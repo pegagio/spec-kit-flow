@@ -1,3 +1,7 @@
+# Agents
+.agents/
+
+# Python
 __pycache__/
 *.pyc
 .venv/
