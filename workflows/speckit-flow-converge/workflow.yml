@@ -1,0 +1,68 @@
+schema_version: "1.0"
+
+workflow:
+  id: "speckit-flow-converge"
+  name: "Converge Feature"
+  version: "0.1.0"
+  author: "pegagio"
+  description: "Assess implementation against the current feature artifacts, route bounded remediation through analysis, and stop cleanly or with a blocker."
+
+requires:
+  speckit_version: ">=1.0.1"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  feature_context:
+    type: string
+    required: true
+    prompt: "Identify the implemented feature to converge"
+  integration:
+    type: string
+    default: "codex"
+    enum: ["codex"]
+  convergence_result:
+    type: string
+    default: ""
+
+steps:
+  - id: assess-convergence
+    command: "speckit.converge"
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Assess {{ inputs.feature_context }} against its specification, plan, and tasks. If bounded remediation tasks are created, report them and return them through the ordinary task-analysis path."
+  - id: classify-convergence-result
+    type: gate
+    message: "Review convergence evidence. A clean result exits converged. New remediation Tasks return through ordinary task analysis and implementation before convergence resumes."
+    options: ["clean", "remediation", "blocked"]
+    verdict_input: "convergence_result"
+    on_reject: "skip"
+  - id: route-convergence-result
+    type: switch
+    expression: "{{ steps.classify-convergence-result.output.choice }}"
+    cases:
+      clean:
+        - id: stop-converged
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop at Feature Converged. The operator may invoke speckit-flow-closeout; convergence is not Git integration or project acceptance."
+      remediation:
+        - id: return-remediation-to-analysis
+          command: "speckit.analyze"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Analyze the remediation tasks created by convergence for {{ inputs.feature_context }} before implementation resumes."
+        - id: stop-for-remediation
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Pause convergence after analysis. Return to the implementation workflow for eligible remediation Tasks, then resume speckit-flow-converge."
+      blocked:
+        - id: stop-with-convergence-blocker
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop with the convergence blocker and preserve evidence."
+    default:
+      - id: stop-invalid-convergence-result
+        type: prompt
+        integration: "{{ inputs.integration }}"
+        prompt: "Stop. The convergence result was not recognized; retain the manual convergence prompt as fallback."

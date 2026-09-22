@@ -1,0 +1,46 @@
+schema_version: "1.0"
+
+bundle:
+  id: "spec-kit-flow"
+  name: "Spec Kit Flow"
+  version: "0.1.0"
+  role: "developer"
+  description: "Human-directed, merge-bounded flow-back workflows and portable feedback for Spec-Driven Development."
+  author: "pegagio"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=1.0.1"
+  tools: ["python3"]
+  mcp: []
+
+integration:
+  id: "codex"
+
+provides:
+  extensions:
+    - id: "roadmap"
+      version: "0.1.1"
+    - id: "wiki"
+      version: "1.0.1"
+    - id: "speckit-flow-feedback"
+      version: "0.1.0"
+  workflows:
+    - id: "speckit-flow-start-feature"
+      version: "0.1.0"
+    - id: "speckit-flow-clarify"
+      version: "0.1.0"
+    - id: "speckit-flow-plan"
+      version: "0.1.0"
+    - id: "speckit-flow-tasks"
+      version: "0.1.0"
+    - id: "speckit-flow-analyze-remediate"
+      version: "0.1.0"
+    - id: "speckit-flow-implement"
+      version: "0.1.0"
+    - id: "speckit-flow-converge"
+      version: "0.1.0"
+    - id: "speckit-flow-closeout"
+      version: "0.1.0"
+
+tags: ["workflow", "spec-driven-development", "flow-back", "codex"]

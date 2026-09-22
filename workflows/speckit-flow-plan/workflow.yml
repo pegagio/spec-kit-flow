@@ -1,0 +1,64 @@
+schema_version: "1.0"
+
+workflow:
+  id: "speckit-flow-plan"
+  name: "Plan Implementation"
+  version: "0.1.0"
+  author: "pegagio"
+  description: "Create implementation design artifacts only after human confirmation that the clarified specification is ready for planning."
+
+requires:
+  speckit_version: ">=1.0.1"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  feature_context:
+    type: string
+    required: true
+    prompt: "Identify the clarified feature to plan"
+  integration:
+    type: string
+    default: "codex"
+    enum: ["codex"]
+  plan_review_decision:
+    type: string
+    default: ""
+
+steps:
+  - id: confirm-planning-readiness
+    type: gate
+    message: "Confirm that the specification was reviewed after clarification and is ready for technical planning. Return to clarification for missing prerequisites or material product ambiguity."
+    options: ["plan", "return-to-clarification", "defer"]
+    verdict_input: "plan_review_decision"
+    on_reject: "skip"
+  - id: route-planning-readiness
+    type: switch
+    expression: "{{ steps.confirm-planning-readiness.output.choice }}"
+    cases:
+      plan:
+        - id: create-plan
+          command: "speckit.plan"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Plan implementation for {{ inputs.feature_context }}. Do not settle material product ambiguity through technical design."
+        - id: stop-for-plan-review
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop at Design Planned. The operator reviews plan, research, data model, contracts, and quickstart before choosing speckit-flow-tasks."
+      return-to-clarification:
+        - id: return-to-clarification
+          command: "speckit.clarify"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Clarify the missing prerequisite or material product ambiguity for {{ inputs.feature_context }} before planning."
+      defer:
+        - id: stop-with-deferred-plan
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop without creating planning artifacts. Record the deferred planning decision and retain the manual prompt as fallback."
+    default:
+      - id: stop-invalid-planning-decision
+        type: prompt
+        integration: "{{ inputs.integration }}"
+        prompt: "Stop. The planning decision was not recognized."

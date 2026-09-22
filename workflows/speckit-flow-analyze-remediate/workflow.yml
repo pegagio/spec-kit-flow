@@ -1,0 +1,116 @@
+schema_version: "1.0"
+
+workflow:
+  id: "speckit-flow-analyze-remediate"
+  name: "Analyze and Remediate"
+  version: "0.1.0"
+  author: "pegagio"
+  description: "Run read-only analysis, route routine findings through the smallest artifact flow-back path, and stop for consequential decisions."
+
+requires:
+  speckit_version: ">=1.0.1"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  feature_context:
+    type: string
+    required: true
+    prompt: "Identify the analyzed feature and its current artifacts"
+  integration:
+    type: string
+    default: "codex"
+    enum: ["codex"]
+  analysis_disposition:
+    type: string
+    default: ""
+
+steps:
+  - id: analyze-artifacts
+    command: "speckit.analyze"
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Analyze {{ inputs.feature_context }} without modifying files. Classify findings as clean, routine spec/plan/task flow-back, constitutional or authority escalation, ambiguous recovery, material scope, or blocker."
+  - id: classify-analysis-result
+    type: gate
+    message: "Review the analysis report. Routine in-scope flow-back is automatic only through the named artifact path. Constitutional, authority, ambiguous-recovery, material-scope, and blocked results stop for the operator."
+    options: ["clean", "routine-spec-flowback", "routine-plan-flowback", "routine-task-flowback", "constitutional-stop", "authority-or-scope-stop", "blocked"]
+    verdict_input: "analysis_disposition"
+    on_reject: "skip"
+  - id: route-analysis-result
+    type: switch
+    expression: "{{ steps.classify-analysis-result.output.choice }}"
+    cases:
+      clean:
+        - id: stop-analysis-clean
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop at Tasks Analyzed. The operator may invoke speckit-flow-implement for eligible work."
+      routine-spec-flowback:
+        - id: remediate-specification
+          command: "speckit.specify"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Apply all routine, in-scope specification remediations identified by the latest analysis for {{ inputs.feature_context }}. Do not apply constitutional, authority, ambiguous-recovery, or material-scope changes."
+        - id: replan-after-specification
+          command: "speckit.plan"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Re-plan {{ inputs.feature_context }} after its approved routine specification remediation."
+        - id: retask-after-specification
+          command: "speckit.tasks"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Regenerate tasks for {{ inputs.feature_context }} after its replan."
+        - id: reanalyze-after-specification
+          command: "speckit.analyze"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Re-run read-only analysis for {{ inputs.feature_context }} after the routine spec flow-back."
+      routine-plan-flowback:
+        - id: remediate-plan
+          command: "speckit.plan"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Apply all routine, in-scope design remediations identified by the latest analysis for {{ inputs.feature_context }}."
+        - id: retask-after-plan
+          command: "speckit.tasks"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Regenerate tasks for {{ inputs.feature_context }} after the routine plan flow-back."
+        - id: reanalyze-after-plan
+          command: "speckit.analyze"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Re-run read-only analysis for {{ inputs.feature_context }} after the routine plan flow-back."
+      routine-task-flowback:
+        - id: remediate-tasks
+          command: "speckit.tasks"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Apply all routine, in-scope task remediations identified by the latest analysis for {{ inputs.feature_context }}."
+        - id: reanalyze-after-tasks
+          command: "speckit.analyze"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Re-run read-only analysis for {{ inputs.feature_context }} after the routine task flow-back."
+      constitutional-stop:
+        - id: stop-for-constitutional-approval
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop before changing the constitution. Report the finding, impact, and proposed amendment; obtain explicit approval through the separate constitutional workflow."
+      authority-or-scope-stop:
+        - id: stop-for-authority-or-scope-decision
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop before expanding authority or material scope, or resolving an ambiguous recovery case. Ask for the smallest explicit operator decision needed to continue."
+      blocked:
+        - id: stop-with-analysis-blocker
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop with the reported blocker and preserve the analysis evidence. Do not claim that implementation is ready."
+    default:
+      - id: stop-invalid-analysis-disposition
+        type: prompt
+        integration: "{{ inputs.integration }}"
+        prompt: "Stop. The analysis disposition was not recognized; retain the manual analyze/remediate controller as fallback."

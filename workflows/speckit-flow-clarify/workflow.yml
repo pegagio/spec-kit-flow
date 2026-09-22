@@ -1,0 +1,63 @@
+schema_version: "1.0"
+
+workflow:
+  id: "speckit-flow-clarify"
+  name: "Clarify Specification"
+  version: "0.1.0"
+  author: "pegagio"
+  description: "Run one interactive clarification session, preserve incremental edits, and return an explicit continuation, planning, or deferral result."
+
+requires:
+  speckit_version: ">=1.0.1"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  feature_context:
+    type: string
+    required: true
+    prompt: "Identify the active feature specification to clarify"
+  integration:
+    type: string
+    default: "codex"
+    enum: ["codex"]
+  clarification_decision:
+    type: string
+    default: ""
+
+steps:
+  - id: clarify-specification
+    command: "speckit.clarify"
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Clarify the active specification for {{ inputs.feature_context }}. Preserve interactive human answers and incremental updates. Treat the current five-question cap as a session boundary, not proof of readiness."
+  - id: choose-clarification-result
+    type: gate
+    message: "Review resolved, outstanding, and deferred ambiguity. Continue another clarification session, accept planning readiness, or defer a bounded concern."
+    options: ["continue-clarification", "begin-planning", "defer"]
+    verdict_input: "clarification_decision"
+    on_reject: "skip"
+  - id: route-clarification-result
+    type: switch
+    expression: "{{ steps.choose-clarification-result.output.choice }}"
+    cases:
+      continue-clarification:
+        - id: stop-for-next-clarification-session
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop at the clarification loop-back. Start another speckit-flow-clarify run with the same active feature; do not claim that the specification is clarified merely because one session ended."
+      begin-planning:
+        - id: stop-for-human-planning-review
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop at Spec Clarified. The operator must re-read the specification and choose whether to invoke speckit-flow-plan."
+      defer:
+        - id: stop-with-explicit-deferral
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop after recording the bounded deferred ambiguity. Do not convert a deferred product decision into an automatic default."
+    default:
+      - id: stop-invalid-clarification-decision
+        type: prompt
+        integration: "{{ inputs.integration }}"
+        prompt: "Stop. Use the current manual clarification prompt as fallback because the requested outcome is not recognized."

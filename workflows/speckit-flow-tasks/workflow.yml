@@ -1,0 +1,69 @@
+schema_version: "1.0"
+
+workflow:
+  id: "speckit-flow-tasks"
+  name: "Generate Implementation Tasks"
+  version: "0.1.0"
+  author: "pegagio"
+  description: "Generate tasks from reviewed design artifacts, surface surprising human work, and route readiness to analysis rather than implicit edits."
+
+requires:
+  speckit_version: ">=1.0.1"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  feature_context:
+    type: string
+    required: true
+    prompt: "Identify the planned feature to decompose into tasks"
+  integration:
+    type: string
+    default: "codex"
+    enum: ["codex"]
+  task_review_decision:
+    type: string
+    default: ""
+
+steps:
+  - id: generate-tasks
+    command: "speckit.tasks"
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Generate dependency-ordered implementation tasks for {{ inputs.feature_context }} from its reviewed design artifacts. Surface any surprising human-operator work rather than silently revising the plan."
+  - id: review-task-proposal
+    type: gate
+    message: "Review task coverage and any surprising human-operator actions. Send an acceptable proposal to analysis, return design gaps to planning, or defer."
+    options: ["analyze", "return-to-plan", "amend-tasks", "defer"]
+    verdict_input: "task_review_decision"
+    on_reject: "skip"
+  - id: route-task-review
+    type: switch
+    expression: "{{ steps.review-task-proposal.output.choice }}"
+    cases:
+      analyze:
+        - id: stop-for-analysis
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop at Tasks Proposed. Invoke speckit-flow-analyze-remediate next; do not begin implementation directly."
+      return-to-plan:
+        - id: return-to-plan
+          command: "speckit.plan"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Re-plan {{ inputs.feature_context }} for the material design gap surfaced during task review."
+      amend-tasks:
+        - id: stop-for-task-amendment
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop for an explicit task amendment. Do not silently change the plan or bypass the normal analysis path."
+      defer:
+        - id: stop-with-deferred-tasks
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop without treating the task proposal as analysis-ready."
+    default:
+      - id: stop-invalid-task-review
+        type: prompt
+        integration: "{{ inputs.integration }}"
+        prompt: "Stop. The task-review decision was not recognized."

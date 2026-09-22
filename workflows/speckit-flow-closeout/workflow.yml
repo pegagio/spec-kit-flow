@@ -1,0 +1,111 @@
+schema_version: "1.0"
+
+workflow:
+  id: "speckit-flow-closeout"
+  name: "Close Out Feature"
+  version: "0.1.0"
+  author: "pegagio"
+  description: "Perform governed closeout after convergence while keeping feature completion, roadmap verification, wiki maintenance, Git integration, and project acceptance distinct."
+
+requires:
+  speckit_version: ">=1.0.1"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  feature_context:
+    type: string
+    required: true
+    prompt: "Identify the converged feature to close out"
+  integration:
+    type: string
+    default: "codex"
+    enum: ["codex"]
+  completion_operation_status:
+    type: string
+    default: ""
+  roadmap_transition_decision:
+    type: string
+    default: ""
+  commit_readiness_decision:
+    type: string
+    default: ""
+
+steps:
+  - id: verify-feature-completion-operation
+    type: gate
+    message: "Confirm that a separately approved feature-completion operation exists before proceeding; otherwise stop without implying a lifecycle transition."
+    options: ["operation-available", "operation-missing"]
+    verdict_input: "completion_operation_status"
+    on_reject: "skip"
+  - id: route-completion-operation-status
+    type: switch
+    expression: "{{ steps.verify-feature-completion-operation.output.choice }}"
+    cases:
+      operation-available:
+        - id: run-approved-completion-operation
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Use the separately approved feature-completion operation for {{ inputs.feature_context }}. Do not infer completion from convergence."
+        - id: debrief-roadmap
+          command: "speckit.roadmap.debrief"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Review converged {{ inputs.feature_context }} against its roadmap entry and propose verification only when the evidence supports it."
+        - id: approve-roadmap-transition
+          type: gate
+          message: "Review the roadmap debrief and exact proposed verification patch. Approve only the exact patch; otherwise return to the relevant workflow or stop."
+          options: ["approve-patch", "return-to-workflow", "defer"]
+          verdict_input: "roadmap_transition_decision"
+          on_reject: "skip"
+        - id: route-roadmap-transition
+          type: switch
+          expression: "{{ steps.approve-roadmap-transition.output.choice }}"
+          cases:
+            approve-patch:
+              - id: apply-approved-roadmap-verification
+                command: "speckit.roadmap.write"
+                integration: "{{ inputs.integration }}"
+                input:
+                  args: "Apply only the exact roadmap verification patch the operator approved for {{ inputs.feature_context }}."
+              - id: ingest-curated-context
+                command: "speckit.wiki.ingest"
+                integration: "{{ inputs.integration }}"
+                input:
+                  args: "Ingest the operator-selected durable closeout sources for {{ inputs.feature_context }}. Include roadmap, constitution, ADRs, workflow or architecture documents, public guides, and relevant feature artifacts; exclude ordinary code unless it is an agent-facing contract."
+              - id: lint-wiki
+                command: "speckit.wiki.lint"
+                integration: "{{ inputs.integration }}"
+                input:
+                  args: "Lint the project wiki after closeout ingestion and stop for unresolved findings."
+              - id: confirm-commit-readiness
+                type: gate
+                message: "Review clean wiki-lint evidence and Git changes. This is commit readiness only; it does not commit, integrate, verify a roadmap without the approved patch, or accept project work."
+                options: ["ready-for-explicit-commit", "return-to-workflow", "blocked"]
+                verdict_input: "commit_readiness_decision"
+                on_reject: "skip"
+            return-to-workflow:
+              - id: stop-for-closeout-flowback
+                type: prompt
+                integration: "{{ inputs.integration }}"
+                prompt: "Stop closeout and return to the workflow named by the debrief or lint finding. Do not create an implicit roadmap, Git, or project transition."
+            defer:
+              - id: stop-with-deferred-closeout
+                type: prompt
+                integration: "{{ inputs.integration }}"
+                prompt: "Stop closeout without applying a roadmap patch, committing changes, or implying acceptance."
+          default:
+            - id: stop-invalid-roadmap-transition
+              type: prompt
+              integration: "{{ inputs.integration }}"
+              prompt: "Stop. The roadmap transition decision was not recognized."
+      operation-missing:
+        - id: stop-missing-completion-operation
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop. A dedicated feature-completion operation is required before closeout can proceed. Do not use speckit.specify as a substitute."
+    default:
+      - id: stop-invalid-completion-operation-status
+        type: prompt
+        integration: "{{ inputs.integration }}"
+        prompt: "Stop. The completion-operation status was not recognized; retain the manual closeout prompt as fallback."

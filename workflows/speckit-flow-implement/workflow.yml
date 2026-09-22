@@ -1,0 +1,82 @@
+schema_version: "1.0"
+
+workflow:
+  id: "speckit-flow-implement"
+  name: "Implement Eligible Work"
+  version: "0.1.0"
+  author: "pegagio"
+  description: "Implement remaining eligible tasks under the current human-selected agent and return execution, flow-back, or blocker evidence."
+
+requires:
+  speckit_version: ">=1.0.1"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  feature_context:
+    type: string
+    required: true
+    prompt: "Identify the feature with clean analysis and eligible tasks"
+  integration:
+    type: string
+    default: "codex"
+    enum: ["codex"]
+  implementation_result:
+    type: string
+    default: ""
+
+steps:
+  - id: implement-eligible-work
+    command: "speckit.implement"
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Implement all remaining eligible tasks for {{ inputs.feature_context }}. Verify current prerequisites and dependencies, retain the operator-selected agent boundary, report execution evidence, and stop for blockers or merge-bounded spec/plan/task flow-back."
+  - id: classify-implementation-result
+    type: gate
+    message: "Review implementation evidence. Continue to convergence only when eligible work is executed; otherwise return through the named flow-back path or stop with the blocker."
+    options: ["converge", "return-to-analysis", "return-to-specification", "return-to-plan", "return-to-tasks", "blocked"]
+    verdict_input: "implementation_result"
+    on_reject: "skip"
+  - id: route-implementation-result
+    type: switch
+    expression: "{{ steps.classify-implementation-result.output.choice }}"
+    cases:
+      converge:
+        - id: stop-for-convergence
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop at Implementation Executed. The operator may invoke speckit-flow-converge; this workflow does not select or launch a follow-on agent."
+      return-to-analysis:
+        - id: return-to-analysis
+          command: "speckit.analyze"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Analyze {{ inputs.feature_context }} before implementation resumes."
+      return-to-specification:
+        - id: return-to-specification
+          command: "speckit.specify"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Update {{ inputs.feature_context }} through merge-bounded flow-back for the implementation discovery."
+      return-to-plan:
+        - id: return-to-plan
+          command: "speckit.plan"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Update the plan for {{ inputs.feature_context }} through merge-bounded flow-back for the implementation discovery."
+      return-to-tasks:
+        - id: return-to-tasks
+          command: "speckit.tasks"
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "Update tasks for {{ inputs.feature_context }} through merge-bounded flow-back for the implementation discovery."
+      blocked:
+        - id: stop-with-implementation-blocker
+          type: prompt
+          integration: "{{ inputs.integration }}"
+          prompt: "Stop with the blocking issue and required operator input. Do not expand implementation scope silently."
+    default:
+      - id: stop-invalid-implementation-result
+        type: prompt
+        integration: "{{ inputs.integration }}"
+        prompt: "Stop. The implementation result was not recognized; retain the manual implementation prompt as fallback."
