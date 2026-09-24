@@ -53,3 +53,9 @@ For routine findings within the issued scope, update the smallest affected artif
 When native implementation dispatch is unavailable, use `speckit.implement` only for the operator-selected feature, current agent, and remaining eligible tasks after clean analysis. Verify prerequisites and dependencies, execute within scope, and present task results, tests, discoveries, and blockers for human review.
 
 If work is complete, stop and let the operator invoke `speckit-flow-converge` separately. For a discovery, return to the smallest affected specification, plan, task, or analysis path; reconcile dependent artifacts and reanalyze before resuming implementation. For a blocker or unrecognized result, stop with the issue and required operator input. Do not infer roadmap verification, Git integration, or acceptance from execution.
+
+## Manual convergence path
+
+When native convergence dispatch is unavailable, run `speckit.converge` for the operator-selected implemented feature and review its assessment against the current specification, plan, and tasks. A clean result stops at Feature Converged; closeout requires a separate operator instruction.
+
+If convergence appends bounded remediation tasks, run `speckit.analyze` on the updated artifacts. Resolve its findings before the operator separately invokes implementation for eligible tasks, then run convergence again. For a blocker or unrecognized result, stop and preserve the evidence. Convergence does not integrate Git or accept the feature.
