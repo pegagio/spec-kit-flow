@@ -23,3 +23,9 @@ When native workflow dispatch is unavailable, the operator can follow the review
 2. Review the proposed patch with the human operator. Apply only the approved patch with `speckit.flow-roadmap.write`; amendment, context resolution, or deferral ends this attempt without applying it.
 3. Query cited governing context and its coverage with `speckit.flow-wiki.query`. Use `speckit.specify` to draft the approved feature, then `speckit.flow-roadmap.brief` to compare it with the roadmap entry.
 4. Present the specification and brief for human review. The operator chooses clarification, roadmap amendment, context resolution, planning readiness, or deferral. Start any next workflow only on a separate operator instruction.
+
+## Manual clarification path
+
+When native clarification dispatch is unavailable, run `speckit.clarify` for the operator-selected active feature. Present one question at a time, obtain the operator's answer, and update the specification after each accepted answer. Treat the command's current five-question cap as the end of one session; report resolved, outstanding, and deferred ambiguity without assuming readiness.
+
+After reviewing that result, the operator may request another `speckit-flow-clarify` session on the same feature, choose to begin planning, or defer a bounded concern. Record the choice and stop. Planning and another clarification session each require a separate operator instruction.
