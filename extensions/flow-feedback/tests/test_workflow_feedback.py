@@ -72,6 +72,29 @@ class WorkflowFeedbackTests(unittest.TestCase):
             with self.assertRaisesRegex(workflow_feedback.FeedbackValidationError, "absolute host path"):
                 workflow_feedback.capture(source, Path(directory) / "journal.jsonl")
 
+    def test_capture_rejectsEmbeddedHostPath_withoutWritingJournal(self):
+        for text in ("Location:/Users/pegagio/report.txt", "See (/private/tmp/report.txt)", "file:///private/tmp/report.txt"):
+            with self.subTest(text=text), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                invalid = observation()
+                invalid["observed_behavior"] = text
+                source = root / "observation.json"
+                journal = root / "journal.jsonl"
+                source.write_text(json.dumps(invalid), encoding="utf-8")
+                with self.assertRaisesRegex(workflow_feedback.FeedbackValidationError, "absolute host path"):
+                    workflow_feedback.capture(source, journal)
+                self.assertFalse(journal.exists())
+
+    def test_capture_allowsRelativeReferenceAndHttpsUrl(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            valid = observation()
+            valid["evidence_references"] = ["validation/convergence-dogfood.md", "https://example.org/evidence/report"]
+            source = root / "observation.json"
+            source.write_text(json.dumps(valid), encoding="utf-8")
+            captured = workflow_feedback.capture(source, root / "journal.jsonl")
+            self.assertEqual("captured", captured["status"])
+
     def test_capture_rejectsDuplicateId_whenJournalAlreadyContainsObservation(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

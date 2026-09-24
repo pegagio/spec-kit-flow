@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: flow-feedback
   name: "Spec Kit Flow Feedback"
-  version: "0.2.0"
+  version: "0.2.1"
   description: "Portable local workflow feedback capture and report export"
   author: pegagio
   license: MIT

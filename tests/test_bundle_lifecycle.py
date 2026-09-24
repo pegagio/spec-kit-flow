@@ -49,6 +49,22 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def released_feedback_source(destination: Path) -> Path:
+    """Extract the checksum-pinned feedback release for bundle lifecycle checks."""
+    release = json.loads((ROOT / "catalog/release.json").read_text(encoding="utf-8"))
+    entry = release["extensions"][FEEDBACK_ID]
+    artifact = ROOT / "catalog/packages" / entry["artifact"]
+    if sha256(artifact) != entry["sha256"]:
+        raise AssertionError("released feedback archive checksum differs from catalog")
+    with zipfile.ZipFile(artifact) as archive:
+        for member in archive.infolist():
+            parts = Path(member.filename).parts
+            if not parts or parts[0] != FEEDBACK_ID or ".." in parts:
+                raise AssertionError("released feedback archive has an unsafe path")
+            archive.extract(member, destination)
+    return destination / FEEDBACK_ID
+
+
 def extension_manifest(source: Path) -> dict[str, str]:
     """Read the small manifest subset required by the disposable catalog."""
     values: dict[str, str] = {}
@@ -197,7 +213,7 @@ class BundleLifecycleTests(unittest.TestCase):
             extensions = {
                 ROADMAP_ID: Path(ROADMAP_SOURCE),
                 WIKI_ID: Path(WIKI_SOURCE),
-                FEEDBACK_ID: ROOT / "extensions/flow-feedback",
+                FEEDBACK_ID: released_feedback_source(fixture / "released-feedback"),
             }
             with LocalCatalog(fixture / "catalog", extensions, {WIKI_ID: "0.0.0"}) as catalog:
                 environment = os.environ.copy()
@@ -233,7 +249,7 @@ class BundleLifecycleTests(unittest.TestCase):
             extensions = {
                 ROADMAP_ID: Path(ROADMAP_SOURCE),
                 WIKI_ID: Path(WIKI_SOURCE),
-                FEEDBACK_ID: ROOT / "extensions/flow-feedback",
+                FEEDBACK_ID: released_feedback_source(fixture / "released-feedback"),
             }
             with LocalCatalog(fixture / "catalog", extensions) as catalog:
                 environment = os.environ.copy()

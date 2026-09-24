@@ -19,7 +19,7 @@ REQUIRED_FIELDS = (
     "manual_fallback_status", "evidence_references", "suggested_change_target", "reporter_disposition",
 )
 SENSITIVE_KEY = re.compile(r"(?:secret|password|credential|private.?key|transcript|token)", re.I)
-ABSOLUTE_PATH = re.compile(r"(?:^|[\s\"'])/(?:[^\s\"']+)")
+ABSOLUTE_PATH = re.compile(r"(?:file://|(?<![A-Za-z0-9./])/(?!/))[^\s\"']+")
 SENSITIVE_VALUE = re.compile(r"(?:sk-[A-Za-z0-9_-]{8,}|BEGIN (?:RSA |OPENSSH )?PRIVATE KEY)")
 DIGEST = re.compile(r"^(?:sha256:)?[a-f0-9]{64}$")
 DISPOSITIONS = {"observed", "exported", "received", "triaged", "deferred", "rejected", "duplicate", "reproduction-requested", "workflow-source-change", "preset-investigation", "agent-policy-investigation"}

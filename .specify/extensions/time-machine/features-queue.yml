@@ -1,7 +1,7 @@
 analyzed_at: "2026-09-24T21:16:40Z"
 project_root: "/Users/pegagio/Development/github/pegagio/spec-kit-flow"
 total_features: 11
-completed: 8
+completed: 9
 features:
   - id: "feature-start"
     name: "Feature Start"
@@ -99,12 +99,12 @@ features:
       - "extensions/flow-feedback/commands"
       - "extensions/flow-feedback/scripts/python/workflow_feedback.py"
       - "extensions/flow-feedback/tests/test_workflow_feedback.py"
-    status: pending
+    status: done
     current_phase: null
-    branch: null
-    pushed: null
-    started_at: null
-    completed_at: null
+    branch: "feature/time-machine-consumer-feedback"
+    pushed: false
+    started_at: "2026-09-24T22:08:10Z"
+    completed_at: "2026-09-24T22:15:01Z"
   - id: "maintainer-intake"
     name: "Maintainer Feedback Intake"
     description: "Validate transferred feedback reports and record proposed dispositions for maintainer review."
