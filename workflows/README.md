@@ -59,3 +59,9 @@ If work is complete, stop and let the operator invoke `speckit-flow-converge` se
 When native convergence dispatch is unavailable, run `speckit.converge` for the operator-selected implemented feature and review its assessment against the current specification, plan, and tasks. A clean result stops at Feature Converged; closeout requires a separate operator instruction.
 
 If convergence appends bounded remediation tasks, run `speckit.analyze` on the updated artifacts. Resolve its findings before the operator separately invokes implementation for eligible tasks, then run convergence again. For a blocker or unrecognized result, stop and preserve the evidence. Convergence does not integrate Git or accept the feature.
+
+## Manual closeout path
+
+When native closeout dispatch is unavailable, first confirm that a separately approved feature-completion operation exists for the operator-selected converged feature. If it is missing, stop without inferring completion or substituting `speckit.specify`. If available, perform that approved operation, then run `speckit.flow-roadmap.debrief` and present its evidence and exact proposed verification patch.
+
+Apply only a patch the operator explicitly approves with `speckit.flow-roadmap.write`; return to the relevant workflow or stop on deferral or an unrecognized decision. After an approved patch, ingest operator-selected durable sources with `speckit.flow-wiki.ingest`, then run `speckit.flow-wiki.lint`. Resolve lint findings before reviewing Git changes and commit readiness. A ready decision does not itself commit, integrate Git, or accept project work.

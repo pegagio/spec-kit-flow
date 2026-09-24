@@ -363,6 +363,15 @@ class BundleLifecycleTests(unittest.TestCase):
                 )
                 self.assertEqual("completed", json.loads(workflow_run)["status"])
 
+                closeout_run = self.run_specify(
+                    consumer, workflow_environment, "workflow", "run", "speckit-flow-closeout",
+                    "--input", "feature_context=disposable consumer fixture",
+                    "--input", "completion_operation_status=operation-missing", "--json",
+                )
+                self.assertEqual("completed", json.loads(closeout_run)["status"])
+                feature_files_after_closeout = set((consumer / "specs").rglob("*")) if (consumer / "specs").exists() else set()
+                self.assertEqual(feature_files_before, feature_files_after_closeout)
+
                 observation = {
                     "observation_id": "converge-terminal-prompt-001",
                     "observed_at": "2026-09-21T12:00:00Z",
