@@ -69,7 +69,8 @@ class CatalogReleaseTests(unittest.TestCase):
             shutil.copytree(catalog.CATALOG / "packages", temporary_catalog / "packages")
             temporary_release = temporary_catalog / "release.json"
             shutil.copy2(catalog.RELEASE, temporary_release)
-            package = temporary_catalog / "packages/flow-feedback-0.2.0.zip"
+            release = json.loads(temporary_release.read_text(encoding="utf-8"))
+            package = temporary_catalog / "packages" / release["extensions"]["flow-feedback"]["artifact"]
             package.write_bytes(package.read_bytes() + b"changed")
             with patch.object(catalog, "CATALOG", temporary_catalog), patch.object(catalog, "RELEASE", temporary_release):
                 with self.assertRaisesRegex(ValueError, "missing or mismatched: flow-feedback"):

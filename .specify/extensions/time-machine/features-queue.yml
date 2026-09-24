@@ -1,7 +1,7 @@
 analyzed_at: "2026-09-24T21:16:40Z"
 project_root: "/Users/pegagio/Development/github/pegagio/spec-kit-flow"
 total_features: 11
-completed: 10
+completed: 11
 features:
   - id: "feature-start"
     name: "Feature Start"
@@ -133,9 +133,9 @@ features:
       - "tests/test_bundle_lifecycle.py"
       - "tests/consumer-fixtures"
       - "mise.toml"
-    status: pending
+    status: done
     current_phase: null
-    branch: null
-    pushed: null
-    started_at: null
-    completed_at: null
+    branch: "feature/time-machine-bundle-catalog"
+    pushed: false
+    started_at: "2026-09-24T22:32:09Z"
+    completed_at: "2026-09-24T22:36:22Z"

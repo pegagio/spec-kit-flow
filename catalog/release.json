@@ -1,15 +1,15 @@
 {
-  "bundle_version": "0.3.0",
+  "bundle_version": "0.3.1",
   "extensions": {
     "flow-feedback": {
-      "artifact": "flow-feedback-0.2.0.zip",
+      "artifact": "flow-feedback-0.2.1.zip",
       "author": "pegagio",
       "name": "Spec Kit Flow Feedback",
-      "sha256": "32f46828933d22914d7d0784b058a9919519e52f7bf10d5407e7c735874ac267",
-      "source_commit": "e14d0e833d3a3a1079ca2b54bda27ba247e2f48f",
+      "sha256": "c666b11aa9f10c49ef879191a30a1f06d593d6fe7e404d71a0fc7145d0c75670",
+      "source_commit": "4eeddd9be6d16ce726df58acd4508a074d454c5a",
       "source_repository": "https://github.com/pegagio/spec-kit-flow",
       "source_tag": null,
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
     "flow-roadmap": {
       "artifact": "flow-roadmap-0.2.1.zip",

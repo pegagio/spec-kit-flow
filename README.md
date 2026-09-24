@@ -13,13 +13,13 @@ This repository owns the generic workflow and feedback source. The repository an
 
 ## What the bundle installs
 
-The [bundle manifest](bundles/spec-kit-flow/bundle.yml) is version `0.3.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The bundle pins these extensions:
+The [bundle manifest](bundles/spec-kit-flow/bundle.yml) is version `0.3.1` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The bundle pins these extensions:
 
 | Extension ID | Version | Purpose |
 | --- | --- | --- |
 | `flow-roadmap` | `0.2.1` | Governed roadmap changes and feature reviews; source: `spec-kit-flow-roadmap` |
 | `flow-wiki` | `2.0.1` | Cited project context, ingestion, and linting; source: `spec-kit-flow-wiki` |
-| `flow-feedback` | `0.2.0` | Local observation capture and portable report export; source: this repository |
+| `flow-feedback` | `0.2.1` | Local observation capture and portable report export; source: this repository |
 
 It also installs the eight workflows in [`workflows/`](workflows/README.md):
 
