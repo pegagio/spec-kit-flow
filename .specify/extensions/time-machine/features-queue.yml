@@ -1,0 +1,141 @@
+analyzed_at: "2026-09-24T21:16:40Z"
+project_root: "/Users/pegagio/Development/github/pegagio/spec-kit-flow"
+total_features: 11
+completed: 1
+features:
+  - id: "feature-start"
+    name: "Feature Start"
+    description: "Guide an operator from an eligible roadmap item through an approved patch, cited context, specification, and brief."
+    files:
+      - "workflows/speckit-flow-start-feature/workflow.yml"
+    status: done
+    current_phase: null
+    branch: "feature/time-machine-feature-start"
+    pushed: false
+    started_at: "2026-09-24T21:18:17Z"
+    completed_at: "2026-09-24T21:26:04Z"
+  - id: "specification-clarification"
+    name: "Specification Clarification"
+    description: "Run a bounded clarification session for the active feature specification and route its result."
+    files:
+      - "workflows/speckit-flow-clarify/workflow.yml"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null
+  - id: "technical-planning"
+    name: "Technical Planning"
+    description: "Check planning readiness and guide creation of a feature's technical plan."
+    files:
+      - "workflows/speckit-flow-plan/workflow.yml"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null
+  - id: "task-generation"
+    name: "Task Generation"
+    description: "Generate implementation tasks from an approved plan as a separate workflow step."
+    files:
+      - "workflows/speckit-flow-tasks/workflow.yml"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null
+  - id: "artifact-analysis"
+    name: "Artifact Analysis and Remediation"
+    description: "Analyze specification, plan, and task consistency and route bounded corrections before implementation."
+    files:
+      - "workflows/speckit-flow-analyze-remediate/workflow.yml"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null
+  - id: "implementation"
+    name: "Scoped Implementation"
+    description: "Guide implementation of eligible tasks while preserving the operator's scope and artifact consistency gates."
+    files:
+      - "workflows/speckit-flow-implement/workflow.yml"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null
+  - id: "convergence"
+    name: "Implementation Convergence"
+    description: "Compare implementation with feature artifacts and route remaining gaps to resolution."
+    files:
+      - "workflows/speckit-flow-converge/workflow.yml"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null
+  - id: "feature-closeout"
+    name: "Feature Closeout"
+    description: "Guide explicit completion review, roadmap verification, wiki maintenance, and commit readiness."
+    files:
+      - "workflows/speckit-flow-closeout/workflow.yml"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null
+  - id: "consumer-feedback"
+    name: "Consumer Feedback"
+    description: "Capture local workflow observations and export portable reports without changing source or authority."
+    files:
+      - "extensions/flow-feedback/extension.yml"
+      - "extensions/flow-feedback/commands"
+      - "extensions/flow-feedback/scripts/python/workflow_feedback.py"
+      - "extensions/flow-feedback/tests/test_workflow_feedback.py"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null
+  - id: "maintainer-intake"
+    name: "Maintainer Feedback Intake"
+    description: "Validate transferred feedback reports and record proposed dispositions for maintainer review."
+    files:
+      - "extensions/speckit-flow-feedback-maintainer/extension.yml"
+      - "extensions/speckit-flow-feedback-maintainer/commands"
+      - "extensions/speckit-flow-feedback-maintainer/scripts/python/workflow_feedback_intake.py"
+      - "extensions/speckit-flow-feedback-maintainer/tests/test_workflow_feedback_intake.py"
+      - "feedback/inbox"
+      - "feedback/triage"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null
+  - id: "bundle-catalog"
+    name: "Bundle Catalog and Lifecycle"
+    description: "Package pinned components and guide verified bundle installation, refresh, and removal in consumer projects."
+    files:
+      - "bundles/spec-kit-flow/bundle.yml"
+      - "catalog/release.json"
+      - "catalog/packages"
+      - "tools/catalog.py"
+      - "tests/test_catalog.py"
+      - "tests/test_bundle_lifecycle.py"
+      - "tests/consumer-fixtures"
+      - "mise.toml"
+    status: pending
+    current_phase: null
+    branch: null
+    pushed: null
+    started_at: null
+    completed_at: null

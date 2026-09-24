@@ -303,6 +303,15 @@ class BundleLifecycleTests(unittest.TestCase):
                 codex_stub.chmod(0o755)
                 workflow_environment = dict(environment)
                 workflow_environment["SPECKIT_INTEGRATION_CODEX_EXECUTABLE"] = str(codex_stub)
+                feature_files_before = set((consumer / "specs").rglob("*")) if (consumer / "specs").exists() else set()
+                start_run = self.run_specify(
+                    consumer, workflow_environment, "workflow", "run", "speckit-flow-start-feature",
+                    "--input", "feature_request=disposable consumer fixture",
+                    "--input", "roadmap_decision=defer", "--json",
+                )
+                self.assertEqual("completed", json.loads(start_run)["status"])
+                feature_files_after = set((consumer / "specs").rglob("*")) if (consumer / "specs").exists() else set()
+                self.assertEqual(feature_files_before, feature_files_after)
                 workflow_run = self.run_specify(
                     consumer, workflow_environment, "workflow", "run", "speckit-flow-converge",
                     "--input", "feature_context=disposable consumer fixture",
