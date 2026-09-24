@@ -41,6 +41,7 @@ WORKFLOW_IDS = (
 CONSUMER_FIXTURE = ROOT / "tests/consumer-fixtures/independent-workflow.yml"
 ROADMAP_ID = "flow-roadmap"
 WIKI_ID = "flow-wiki"
+FEEDBACK_ID = "flow-feedback"
 
 
 def sha256(path: Path) -> str:
@@ -196,7 +197,7 @@ class BundleLifecycleTests(unittest.TestCase):
             extensions = {
                 ROADMAP_ID: Path(ROADMAP_SOURCE),
                 WIKI_ID: Path(WIKI_SOURCE),
-                "speckit-flow-feedback": ROOT / "extensions/speckit-flow-feedback",
+                FEEDBACK_ID: ROOT / "extensions/flow-feedback",
             }
             with LocalCatalog(fixture / "catalog", extensions, {WIKI_ID: "0.0.0"}) as catalog:
                 environment = os.environ.copy()
@@ -232,7 +233,7 @@ class BundleLifecycleTests(unittest.TestCase):
             extensions = {
                 ROADMAP_ID: Path(ROADMAP_SOURCE),
                 WIKI_ID: Path(WIKI_SOURCE),
-                "speckit-flow-feedback": ROOT / "extensions/speckit-flow-feedback",
+                FEEDBACK_ID: ROOT / "extensions/flow-feedback",
             }
             with LocalCatalog(fixture / "catalog", extensions) as catalog:
                 environment = os.environ.copy()
@@ -278,6 +279,11 @@ class BundleLifecycleTests(unittest.TestCase):
                     self.assertTrue((consumer / ".specify/extensions" / extension_id).is_dir())
                 self.assertFalse((consumer / ".specify/extensions/roadmap").exists())
                 self.assertFalse((consumer / ".specify/extensions/wiki").exists())
+                self.assertFalse((consumer / ".specify/extensions/speckit-flow-feedback").exists())
+                feedback_manifest = (consumer / ".specify/extensions/flow-feedback/extension.yml").read_text(encoding="utf-8")
+                self.assertIn("- name: speckit.flow-feedback.capture", feedback_manifest)
+                self.assertIn("- name: speckit.flow-feedback.report", feedback_manifest)
+                self.assertNotIn("speckit.speckit-flow-feedback.", feedback_manifest)
                 for workflow_id in ("speckit-flow-start-feature", "speckit-flow-closeout"):
                     workflow = (consumer / ".specify/workflows" / workflow_id / "workflow.yml").read_text(encoding="utf-8")
                     commands = re.findall(r'^\s+command: "(speckit\.flow-(?:roadmap|wiki)\.[^"]+)"', workflow, re.MULTILINE)
@@ -323,7 +329,7 @@ class BundleLifecycleTests(unittest.TestCase):
                     observation = json.loads(Path(os.environ["SPEC_KIT_FLOW_TEST_OBSERVATION"]).read_text(encoding="utf-8"))
                 observation_file = consumer / "observation.json"
                 observation_file.write_text(json.dumps(observation), encoding="utf-8")
-                feedback_script = consumer / ".specify/extensions/speckit-flow-feedback/scripts/python/workflow_feedback.py"
+                feedback_script = consumer / ".specify/extensions/flow-feedback/scripts/python/workflow_feedback.py"
                 journal = consumer / ".specify/workflow-feedback/observations.jsonl"
                 report_json = consumer / "feedback-report.json"
                 report_markdown = consumer / "feedback-report.md"
@@ -397,7 +403,7 @@ class BundleLifecycleTests(unittest.TestCase):
                 )
                 self.assertTrue(independent.is_file())
                 self.run_specify(consumer, environment, "bundle", "remove", "spec-kit-flow")
-                self.assertFalse((consumer / ".specify/extensions/speckit-flow-feedback").exists())
+                self.assertFalse((consumer / ".specify/extensions/flow-feedback").exists())
                 self.assertFalse((consumer / ".specify/workflows/speckit-flow-converge").exists())
                 self.assertTrue(independent.is_file())
                 self.assertTrue(report_json.is_file())

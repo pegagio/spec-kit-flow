@@ -1,9 +1,9 @@
 schema_version: "1.0"
 
 extension:
-  id: speckit-flow-feedback
+  id: flow-feedback
   name: "Spec Kit Flow Feedback"
-  version: "0.1.0"
+  version: "0.2.0"
   description: "Portable local workflow feedback capture and report export"
   author: pegagio
   license: MIT
@@ -16,11 +16,11 @@ requires:
 
 provides:
   commands:
-    - name: speckit.speckit-flow-feedback.capture
-      file: commands/speckit.speckit-flow-feedback.capture.md
+    - name: speckit.flow-feedback.capture
+      file: commands/speckit.flow-feedback.capture.md
       description: "Validate and append one sanitized workflow-feedback observation"
-    - name: speckit.speckit-flow-feedback.report
-      file: commands/speckit.speckit-flow-feedback.report.md
+    - name: speckit.flow-feedback.report
+      file: commands/speckit.flow-feedback.report.md
       description: "Export a portable workflow-feedback JSON report and Markdown projection"
 
 tags:

@@ -2,7 +2,7 @@
 
 Spec Kit Flow is a human-directed, merge-bounded flow-back workbench for Spec-Driven Development. It packages eight reusable Spec Kit workflows, portable consumer feedback, and a version-pinned bundle that composes independently maintained roadmap and wiki extensions.
 
-This repository owns the generic workflow and feedback source. The repository and bundle ID are `spec-kit-flow`; workflows and extensions owned here use `speckit-flow-<purpose>` IDs. The independent `spec-kit-flow-roadmap` and `spec-kit-flow-wiki` repositories publish the extension IDs `flow-roadmap` and `flow-wiki`.
+This repository owns the generic workflow and feedback source. The repository and bundle ID are `spec-kit-flow`; its workflows use `speckit-flow-<purpose>` IDs, and the consumer feedback extension uses `flow-feedback`. The independent `spec-kit-flow-roadmap` and `spec-kit-flow-wiki` repositories publish the extension IDs `flow-roadmap` and `flow-wiki`.
 
 ## Contents
 
@@ -13,13 +13,13 @@ This repository owns the generic workflow and feedback source. The repository an
 
 ## What the bundle installs
 
-The [bundle manifest](bundles/spec-kit-flow/bundle.yml) is version `0.2.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The bundle pins these extensions:
+The [bundle manifest](bundles/spec-kit-flow/bundle.yml) is version `0.3.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The bundle pins these extensions:
 
 | Extension ID | Version | Purpose |
 | --- | --- | --- |
 | `flow-roadmap` | `0.2.0` | Governed roadmap changes and feature reviews; source: `spec-kit-flow-roadmap` |
 | `flow-wiki` | `2.0.0` | Cited project context, ingestion, and linting; source: `spec-kit-flow-wiki` |
-| `speckit-flow-feedback` | `0.1.0` | Local observation capture and portable report export; source: this repository |
+| `flow-feedback` | `0.2.0` | Local observation capture and portable report export; source: this repository |
 
 It also installs the eight workflows in [`workflows/`](workflows/README.md):
 
@@ -51,7 +51,7 @@ WIKI_SOURCE=/absolute/path/to/spec-kit-flow-wiki
 
 specify extension add --dev "$ROADMAP_SOURCE"
 specify extension add --dev "$WIKI_SOURCE"
-specify extension add --dev "$FLOW_SOURCE/extensions/speckit-flow-feedback"
+specify extension add --dev "$FLOW_SOURCE/extensions/flow-feedback"
 
 for workflow in start-feature clarify plan tasks analyze-remediate implement converge closeout; do
   specify workflow add --dev "$FLOW_SOURCE/workflows/speckit-flow-$workflow"
@@ -95,6 +95,6 @@ Human review controls roadmap patches, material scope and authority changes, amb
 
 ## Feedback and project status
 
-Consumers may use `speckit-flow-feedback` to capture local observations and export a portable report. Capture and export do not change workflow source or project authority; maintainer intake is a separate step. See [feedback guidance](docs/feedback.md).
+Consumers may use `flow-feedback` to capture local observations and export a portable report. Its commands are `speckit.flow-feedback.capture` and `speckit.flow-feedback.report`. Capture and export do not change workflow source or project authority; maintainer intake is a separate step. See [feedback guidance](docs/feedback.md).
 
 The [project status](docs/project-status.md) records tested versions, source coordinates, validation evidence, and remaining publication limits. The disposable lifecycle test proves bundle installation and native dispatch with a no-op Codex executable; it does not prove live-agent behavior or general consumer compatibility.
