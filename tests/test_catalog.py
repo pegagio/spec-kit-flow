@@ -14,6 +14,13 @@ from tools import catalog
 
 
 class CatalogReleaseTests(unittest.TestCase):
+    def test_install_allowsSourceCheckout_butRejectsNestedTarget(self) -> None:
+        with patch.object(catalog, "verified_release", side_effect=ValueError("release checked")):
+            with self.assertRaisesRegex(ValueError, "release checked"):
+                catalog.install(catalog.ROOT, False)
+            with self.assertRaisesRegex(ValueError, "must not be nested"):
+                catalog.install(catalog.ROOT / "workflows", False)
+
     def test_verifiedRelease_rejectsSnapshotRelabeledAsReleased(self) -> None:
         with tempfile.TemporaryDirectory(prefix="spec-kit-flow-catalog-status-") as temporary:
             temporary_catalog = Path(temporary)

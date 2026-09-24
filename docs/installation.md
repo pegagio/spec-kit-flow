@@ -1,25 +1,102 @@
-# Installation and Lifecycle
+# Install and Use Spec Kit Flow
 
-## Local catalog installation
+Use the catalog tasks in this repository to install or refresh the bundle. They serve the checked-in release packages on localhost for the duration of each command, so you do not need separate roadmap or wiki source checkouts to install it. The [bundle manifest](../bundles/spec-kit-flow/bundle.yml) and [release metadata](../catalog/release.json) are the sources for current component versions.
 
-The checkout contains bundle `0.3.1`, `catalog/release.json`, and checksum-pinned archives for `flow-roadmap` 0.2.1, `flow-wiki` 2.0.1, and `flow-feedback` 0.2.1. The catalog is marked `released` and records the Roadmap `v0.2.1` and Wiki `v2.0.1` annotated tags. The eight workflows are served from their reviewed source files. No external component checkouts or public catalog service are needed by a consumer. The compatible Specify CLI is a separate prerequisite: `mise.toml` pins the tested local fork but this checkout does not distribute it, and `mise install` succeeds only when that fork is obtainable in your environment.
+## Contents
 
-For a released catalog, run `mise run catalog:install /path/to/consumer-project` from this repository's root. The consumer directory must exist and be outside this checkout; Specify initializes it if needed. The task verifies release status, package checksums, workflow hashes, bundle pins, and the exact tested Specify version, then starts a temporary loopback catalog and invokes native bundle installation. The server stops when the command finishes. Do not pass Specify's `--offline` flag: its component resolver treats the temporary loopback catalog as a network source, although no external catalog service is contacted.
+- [Prepare the checkout](#prepare-the-checkout)
+- [Install in another project](#install-in-another-project)
+- [Dogfood this repository](#dogfood-this-repository)
+- [Use a workflow](#use-a-workflow)
+- [Refresh or remove the bundle](#refresh-or-remove-the-bundle)
+- [Build release packages](#build-release-packages)
 
-The local `bundle.yml` remains a composition contract and does not embed component payloads. `mise run catalog:refresh /path/to/consumer-project` supplies a fresh temporary catalog and runs native bundle refresh from that manifest. Use this task for updates; a plain `specify bundle update` has no active catalog after the temporary server stops. Existing installed bundle records may contain the former loopback URL, which is transient; the release manifest in this checkout records durable source commits and package digests.
+## Prepare the checkout
 
-`flow-feedback` replaces the consumer extension ID `speckit-flow-feedback` and exposes `speckit.flow-feedback.capture` and `speckit.flow-feedback.report`; the former command names are not aliases. In an existing consumer, retain its local feedback journal, install and verify the new extension, then remove or disable the former installation according to its ownership. A bundle refresh may remove an old bundle-owned component omitted from the new manifest; an independently installed old extension remains a separate installation.
+Run these commands from the Spec Kit Flow checkout. You need `mise`, Python 3, and access to the Specify CLI pinned in `mise.toml`. The repository does not distribute that CLI.
 
-## Release build and lifecycle
+```sh
+cd /path/to/spec-kit-flow
+mise trust
+mise install
+mise exec -- specify --version
+```
 
-The release builder needs clean local checkouts of the independently maintained roadmap and wiki extensions at annotated tags matching the bundle's extension versions. The source repositories document their own release gates in `RELEASE.md`. From this repository's root, run:
+If `mise install` cannot obtain the pinned Specify fork, make that CLI available before continuing. The catalog tasks check its exact version and reject development snapshots or mismatched package hashes.
+
+## Install in another project
+
+Choose an existing project directory outside this checkout, or create an empty one. The install task initializes it with Specify if needed.
+
+```sh
+mkdir -p /path/to/my-project
+mise run catalog:install /path/to/my-project
+```
+
+Verify the installation from the project directory:
+
+```sh
+cd /path/to/my-project
+specify bundle list
+specify extension list
+specify workflow list
+```
+
+The install task starts and stops its own localhost catalog. Do not add Specify's `--offline` flag; the resolver needs to contact that local catalog.
+
+## Dogfood this repository
+
+Install into the checkout itself when developing Spec Kit Flow. Run this from its root:
+
+```sh
+mise run catalog:install .
+specify bundle list
+specify workflow list
+```
+
+Edit reviewed workflow and extension source packages, not the installed copies under `.specify/`. Check `git status` before staging: installation changes tracked Spec Kit registries, and project-specific extension configuration may be untracked.
+
+For new local Codex-managed worktrees, select the **Spec Kit Flow** local environment in Codex. Its setup script trusts the checkout's `mise.toml`, installs the pinned tools, and installs the bundle before work begins. This setup is defined in `.codex/environments/environment.toml`. Plain `git worktree add` does not run Codex setup; run `bash .codex/setup-worktree.sh` in that worktree if needed.
+
+Each installation updates checkout-local Spec Kit registries. Review these generated changes separately from workflow source changes; the workflow registry can contain a temporary localhost catalog URL.
+
+## Use a workflow
+
+Inspect the workflow before running it in the installed project. For example, start-feature requires an eligible roadmap candidate and governing wiki context:
+
+```sh
+specify workflow info speckit-flow-start-feature
+specify workflow run speckit-flow-start-feature --input "feature_request=Describe the selected eligible feature"
+```
+
+The workflow stops at human review gates. Invoke each later workflow separately. The [workflow guide](../workflows/README.md) gives the route and manual fallback. While editing a workflow in this repository, you can run its source `workflow.yml` by path to test an uninstalled change.
+
+## Refresh or remove the bundle
+
+After updating this checkout to a newer reviewed release, return to its root and refresh the target project:
+
+```sh
+cd /path/to/spec-kit-flow
+mise run catalog:refresh /path/to/my-project
+```
+
+For an in-repository installation, use `mise run catalog:refresh .` instead. Use the catalog task because a plain `specify bundle update` cannot reach the temporary catalog after the install task exits. Inspect the result if refresh fails; it may have changed some components before stopping. Refresh can remove components previously owned by the bundle when the new manifest omits them.
+
+To remove the bundle, run this in the installed project:
+
+```sh
+specify bundle remove spec-kit-flow
+specify bundle list
+```
+
+Confirm that unrelated components remain. The consumer's feedback journal is local evidence and should remain available after removal.
+
+## Build release packages
+
+Maintainers need clean checkouts of the independent roadmap and wiki repositories at annotated release tags matching the [bundle manifest](../bundles/spec-kit-flow/bundle.yml). From this repository's root, run:
 
 ```sh
 mise run catalog:build /path/to/spec-kit-flow-roadmap /path/to/spec-kit-flow-wiki
 ```
 
-The default builder checks source IDs and versions against `bundles/spec-kit-flow/bundle.yml`, refuses uncommitted extension source, verifies that each external checkout is at its matching annotated release tag, creates deterministic runtime archives, and records the source repository, tag, commit, version, and archive hash in `catalog/release.json`. Workflow hashes are recorded from source. For development packaging only, pass `--snapshot`; this marks the catalog as a snapshot that consumer install and refresh tasks reject. Review the generated package contents and diff before committing a release. Do not edit archives directly. Repository names are `spec-kit-flow-roadmap` and `spec-kit-flow-wiki`; their extension IDs are `flow-roadmap` and `flow-wiki`. The consumer still needs compatible Specify, Python 3, and Codex prerequisites. Missing or incompatible prerequisites are failures, not substitutions.
-
-Refresh may remove components previously owned by the bundle but omitted from the revised manifest; independently installed components remain untouched. If refresh fails, inspect the result because Spec Kit does not promise rollback of every already-modified installed component.
-
-Remove the bundle with `specify bundle remove spec-kit-flow`. Confirm that unrelated independently installed components remain and that the local feedback journal is retained as consumer-owned evidence. A consumer must not install `speckit-flow-feedback-maintainer`; maintainer intake belongs only in the Spec Kit Flow source environment.
+The builder checks source IDs, versions, tags, and cleanliness, then writes deterministic extension archives and source digests to `catalog/`. Review the resulting package contents and diff before committing a release. `--snapshot` is for development packaging; install and refresh reject snapshots. Do not edit archives directly.

@@ -223,8 +223,8 @@ def install(project: Path, refresh: bool) -> None:
     project = project.resolve()
     if not project.is_dir():
         fail(f"consumer project directory does not exist: {project}")
-    if project == ROOT or ROOT in project.parents:
-        fail("consumer project must be outside the Spec Kit Flow source checkout")
+    if ROOT in project.parents:
+        fail("consumer project must not be nested inside the Spec Kit Flow source checkout")
     release = verified_release()
     if release["status"] != "released":
         fail("catalog is a development snapshot; install and refresh require tagged extension releases")

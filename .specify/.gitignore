@@ -7,3 +7,16 @@ feature.json
 
 # Per-machine extension config overrides.
 extensions/*/local-config.yml
+
+# Local catalog caches and installed release snapshots. Keep project-specific
+# extension configuration visible for review.
+.workflow-install.lock
+bundle-records.json
+extensions/.cache/
+workflows/.cache/
+extensions/flow-feedback/
+extensions/flow-roadmap/*
+!extensions/flow-roadmap/roadmap-config.yml
+extensions/flow-wiki/*
+!extensions/flow-wiki/flow-wiki-config.yml
+workflows/speckit-flow-*/

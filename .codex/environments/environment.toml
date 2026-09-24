@@ -1,0 +1,5 @@
+version = 1
+name = "Spec Kit Flow"
+
+[setup]
+script = "bash .codex/setup-worktree.sh"
