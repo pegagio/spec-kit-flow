@@ -17,8 +17,8 @@ The [bundle manifest](bundles/spec-kit-flow/bundle.yml) is version `0.3.0` and t
 
 | Extension ID | Version | Purpose |
 | --- | --- | --- |
-| `flow-roadmap` | `0.2.0` | Governed roadmap changes and feature reviews; source: `spec-kit-flow-roadmap` |
-| `flow-wiki` | `2.0.0` | Cited project context, ingestion, and linting; source: `spec-kit-flow-wiki` |
+| `flow-roadmap` | `0.2.1` | Governed roadmap changes and feature reviews; source: `spec-kit-flow-roadmap` |
+| `flow-wiki` | `2.0.1` | Cited project context, ingestion, and linting; source: `spec-kit-flow-wiki` |
 | `flow-feedback` | `0.2.0` | Local observation capture and portable report export; source: this repository |
 
 It also installs the eight workflows in [`workflows/`](workflows/README.md):
@@ -38,40 +38,25 @@ The bundle does not include a preset or `speckit-flow-feedback-maintainer`. Main
 
 ## Installation
 
-There is no published Spec Kit Flow bundle or vetted catalog entry yet. The bundle manifest names and pins components but does not contain their payloads. For current local development, install reviewed source snapshots into a disposable initialized consumer project. Obtain compatible checkouts of this repository, `spec-kit-flow-roadmap`, and `spec-kit-flow-wiki`, then set the three paths below to those checkouts:
+This repository contains a local released catalog package set for Roadmap `v0.2.1` and Wiki `v2.0.1`. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. From the Spec Kit Flow checkout, point the mise task at an existing consumer project directory:
 
 ```sh
-mkdir my-project
-cd my-project
-specify init --here --non-interactive --integration codex --integration-options=--skills
-
-FLOW_SOURCE=/absolute/path/to/spec-kit-flow
-ROADMAP_SOURCE=/absolute/path/to/spec-kit-flow-roadmap
-WIKI_SOURCE=/absolute/path/to/spec-kit-flow-wiki
-
-specify extension add --dev "$ROADMAP_SOURCE"
-specify extension add --dev "$WIKI_SOURCE"
-specify extension add --dev "$FLOW_SOURCE/extensions/flow-feedback"
-
-for workflow in start-feature clarify plan tasks analyze-remediate implement converge closeout; do
-  specify workflow add --dev "$FLOW_SOURCE/workflows/speckit-flow-$workflow"
-done
-
-specify extension list
-specify workflow list
+git clone https://github.com/pegagio/spec-kit-flow.git
+cd spec-kit-flow
+mise trust
+mkdir -p /path/to/my-project
+mise run catalog:install /path/to/my-project
 ```
 
-Run these commands from a new project directory; `specify init` creates the Spec Kit project there. Local `--dev` installs are snapshots, so source edits require a deliberate reinstall or refresh. The tested local CLI is `1.0.10.dev0+pegagio.2`; compatibility with stock Spec Kit remains unverified. Inspect installed component IDs and provenance before use.
+The task first requires a catalog marked `released`. It then checks the packaged component versions and checksums, serves the checked-in packages and workflow source on localhost for the duration of the install, and calls `specify bundle install` in the consumer directory. Specify initializes a new project when needed. The tested CLI is `1.0.10.dev0+pegagio.2`; compatibility with stock Spec Kit remains unverified. `mise install` can activate the pinned CLI only when that fork is obtainable in your environment. Inspect installed component IDs and provenance before use.
 
-When vetted component sources become available through a catalog, consumers can install the complete bundle from its manifest or a published bundle artifact:
+After pulling a newer reviewed release of this repository, refresh the bundle with:
 
 ```sh
-specify bundle validate --path /absolute/path/to/spec-kit-flow/bundles/spec-kit-flow
-specify bundle install /absolute/path/to/spec-kit-flow/bundles/spec-kit-flow/bundle.yml
-specify bundle info spec-kit-flow
+mise run catalog:refresh /path/to/my-project
 ```
 
-A manifest path alone cannot supply missing extensions or workflows. See [installation and lifecycle details](docs/installation.md) for refresh, removal, and source requirements.
+The same task must provide the temporary catalogs during refresh, and it also rejects snapshots. Maintainers build release packages from clean checkouts at matching annotated tags with `mise run catalog:build <roadmap-checkout> <wiki-checkout>`. The `--snapshot` build option is for development packages only; those packages cannot be installed through the consumer tasks. Review `catalog/release.json` and the packages before committing them. See [installation and lifecycle details](docs/installation.md) for provenance, removal, and release requirements.
 
 ## Using the workflows
 

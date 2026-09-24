@@ -217,7 +217,7 @@ class BundleLifecycleTests(unittest.TestCase):
                 )
                 self.assertNotEqual(0, install.returncode, install.stdout)
                 self.assertIn(WIKI_ID, install.stdout.lower())
-                self.assertIn("2.0.0", install.stdout)
+                self.assertIn("2.0.1", install.stdout)
                 self.assertIn("0.0.0", install.stdout)
                 record_path = consumer / ".specify/bundle-records.json"
                 if record_path.exists():

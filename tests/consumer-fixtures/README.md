@@ -6,6 +6,6 @@
 
 `diagram-converge-observation.json` is a sanitized retrospective observation from the Diagram dogfood run. Set `SPEC_KIT_FLOW_TEST_OBSERVATION` to this fixture and `SPEC_KIT_FLOW_TEST_REPORT_OUTPUT` to a temporary output path to export a portable report from the installed feedback extension. The test also checks that maintainer intake accepts the valid report and rejects a tampered copy without creating another record. Both intake checks use a disposable maintainer root; transferring an accepted report into the Spec Kit Flow source repository is a separate, explicit operation.
 
-The lifecycle test also advertises `flow-wiki` version `0.0.0` from its private catalog against the bundle's pinned `2.0.0`. Native installation must report both versions and leave no compatible bundle record. This complements the missing-component fixture without contacting a public catalog.
+The lifecycle test also advertises `flow-wiki` version `0.0.0` from its private catalog against the bundle's pinned `2.0.1`. Native installation must report both versions and leave no compatible bundle record. This complements the missing-component fixture without contacting a public catalog.
 
 Run the lifecycle test with a compatible Spec Kit executable and vetted source directories for the two required extension prerequisites. The test publishes nothing, starts no persistent service, and removes only its fresh temporary fixture directory.

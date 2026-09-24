@@ -5,3 +5,15 @@ uv = "0.12.5"
 
 [settings.task]
 run_auto_install = false
+
+[tasks."catalog:build"]
+description = "Build reviewed catalog packages from roadmap and wiki source checkouts"
+run = "python3 tools/catalog.py build"
+
+[tasks."catalog:install"]
+description = "Install the pinned Spec Kit Flow bundle into a consumer project"
+run = "python3 tools/catalog.py install"
+
+[tasks."catalog:refresh"]
+description = "Refresh the pinned Spec Kit Flow bundle in a consumer project"
+run = "python3 tools/catalog.py refresh"
