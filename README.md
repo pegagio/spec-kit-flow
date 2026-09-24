@@ -1,7 +1,100 @@
 # Spec Kit Flow
 
-Spec Kit Flow is a human-directed, merge-bounded flow-back workbench for Spec-Driven Development.
+Spec Kit Flow is a human-directed, merge-bounded flow-back workbench for Spec-Driven Development. It packages eight reusable Spec Kit workflows, portable consumer feedback, and a version-pinned bundle that composes independently maintained roadmap and wiki extensions.
 
-This repository is the reusable source boundary for generic workflow packages, portable feedback capture and reporting, and their maintainer-only intake. Its source is local and its GitHub remote exists, but it has no published bundle or catalog artifact.
+This repository owns the generic workflow and feedback source. The repository and bundle ID are `spec-kit-flow`; workflows and extensions owned here use `speckit-flow-<purpose>` IDs. The independent `spec-kit-flow-roadmap` and `spec-kit-flow-wiki` repositories publish the extension IDs `flow-roadmap` and `flow-wiki`.
 
-The repository and bundle use the `spec-kit-flow` identifier. Reusable workflow and extension component identifiers use the `speckit-flow-<purpose>` convention, such as `speckit-flow-converge` and `speckit-flow-feedback`.
+## Contents
+
+- [What the bundle installs](#what-the-bundle-installs)
+- [Installation](#installation)
+- [Using the workflows](#using-the-workflows)
+- [Feedback and project status](#feedback-and-project-status)
+
+## What the bundle installs
+
+The [bundle manifest](bundles/spec-kit-flow/bundle.yml) is version `0.2.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The bundle pins these extensions:
+
+| Extension ID | Version | Purpose |
+| --- | --- | --- |
+| `flow-roadmap` | `0.2.0` | Governed roadmap changes and feature reviews; source: `spec-kit-flow-roadmap` |
+| `flow-wiki` | `2.0.0` | Cited project context, ingestion, and linting; source: `spec-kit-flow-wiki` |
+| `speckit-flow-feedback` | `0.1.0` | Local observation capture and portable report export; source: this repository |
+
+It also installs the eight workflows in [`workflows/`](workflows/README.md):
+
+| Workflow ID | Version | Role |
+| --- | --- | --- |
+| `speckit-flow-start-feature` | `0.2.0` | Assess an eligible roadmap feature, obtain approval for its exact patch, query context, specify, and brief |
+| `speckit-flow-clarify` | `0.1.0` | Run one bounded clarification session |
+| `speckit-flow-plan` | `0.1.0` | Review readiness and create the technical plan |
+| `speckit-flow-tasks` | `0.1.0` | Generate implementation tasks separately from planning |
+| `speckit-flow-analyze-remediate` | `0.1.0` | Analyze artifact consistency and route bounded remediation |
+| `speckit-flow-implement` | `0.1.0` | Implement eligible tasks within the selected agent's scope |
+| `speckit-flow-converge` | `0.1.0` | Compare implementation with the feature artifacts and close gaps |
+| `speckit-flow-closeout` | `0.2.0` | Review completion, roadmap verification, wiki maintenance, and commit readiness through explicit gates |
+
+The bundle does not include a preset or `speckit-flow-feedback-maintainer`. Maintainer intake belongs in this source environment, not a consumer project.
+
+## Installation
+
+There is no published Spec Kit Flow bundle or vetted catalog entry yet. The bundle manifest names and pins components but does not contain their payloads. For current local development, install reviewed source snapshots into a disposable initialized consumer project. Obtain compatible checkouts of this repository, `spec-kit-flow-roadmap`, and `spec-kit-flow-wiki`, then set the three paths below to those checkouts:
+
+```sh
+mkdir my-project
+cd my-project
+specify init --here --non-interactive --integration codex --integration-options=--skills
+
+FLOW_SOURCE=/absolute/path/to/spec-kit-flow
+ROADMAP_SOURCE=/absolute/path/to/spec-kit-flow-roadmap
+WIKI_SOURCE=/absolute/path/to/spec-kit-flow-wiki
+
+specify extension add --dev "$ROADMAP_SOURCE"
+specify extension add --dev "$WIKI_SOURCE"
+specify extension add --dev "$FLOW_SOURCE/extensions/speckit-flow-feedback"
+
+for workflow in start-feature clarify plan tasks analyze-remediate implement converge closeout; do
+  specify workflow add --dev "$FLOW_SOURCE/workflows/speckit-flow-$workflow"
+done
+
+specify extension list
+specify workflow list
+```
+
+Run these commands from a new project directory; `specify init` creates the Spec Kit project there. Local `--dev` installs are snapshots, so source edits require a deliberate reinstall or refresh. The tested local CLI is `1.0.10.dev0+pegagio.2`; compatibility with stock Spec Kit remains unverified. Inspect installed component IDs and provenance before use.
+
+When vetted component sources become available through a catalog, consumers can install the complete bundle from its manifest or a published bundle artifact:
+
+```sh
+specify bundle validate --path /absolute/path/to/spec-kit-flow/bundles/spec-kit-flow
+specify bundle install /absolute/path/to/spec-kit-flow/bundles/spec-kit-flow/bundle.yml
+specify bundle info spec-kit-flow
+```
+
+A manifest path alone cannot supply missing extensions or workflows. See [installation and lifecycle details](docs/installation.md) for refresh, removal, and source requirements.
+
+## Using the workflows
+
+Prepare a project constitution, use `speckit.flow-roadmap.write` for an approved roadmap, then use `speckit.flow-wiki.init` and `speckit.flow-wiki.ingest` to establish cited project context. The operator chooses an eligible feature and invokes each workflow deliberately. A typical route is:
+
+```text
+start-feature → clarify (as needed) → plan → tasks → analyze-remediate
+              → implement → converge → closeout
+```
+
+Inspect an installed workflow and supply its required context when running it. For example, after reviewing the roadmap and its eligibility:
+
+```sh
+specify workflow info speckit-flow-start-feature
+specify workflow run speckit-flow-start-feature --input "feature_request=Describe the chosen roadmap feature"
+```
+
+The workflows preserve a manual-prompt fallback. Clarification may need another session after the current command's five-question cap. Analyze after task generation or consequential artifact reconciliation before implementation; converge after implementation until gaps are resolved. Planning and task generation remain separate. The closeout workflow requires a separately approved feature-completion operation and does not create one.
+
+Human review controls roadmap patches, material scope and authority changes, ambiguous recovery, Git integration, and acceptance. A completed workflow does not select or launch another agent or imply that a feature was merged or accepted. See the [workflow command map](workflows/README.md) and [project constitution](.specify/memory/constitution.md) for the governing contracts.
+
+## Feedback and project status
+
+Consumers may use `speckit-flow-feedback` to capture local observations and export a portable report. Capture and export do not change workflow source or project authority; maintainer intake is a separate step. See [feedback guidance](docs/feedback.md).
+
+The [project status](docs/project-status.md) records tested versions, source coordinates, validation evidence, and remaining publication limits. The disposable lifecycle test proves bundle installation and native dispatch with a no-op Codex executable; it does not prove live-agent behavior or general consumer compatibility.
