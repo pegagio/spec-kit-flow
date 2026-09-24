@@ -3,12 +3,12 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-start-feature"
   name: "Start Eligible Feature"
-  version: "0.1.0"
+  version: "0.2.0"
   author: "pegagio"
   description: "Prepare one uniquely eligible roadmap feature through an approval-gated roadmap transition, cited context, specification, and roadmap brief."
 
 requires:
-  speckit_version: ">=1.0.1"
+  speckit_version: ">=1.0.10.dev0"
   integrations:
     any: ["codex"]
 
@@ -45,12 +45,12 @@ steps:
     cases:
       approve:
         - id: apply-approved-roadmap-patch
-          command: "speckit.roadmap.write"
+          command: "speckit.flow-roadmap.write"
           integration: "{{ inputs.integration }}"
           input:
             args: "Apply only the exact roadmap patch the operator just approved for: {{ inputs.feature_request }}."
         - id: retrieve-governing-context
-          command: "speckit.wiki.query"
+          command: "speckit.flow-wiki.query"
           integration: "{{ inputs.integration }}"
           input:
             args: "For {{ inputs.feature_request }}, retrieve cited governing decisions, constraints, dependencies, and coverage classification. Report Partial or Uncovered rather than inventing a fact."
@@ -60,7 +60,7 @@ steps:
           input:
             args: "Create the specification for the approved roadmap feature: {{ inputs.feature_request }}. Preserve the approved outcome, scope, dependencies, and cited governing context."
         - id: brief-against-roadmap
-          command: "speckit.roadmap.brief"
+          command: "speckit.flow-roadmap.brief"
           integration: "{{ inputs.integration }}"
           input:
             args: "Review the active specification for {{ inputs.feature_request }} against its roadmap entry."

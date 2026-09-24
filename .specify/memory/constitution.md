@@ -23,7 +23,7 @@ The human operator MUST select tasks and agents. Workflows MUST NOT select model
 
 ### III. Generic Source and Component Boundaries
 
-This repository MUST own generic workflow source, any separately approved reusable preset, portable consumer feedback capture and reporting, and maintainer-only feedback intake. The `spec-kit-flow` repository and bundle MUST retain that identity; reusable workflow and extension IDs MUST use `speckit-flow-<purpose>`. A bundle MUST compose versioned components and MUST NOT become a second source of their behavior. The Diagram MUST remain a consumer rather than a runtime prerequisite; its registration, canonical work, projections, adapter feedback, and orchestration MUST stay in a separately versioned adapter under its own authority.
+This repository MUST own generic workflow source, any separately approved reusable preset, portable consumer feedback capture and reporting, and maintainer-only feedback intake. The `spec-kit-flow` repository and bundle MUST retain that identity. Workflow and extension source owned by this repository MUST use `speckit-flow-<purpose>` IDs. Independently versioned extensions MAY retain their own manifest IDs; the bundle MUST pin their reviewed IDs and versions, and workflows MUST invoke commands those extensions declare. A bundle MUST compose versioned components and MUST NOT become a second source of their behavior. The Diagram MUST remain a consumer rather than a runtime prerequisite; its registration, canonical work, projections, adapter feedback, and orchestration MUST stay in a separately versioned adapter under its own authority.
 
 **Rationale:** These boundaries keep the generic workbench reusable and each component's behavior traceable to one reviewed source.
 
@@ -41,7 +41,7 @@ Changed source definitions and bundle behavior MUST be validated in disposable i
 
 ## Component and Consumer Constraints
 
-The generic bundle MUST require compatible roadmap and wiki extensions and MUST identify Codex as its initial supported integration until other integrations are validated and accepted. Consumer-owned feedback and unrelated components MUST survive bundle removal. A custom clarification preset or continuation policy MUST require its own approval; the current five-question clarification cap MUST NOT be described as removed by the existing workflows. Diagram-specific behavior MUST NOT enter the generic bundle through a consumer fixture or feedback report.
+The generic bundle MUST require compatible, independently versioned roadmap and wiki extensions and MUST identify Codex as its initial supported integration until other integrations are validated and accepted. Consumer-owned feedback and unrelated components MUST survive bundle removal. A custom clarification preset or continuation policy MUST require its own approval; the current five-question clarification cap MUST NOT be described as removed by the existing workflows. Diagram-specific behavior MUST NOT enter the generic bundle through a consumer fixture or feedback report.
 
 ## Development and Review Gates
 
@@ -53,4 +53,4 @@ This constitution governs project decisions when lower-level guidance conflicts 
 
 Constitution versions use semantic versioning: MAJOR for incompatible governance changes or principle removal/redefinition, MINOR for a new principle or material expansion, and PATCH for non-semantic clarification. The first ratified constitution is version 1.0.0. Every amendment MUST update the version and last-amended date, and its review MUST verify compliance with the principles and identify any unresolved exceptions. Exceptions MUST be explicit, scoped, and approved by the human operator; an exception does not silently amend this constitution.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-22 | **Last Amended**: 2026-09-22
+**Version**: 1.1.0 | **Ratified**: 2026-09-22 | **Last Amended**: 2026-09-24

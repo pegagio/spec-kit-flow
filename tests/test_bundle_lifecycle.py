@@ -11,6 +11,7 @@ import functools
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -38,6 +39,8 @@ WORKFLOW_IDS = (
     "speckit-flow-closeout",
 )
 CONSUMER_FIXTURE = ROOT / "tests/consumer-fixtures/independent-workflow.yml"
+ROADMAP_ID = "flow-roadmap"
+WIKI_ID = "flow-wiki"
 
 
 def sha256(path: Path) -> str:
@@ -62,13 +65,22 @@ def extension_manifest(source: Path) -> dict[str, str]:
 
 
 def archive_extension(source: Path, artifacts: Path) -> tuple[Path, dict[str, str]]:
-    """Create the single-root extension archive expected by Spec Kit."""
+    """Create a single-root archive from the extension's runtime payload."""
     metadata = extension_manifest(source)
     artifact = artifacts / f"{metadata['id']}-{metadata['version']}.zip"
+    runtime_roots = ("commands", "scripts", "templates")
+    runtime_files = ("extension.yml", "config-template.yml", "README.md", "LICENSE")
+    payload = [source / name for name in runtime_files if (source / name).is_file()]
+    for root_name in runtime_roots:
+        root = source / root_name
+        if root.is_dir():
+            payload.extend(
+                path for path in root.rglob("*")
+                if path.is_file() and "__pycache__" not in path.parts
+            )
     with zipfile.ZipFile(artifact, "w", zipfile.ZIP_DEFLATED) as archive:
-        for path in source.rglob("*"):
-            if path.is_file() and "__pycache__" not in path.parts:
-                archive.write(path, Path(metadata["id"]) / path.relative_to(source))
+        for path in payload:
+            archive.write(path, Path(metadata["id"]) / path.relative_to(source))
     return artifact, metadata
 
 
@@ -105,10 +117,15 @@ class LocalCatalog:
             target = self.assets / "workflows" / workflow_id / "workflow.yml"
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
+            workflow_version = next(
+                line.split(":", 1)[1].strip().strip('"\'')
+                for line in source.read_text(encoding="utf-8").splitlines()
+                if line.startswith("  version:")
+            )
             workflows[workflow_id] = {
                 "id": workflow_id,
                 "name": workflow_id,
-                "version": "0.1.0",
+                "version": workflow_version,
                 "description": "Spec Kit Flow lifecycle-test workflow.",
                 "author": "pegagio",
                 "url": f"PLACEHOLDER/assets/workflows/{workflow_id}/workflow.yml",
@@ -177,11 +194,11 @@ class BundleLifecycleTests(unittest.TestCase):
             home = fixture / "home"
             home.mkdir()
             extensions = {
-                "roadmap": Path(ROADMAP_SOURCE),
-                "wiki": Path(WIKI_SOURCE),
+                ROADMAP_ID: Path(ROADMAP_SOURCE),
+                WIKI_ID: Path(WIKI_SOURCE),
                 "speckit-flow-feedback": ROOT / "extensions/speckit-flow-feedback",
             }
-            with LocalCatalog(fixture / "catalog", extensions, {"wiki": "0.0.0"}) as catalog:
+            with LocalCatalog(fixture / "catalog", extensions, {WIKI_ID: "0.0.0"}) as catalog:
                 environment = os.environ.copy()
                 environment.update({
                     "HOME": str(home),
@@ -198,8 +215,8 @@ class BundleLifecycleTests(unittest.TestCase):
                     stderr=subprocess.STDOUT, check=False,
                 )
                 self.assertNotEqual(0, install.returncode, install.stdout)
-                self.assertIn("wiki", install.stdout.lower())
-                self.assertIn("1.0.1", install.stdout)
+                self.assertIn(WIKI_ID, install.stdout.lower())
+                self.assertIn("2.0.0", install.stdout)
                 self.assertIn("0.0.0", install.stdout)
                 record_path = consumer / ".specify/bundle-records.json"
                 if record_path.exists():
@@ -213,8 +230,8 @@ class BundleLifecycleTests(unittest.TestCase):
             home = fixture / "home"
             home.mkdir()
             extensions = {
-                "roadmap": Path(ROADMAP_SOURCE),
-                "wiki": Path(WIKI_SOURCE),
+                ROADMAP_ID: Path(ROADMAP_SOURCE),
+                WIKI_ID: Path(WIKI_SOURCE),
                 "speckit-flow-feedback": ROOT / "extensions/speckit-flow-feedback",
             }
             with LocalCatalog(fixture / "catalog", extensions) as catalog:
@@ -259,6 +276,16 @@ class BundleLifecycleTests(unittest.TestCase):
                 self.assertTrue(all(component.get("version") for component in contributions))
                 for extension_id in extensions:
                     self.assertTrue((consumer / ".specify/extensions" / extension_id).is_dir())
+                self.assertFalse((consumer / ".specify/extensions/roadmap").exists())
+                self.assertFalse((consumer / ".specify/extensions/wiki").exists())
+                for workflow_id in ("speckit-flow-start-feature", "speckit-flow-closeout"):
+                    workflow = (consumer / ".specify/workflows" / workflow_id / "workflow.yml").read_text(encoding="utf-8")
+                    commands = re.findall(r'^\s+command: "(speckit\.flow-(?:roadmap|wiki)\.[^"]+)"', workflow, re.MULTILINE)
+                    self.assertTrue(commands, workflow_id)
+                    for command in commands:
+                        extension_id = command.split(".", 2)[1]
+                        manifest = (consumer / ".specify/extensions" / extension_id / "extension.yml").read_text(encoding="utf-8")
+                        self.assertIn(f"- name: {command}", manifest)
                 for workflow_id in WORKFLOW_IDS:
                     self.assertTrue((consumer / ".specify/workflows" / workflow_id / "workflow.yml").is_file())
                 self.assertFalse((consumer / ".specify/extensions/speckit-flow-feedback-maintainer").exists())

@@ -3,12 +3,12 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-closeout"
   name: "Close Out Feature"
-  version: "0.1.0"
+  version: "0.2.0"
   author: "pegagio"
   description: "Perform governed closeout after convergence while keeping feature completion, roadmap verification, wiki maintenance, Git integration, and project acceptance distinct."
 
 requires:
-  speckit_version: ">=1.0.1"
+  speckit_version: ">=1.0.10.dev0"
   integrations:
     any: ["codex"]
 
@@ -48,7 +48,7 @@ steps:
           integration: "{{ inputs.integration }}"
           prompt: "Use the separately approved feature-completion operation for {{ inputs.feature_context }}. Do not infer completion from convergence."
         - id: debrief-roadmap
-          command: "speckit.roadmap.debrief"
+          command: "speckit.flow-roadmap.debrief"
           integration: "{{ inputs.integration }}"
           input:
             args: "Review converged {{ inputs.feature_context }} against its roadmap entry and propose verification only when the evidence supports it."
@@ -64,17 +64,17 @@ steps:
           cases:
             approve-patch:
               - id: apply-approved-roadmap-verification
-                command: "speckit.roadmap.write"
+                command: "speckit.flow-roadmap.write"
                 integration: "{{ inputs.integration }}"
                 input:
                   args: "Apply only the exact roadmap verification patch the operator approved for {{ inputs.feature_context }}."
               - id: ingest-curated-context
-                command: "speckit.wiki.ingest"
+                command: "speckit.flow-wiki.ingest"
                 integration: "{{ inputs.integration }}"
                 input:
                   args: "Ingest the operator-selected durable closeout sources for {{ inputs.feature_context }}. Include roadmap, constitution, ADRs, workflow or architecture documents, public guides, and relevant feature artifacts; exclude ordinary code unless it is an agent-facing contract."
               - id: lint-wiki
-                command: "speckit.wiki.lint"
+                command: "speckit.flow-wiki.lint"
                 integration: "{{ inputs.integration }}"
                 input:
                   args: "Lint the project wiki after closeout ingestion and stop for unresolved findings."

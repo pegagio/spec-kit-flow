@@ -1,6 +1,6 @@
 # Spec Kit Flow Agent Guidance
 
-Spec Kit Flow is the reusable, human-directed, merge-bounded flow-back workbench for Spec-Driven Development. The `spec-kit-flow` repository and bundle own generic source; reusable workflow and extension IDs use `speckit-flow-<purpose>`. Read [the project status](docs/project-status.md) before assuming a component is released or an installation path is available.
+Spec Kit Flow is the reusable, human-directed, merge-bounded flow-back workbench for Spec-Driven Development. The `spec-kit-flow` repository and bundle own generic source; workflow and extension IDs owned here use `speckit-flow-<purpose>`. Independently versioned extensions retain their manifest IDs. Read [the project status](docs/project-status.md) before assuming a component is released or an installation path is available.
 
 ## Authority and scope
 

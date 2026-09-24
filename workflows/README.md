@@ -6,11 +6,11 @@ Each workflow preserves its manual prompt fallback and explicit human gates. Non
 
 | Workflow | Core or extension commands |
 | --- | --- |
-| `speckit-flow-start-feature` | `speckit.roadmap.write`, `speckit.wiki.query`, `speckit.specify`, `speckit.roadmap.brief` |
+| `speckit-flow-start-feature` | `speckit.flow-roadmap.write`, `speckit.flow-wiki.query`, `speckit.specify`, `speckit.flow-roadmap.brief` |
 | `speckit-flow-clarify` | `speckit.clarify` |
 | `speckit-flow-plan` | `speckit.plan`, `speckit.clarify` |
 | `speckit-flow-tasks` | `speckit.tasks`, `speckit.plan` |
 | `speckit-flow-analyze-remediate` | `speckit.analyze`, `speckit.specify`, `speckit.plan`, `speckit.tasks` |
 | `speckit-flow-implement` | `speckit.implement`, `speckit.analyze`, `speckit.specify`, `speckit.plan`, `speckit.tasks` |
 | `speckit-flow-converge` | `speckit.converge`, `speckit.analyze` |
-| `speckit-flow-closeout` | `speckit.roadmap.debrief`, `speckit.roadmap.write`, `speckit.wiki.ingest`, `speckit.wiki.lint` |
+| `speckit-flow-closeout` | `speckit.flow-roadmap.debrief`, `speckit.flow-roadmap.write`, `speckit.flow-wiki.ingest`, `speckit.flow-wiki.lint` |
