@@ -14,8 +14,15 @@ from typing import Any
 REPORT_SCHEMA_VERSION = "1.0"
 DISPOSITIONS = {"workflow-source-change", "preset-investigation", "agent-policy-investigation", "reproduction-requested", "deferred", "rejected"}
 DIGEST = re.compile(r"^sha256:[a-f0-9]{64}$")
+COMPONENT_DIGEST = re.compile(r"^(?:sha256:)?[a-f0-9]{64}$")
+REQUIRED_OBSERVATION_FIELDS = (
+    "observation_id", "observed_at", "component", "integration", "consumer_project_ref",
+    "execution_profile", "expected_behavior", "observed_behavior", "safety_response",
+    "manual_fallback_status", "evidence_references", "suggested_change_target", "reporter_disposition",
+)
+REPORTER_DISPOSITIONS = {"observed", "exported", "received", "triaged", "deferred", "rejected", "duplicate", "reproduction-requested", "workflow-source-change", "preset-investigation", "agent-policy-investigation"}
 SENSITIVE_KEY = re.compile(r"(?:secret|password|credential|private.?key|transcript|token)", re.I)
-ABSOLUTE_PATH = re.compile(r"(?:^|[\s\"'])/(?:[^\s\"']+)")
+ABSOLUTE_PATH = re.compile(r"(?:file://|(?<![A-Za-z0-9./])/(?!/))[^\s\"']+")
 SENSITIVE_VALUE = re.compile(r"(?:sk-[A-Za-z0-9_-]{8,}|BEGIN (?:RSA |OPENSSH )?PRIVATE KEY)")
 
 
@@ -87,10 +94,15 @@ def validate_report(value: Any) -> dict[str, Any]:
     for index, observation in enumerate(observations):
         if not isinstance(observation, dict):
             reject(f"observation {index} must be an object")
-        for field in ("observation_id", "component", "expected_behavior", "observed_behavior", "evidence_references"):
+        if observation.get("schema_version") != REPORT_SCHEMA_VERSION:
+            reject(f"observation {index} has unsupported schema_version")
+        for field in REQUIRED_OBSERVATION_FIELDS:
             if field not in observation:
                 reject(f"observation {index} is missing {field}")
-        observation_id = require_string(observation["observation_id"], f"observation {index}.observation_id")
+        for field in REQUIRED_OBSERVATION_FIELDS:
+            if field not in {"component", "execution_profile", "evidence_references"}:
+                require_string(observation[field], f"observation {index}.{field}")
+        observation_id = observation["observation_id"]
         if observation_id in seen:
             reject(f"duplicate observation_id in report: {observation_id}")
         seen.add(observation_id)
@@ -99,10 +111,16 @@ def validate_report(value: Any) -> dict[str, Any]:
             reject(f"observation {index}.component must be an object")
         for field in ("id", "version", "digest"):
             require_string(component.get(field), f"observation {index}.component.{field}")
-        if not DIGEST.fullmatch(component["digest"]):
+        if not COMPONENT_DIGEST.fullmatch(component["digest"]):
             reject(f"observation {index}.component.digest must be a SHA-256 digest")
+        if not isinstance(observation["execution_profile"], dict):
+            reject(f"observation {index}.execution_profile must be an object")
         if not isinstance(observation["evidence_references"], list) or not observation["evidence_references"]:
             reject(f"observation {index}.evidence_references must be a non-empty list")
+        if not all(isinstance(item, str) and item.strip() for item in observation["evidence_references"]):
+            reject(f"observation {index}.evidence_references must contain non-empty strings")
+        if observation["reporter_disposition"] not in REPORTER_DISPOSITIONS:
+            reject(f"observation {index}.reporter_disposition is not recognized")
     return value
 
 
@@ -130,6 +148,8 @@ def intake(report_path: Path, disposition: str, rationale: str, received_at: str
         reject("unrecognized disposition")
     require_string(rationale, "rationale")
     require_string(received_at, "received_at")
+    reject_sensitive(rationale, "rationale")
+    reject_sensitive(received_at, "received_at")
     try:
         report = json.loads(report_path.read_text(encoding="utf-8"))
     except FileNotFoundError:

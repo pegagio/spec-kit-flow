@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: speckit-flow-feedback-maintainer
   name: "Spec Kit Flow Feedback Maintainer"
-  version: "0.1.0"
+  version: "0.1.1"
   description: "Maintainer-only validation and proposal intake for portable workflow feedback"
   author: pegagio
   license: MIT
