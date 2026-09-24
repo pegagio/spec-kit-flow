@@ -347,6 +347,15 @@ class BundleLifecycleTests(unittest.TestCase):
                 self.assertEqual("completed", json.loads(analysis_run)["status"])
                 feature_files_after_analysis = set((consumer / "specs").rglob("*")) if (consumer / "specs").exists() else set()
                 self.assertEqual(feature_files_before, feature_files_after_analysis)
+                self.run_specify(consumer, workflow_environment, "workflow", "resolve", "speckit-flow-implement")
+                implementation_run = self.run_specify(
+                    consumer, workflow_environment, "workflow", "run", "speckit-flow-implement",
+                    "--input", "feature_context=disposable consumer fixture",
+                    "--input", "implementation_result=blocked", "--json",
+                )
+                self.assertEqual("completed", json.loads(implementation_run)["status"])
+                feature_files_after_implementation = set((consumer / "specs").rglob("*")) if (consumer / "specs").exists() else set()
+                self.assertEqual(feature_files_before, feature_files_after_implementation)
                 workflow_run = self.run_specify(
                     consumer, workflow_environment, "workflow", "run", "speckit-flow-converge",
                     "--input", "feature_context=disposable consumer fixture",

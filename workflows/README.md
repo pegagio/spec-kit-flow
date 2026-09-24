@@ -47,3 +47,9 @@ If the proposal is acceptable, stop and ask the operator to invoke `speckit-flow
 When native analysis dispatch is unavailable, run `speckit.analyze` on the active specification, plan, and tasks without modifying them. Present the findings and ask the operator to classify the result. A clean result stops with implementation available only on a separate operator instruction.
 
 For routine findings within the issued scope, update the smallest affected artifact path, then reanalyze: specification changes require `speckit.specify` → `speckit.plan` → `speckit.tasks` → `speckit.analyze`; plan changes require plan → tasks → analyze; task changes require tasks → analyze. Stop for constitutional amendments, authority or material-scope changes, ambiguous recovery, blockers, and unrecognized decisions. Preserve the report and obtain the relevant explicit operator decision before those changes.
+
+## Manual implementation path
+
+When native implementation dispatch is unavailable, use `speckit.implement` only for the operator-selected feature, current agent, and remaining eligible tasks after clean analysis. Verify prerequisites and dependencies, execute within scope, and present task results, tests, discoveries, and blockers for human review.
+
+If work is complete, stop and let the operator invoke `speckit-flow-converge` separately. For a discovery, return to the smallest affected specification, plan, task, or analysis path; reconcile dependent artifacts and reanalyze before resuming implementation. For a blocker or unrecognized result, stop with the issue and required operator input. Do not infer roadmap verification, Git integration, or acceptance from execution.
