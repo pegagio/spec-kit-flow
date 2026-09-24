@@ -1,7 +1,7 @@
 analyzed_at: "2026-09-24T21:16:40Z"
 project_root: "/Users/pegagio/Development/github/pegagio/spec-kit-flow"
 total_features: 11
-completed: 3
+completed: 4
 features:
   - id: "feature-start"
     name: "Feature Start"
@@ -41,12 +41,12 @@ features:
     description: "Generate implementation tasks from an approved plan as a separate workflow step."
     files:
       - "workflows/speckit-flow-tasks/workflow.yml"
-    status: pending
+    status: done
     current_phase: null
-    branch: null
-    pushed: null
-    started_at: null
-    completed_at: null
+    branch: "feature/time-machine-task-generation"
+    pushed: false
+    started_at: "2026-09-24T21:36:34Z"
+    completed_at: "2026-09-24T21:40:17Z"
   - id: "artifact-analysis"
     name: "Artifact Analysis and Remediation"
     description: "Analyze specification, plan, and task consistency and route bounded corrections before implementation."

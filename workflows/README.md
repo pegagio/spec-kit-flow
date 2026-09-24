@@ -35,3 +35,9 @@ After reviewing that result, the operator may request another `speckit-flow-clar
 When native planning dispatch is unavailable, ask the operator to review the clarified specification and explicitly confirm planning readiness. If a prerequisite or material product decision is missing, return to `speckit.clarify` for the same feature; if planning is deferred, stop without creating design artifacts.
 
 Only after the operator confirms readiness, run `speckit.plan` for the selected feature. Present the plan, research, data model, contracts, and quickstart for review, then stop. Task generation requires a separate operator instruction.
+
+## Manual task-generation path
+
+When native task workflow dispatch is unavailable, run `speckit.tasks` for the operator-selected planned feature using its reviewed design artifacts. Review the dependency order, coverage, and any surprising human actions with the operator. Do not silently revise the plan to accommodate a new product decision.
+
+If the proposal is acceptable, stop and ask the operator to invoke `speckit-flow-analyze-remediate` separately. If review finds a material design gap, return to `speckit.plan` for the same feature. An explicit task amendment or deferral ends this attempt without marking the proposal ready for implementation.
