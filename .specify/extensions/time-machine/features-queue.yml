@@ -1,7 +1,7 @@
 analyzed_at: "2026-09-24T21:16:40Z"
 project_root: "/Users/pegagio/Development/github/pegagio/spec-kit-flow"
 total_features: 11
-completed: 4
+completed: 5
 features:
   - id: "feature-start"
     name: "Feature Start"
@@ -52,12 +52,12 @@ features:
     description: "Analyze specification, plan, and task consistency and route bounded corrections before implementation."
     files:
       - "workflows/speckit-flow-analyze-remediate/workflow.yml"
-    status: pending
+    status: done
     current_phase: null
-    branch: null
-    pushed: null
-    started_at: null
-    completed_at: null
+    branch: "feature/time-machine-artifact-analysis"
+    pushed: false
+    started_at: "2026-09-24T21:40:42Z"
+    completed_at: "2026-09-24T21:45:37Z"
   - id: "implementation"
     name: "Scoped Implementation"
     description: "Guide implementation of eligible tasks while preserving the operator's scope and artifact consistency gates."

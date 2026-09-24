@@ -41,3 +41,9 @@ Only after the operator confirms readiness, run `speckit.plan` for the selected 
 When native task workflow dispatch is unavailable, run `speckit.tasks` for the operator-selected planned feature using its reviewed design artifacts. Review the dependency order, coverage, and any surprising human actions with the operator. Do not silently revise the plan to accommodate a new product decision.
 
 If the proposal is acceptable, stop and ask the operator to invoke `speckit-flow-analyze-remediate` separately. If review finds a material design gap, return to `speckit.plan` for the same feature. An explicit task amendment or deferral ends this attempt without marking the proposal ready for implementation.
+
+## Manual analysis and remediation path
+
+When native analysis dispatch is unavailable, run `speckit.analyze` on the active specification, plan, and tasks without modifying them. Present the findings and ask the operator to classify the result. A clean result stops with implementation available only on a separate operator instruction.
+
+For routine findings within the issued scope, update the smallest affected artifact path, then reanalyze: specification changes require `speckit.specify` → `speckit.plan` → `speckit.tasks` → `speckit.analyze`; plan changes require plan → tasks → analyze; task changes require tasks → analyze. Stop for constitutional amendments, authority or material-scope changes, ambiguous recovery, blockers, and unrecognized decisions. Preserve the report and obtain the relevant explicit operator decision before those changes.
