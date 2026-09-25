@@ -50,7 +50,7 @@ mise run catalog:install /path/to/my-project
 
 The task first requires a catalog marked `released`. It then checks the packaged component versions and checksums, serves the checked-in packages and workflow source on localhost for the duration of the install, and calls `specify bundle install` in the consumer directory. Specify initializes a new project when needed. The tested CLI is `1.0.10.dev0+pegagio.2`; compatibility with stock Spec Kit remains unverified. `mise install` can activate the pinned CLI only when that fork is obtainable in your environment. Inspect installed component IDs and provenance before use.
 
-To dogfood the workflows while developing this repository, run `mise run catalog:install .` from its root. For new local Codex worktrees, select the checked-in **Spec Kit Flow** local environment so setup installs the bundle automatically. Edit the reviewed source packages and inspect generated installation changes before staging. Use `mise run catalog:refresh .` after a newer reviewed release.
+To dogfood the workflows while developing this repository, run `mise run catalog:install .` from its root. New local Codex-managed worktrees copy the ignored installed state through `.worktreeinclude`. Edit the reviewed source packages; local installation state is ignored. Use `mise run catalog:refresh .` after a newer reviewed release. See the [installation guide](docs/installation.md) for worktree and fresh-clone steps.
 
 After pulling a newer reviewed release of this repository, refresh the bundle with:
 

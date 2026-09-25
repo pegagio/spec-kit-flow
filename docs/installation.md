@@ -54,11 +54,11 @@ specify bundle list
 specify workflow list
 ```
 
-Edit reviewed workflow and extension source packages, not the installed copies under `.specify/`. Check `git status` before staging: installation changes tracked Spec Kit registries, and project-specific extension configuration may be untracked.
+Edit reviewed workflow and extension source packages, not the installed copies under `.specify/`. This repository ignores the bundle's local installation records, copied default configuration, and installed payloads.
 
-For new local Codex-managed worktrees, select the **Spec Kit Flow** local environment in Codex. Its setup script trusts the checkout's `mise.toml`, installs the pinned tools, and installs the bundle before work begins. This setup is defined in `.codex/environments/environment.toml`. Plain `git worktree add` does not run Codex setup; run `bash .codex/setup-worktree.sh` in that worktree if needed.
+After installing in this checkout, new local Codex-managed worktrees copy its ignored installation records, extension and workflow payloads, and generated agent files through `.worktreeinclude`. No worktree setup script is needed. Run `mise install` in a worktree if the pinned tools are not already available there.
 
-Each installation updates checkout-local Spec Kit registries. Review these generated changes separately from workflow source changes; the workflow registry can contain a temporary localhost catalog URL.
+The copy reflects the source checkout's installed bundle. After changing reviewed release packages, run `mise run catalog:refresh .` in that checkout before creating a worktree. A fresh clone, remote worktree, or plain `git worktree add` does not receive this ignored state; run `mise run catalog:install .` there after preparing the checkout. The workflow registry can contain a temporary localhost catalog URL; use the catalog refresh task to update the bundle.
 
 ## Use a workflow
 
