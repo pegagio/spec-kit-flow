@@ -9,7 +9,7 @@ This repository owns the generic workflow and feedback source. The repository an
 - [What the bundle installs](#what-the-bundle-installs)
 - [Installation](#installation)
 - [Using the workflows](#using-the-workflows)
-- [Feedback and project status](#feedback-and-project-status)
+- [Feedback and release status](#feedback-and-release-status)
 
 ## What the bundle installs
 
@@ -80,8 +80,8 @@ The workflows preserve a manual-prompt fallback. Clarification may need another 
 
 Human review controls roadmap patches, material scope and authority changes, ambiguous recovery, Git integration, and acceptance. A completed workflow does not select or launch another agent or imply that a feature was merged or accepted. See the [workflow command map](workflows/README.md) and [project constitution](.specify/memory/constitution.md) for the governing contracts.
 
-## Feedback and project status
+## Feedback and release status
 
 Consumers may use `flow-feedback` to capture local observations and export a portable report. Its commands are `speckit.flow-feedback.capture` and `speckit.flow-feedback.report`. Capture and export do not change workflow source or project authority; maintainer intake is a separate step. See [feedback guidance](docs/feedback.md).
 
-The [project status](docs/project-status.md) records tested versions, source coordinates, validation evidence, and remaining publication limits. The disposable lifecycle test proves bundle installation and native dispatch with a no-op Codex executable; it does not prove live-agent behavior or general consumer compatibility.
+The [release metadata](catalog/release.json) records packaged versions, source commits, digests, and local release status. The [installation guide](docs/installation.md) documents the tested CLI and local catalog route. The disposable lifecycle test proves bundle installation and native dispatch with a no-op Codex executable; it does not prove live-agent behavior or general consumer compatibility.

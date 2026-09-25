@@ -52,7 +52,6 @@ tools/catalog.py
 tests/test_catalog.py
 tests/test_bundle_lifecycle.py
 docs/installation.md
-docs/project-status.md
 docs/feedback.md
 mise.toml
 ```

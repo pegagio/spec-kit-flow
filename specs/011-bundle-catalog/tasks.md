@@ -45,7 +45,7 @@ Check artifact consistency and source cleanliness before build.
 **Independent Test**: Inspect disposable lifecycle removal assertions and temporary consumer results.
 
 - [x] T009 [US3] Verify removal retains unrelated workflow and feedback journal in `tests/test_bundle_lifecycle.py`
-- [x] T010 [US3] Update `docs/installation.md`, `docs/project-status.md`, and `docs/feedback.md` with current coordinates and limits
+- [x] T010 [US3] Update `docs/installation.md` and `docs/feedback.md` with current coordinates and limits
 
 ## Phase 6: Polish and Validation
 
