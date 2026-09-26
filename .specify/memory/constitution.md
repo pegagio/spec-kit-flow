@@ -4,12 +4,17 @@
 
 ### I. Spec Evolution and Merge-Bounded Persistence
 
-The project MUST use the Merge-Bounded Flow-Back Spec Persistence Model.
+The project MUST use the **Merge-Bounded Flow-Back Spec Persistence Model**.
 
 - **One mutable change set**: Before a feature is merged, its `spec.md`, `plan.md`, `tasks.md`, and implementation MUST be treated as one mutable, reviewable unit.
-- **Changes flow back**: Accepted discoveries MAY originate in any artifact, but their consequences MUST be applied throughout the artifact set before work proceeds from the changed direction. A change to intended behavior MUST be reflected in `spec.md`; a change to technical approach MUST be reflected in `plan.md`; and a change to the required work MUST be reflected in `tasks.md`. Lower-level artifacts and implementation MUST NOT silently contradict higher-level intent.
-- **Scope requires acceptance**: Flow-back MUST NOT be used to introduce material scope without review. Independently valuable behavior, substantial scope expansion, or work requiring separate acceptance MUST be captured as a separate feature.
-- **Consistency gates implementation and merge**: After tasking or consequential artifact reconciliation, the agent MUST run `/speckit.analyze` before starting or resuming implementation. After implementation, the agent MUST use `/speckit.converge` until no gaps remain. Known divergence MUST block implementation or merge until it is reconciled or explicitly removed from scope.
+- **Changes flow back**: Accepted discoveries MAY originate in any artifact, but their consequences MUST be applied throughout the artifact set before work proceeds from the changed direction. Lower-level artifacts and implementation MUST NOT silently contradict higher-level intent.
+  - A change to intended behavior MUST be reflected in `spec.md`.
+  - A change to technical approach MUST be reflected in `plan.md`.
+  - A change to the required work MUST be reflected in `tasks.md`.
+- **Operator-directed consistency gates**: The operator decides when to invoke FlowKit workflows. The agent MUST flag missing checks and unresolved divergence, ask the operator when existing feature decisions do not settle a conflict, and MUST NOT launch a workflow or its underlying commands without an operator instruction. Known divergence MUST block implementation or merge until the artifacts are reconciled or the operator directs a documented resolution.
+  - After tasking or consequential artifact reconciliation, the agent SHOULD recommend the FlowKit analyze/remediate workflow before implementation starts or resumes.
+  - After implementation, the agent SHOULD recommend the FlowKit convergence workflow until no gaps remain.
+  - Before merge, the agent SHOULD recommend the project's applicable validation and a joint review of the artifact and implementation diffs.
 - **Merge freezes history**: Acceptance into the project's designated integration branch is the persistence boundary. After that merge, the feature directory MUST be treated as a semantically immutable historical record. Editorial corrections MAY improve presentation only when they do not alter meaning.
 - **Later changes flow forward**: A later requirement or behavioral change MUST be expressed in a new feature directory. The new feature MUST reference any earlier feature that it amends, replaces, or depends on when that relationship is material, and MUST NOT rewrite the earlier feature to describe the new outcome retroactively.
 
@@ -53,4 +58,4 @@ This constitution governs project decisions when lower-level guidance conflicts 
 
 Constitution versions use semantic versioning: MAJOR for incompatible governance changes or principle removal/redefinition, MINOR for a new principle or material expansion, and PATCH for non-semantic clarification. The first ratified constitution is version 1.0.0. Every amendment MUST update the version and last-amended date, and its review MUST verify compliance with the principles and identify any unresolved exceptions. Exceptions MUST be explicit, scoped, and approved by the human operator; an exception does not silently amend this constitution.
 
-**Version**: 2.0.0 | **Ratified**: 2026-09-22 | **Last Amended**: 2026-09-24
+**Version**: 3.0.0 | **Ratified**: 2026-09-22 | **Last Amended**: 2026-09-26
