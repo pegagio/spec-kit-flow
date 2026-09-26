@@ -1,17 +1,17 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: none → 1.0.0
-Bump rationale: Initial roadmap creation from all eleven current feature specifications and the project constitution, with verified lifecycle status explicitly assigned by the operator on 2026-09-26.
+Version change: 1.0.0 → 1.1.0
+Bump rationale: MINOR — add one planned feature for consumer adoption of the Merge-Bounded Flow-Back Spec Persistence Model.
 
 Changes this revision:
-  - Added specs 001–011 as verified historical entries.
-  - Recorded constitutional constraints and the current absence of additional planned features.
+  - Added spec 012 as planned without changing verified entries 001–011.
+  - Replaced the no-planned-features statement with the current planned feature and recorded its research questions.
 
-Specs affected: 001–011
-Open questions added/resolved: none
+Specs affected: 012
+Open questions added/resolved: added mechanism selection, existing-governance handling, and adoption evidence; none resolved.
 
-Notes: This roadmap records the operator's verification decision. The existing spec.md headers say Draft and were not changed. No ADR or PRD was available in the configured evidence locations.
+Notes: The operator approved the feature amendment on 2026-09-26 and clarified that proposed guidance may be refined. The operator then specified that agents should recommend the FlowKit consistency workflows and flag skipped checks, not invoke workflows or core commands independently. The proposal document is docs/merge-bounded-flow-back.md; it does not choose a delivery mechanism. The earlier verification decision for 001–011 remains intact.
 -->
 
 # Spec Kit Flow — Spec Roadmap
@@ -35,7 +35,7 @@ The constitution establishes the durable project direction; the completed specs 
 - Provide a reusable, human-directed Spec-Driven Development workbench whose feature artifacts stay consistent through merge-bounded flow-back and explicit review gates.
 - Keep generic workflows, independently versioned extensions, portable consumer feedback, maintainer intake, and the bundle catalog traceable to reviewed source and bounded validation evidence.
 - Preserve manual workflow paths and human control over agent selection, material scope, roadmap verification, Git integration, publication, and acceptance.
-- Treat additional features as future roadmap amendments. None are currently planned by the operator.
+- Treat additional features as future roadmap amendments. Feature 012 is the sole current planned feature.
 
 ## Constraints and decisions
 
@@ -49,7 +49,7 @@ These cross-cutting constraints come from the [constitution](constitution.md); t
 
 ## Planned Specs
 
-All current feature directories are included below as verified history. Dependencies describe delivery prerequisites between these specs, not the order in which an operator must run workflow phases.
+Entries 001–011 record all current feature directories as verified history. Feature 012 is planned and has no spec directory yet. Dependencies describe delivery prerequisites between these specs, not the order in which an operator must run workflow phases.
 
 ### 001 — Start Eligible Feature  [status: verified]
 
@@ -161,9 +161,23 @@ All current feature directories are included below as verified history. Dependen
 - **Governed by**: C-02, C-03, C-04, C-05.
 - **Spec dir**: `specs/011-bundle-catalog/`.
 
+### 012 — Consumer Adoption of Merge-Bounded Flow-Back  [status: planned]
+
+- **Description**: Investigate how the FlowKit bundle should bring the Merge-Bounded Flow-Back Spec Persistence Model into consumer projects, then implement the selected mechanism.
+- **Outcome**: New and refreshed bundle consumers have a validated, reviewable path to use the model in project guidance and governance; adoption is confirmed from project state rather than assumed from installation.
+- **Scope (in)**: Compare an onboarding skill, a preset or template approach, and other supported mechanisms; review and refine the proposed README and constitution language as needed; implement the chosen path, conflict handling, and disposable-consumer validation.
+- **Scope (out)**: Silent replacement of existing project governance, retroactive edits to merged feature history, a separate scope-creep policy, Diagram-specific behavior, and changes to Specify's global base template.
+- **Depends on**: 011.
+- **Governed by**: C-01, C-02, C-03, C-04, C-05.
+- **Notes**: The operator set the adoption goal and requested investigation followed by implementation. Agents should recommend the operator-invoked FlowKit consistency workflows and flag missing checks rather than independently launch those workflows or their core commands. `docs/merge-bounded-flow-back.md` is a starting proposal, not required verbatim text; the delivery mechanism remains subject to research and review.
+
 ## Open Questions
 
-There are no current roadmap questions or additional planned features. New work enters through a reviewed amendment rather than being inferred from this historical ledger.
+Feature 012 must answer these questions before its implementation path is settled:
+
+- Which supported mechanism should deliver and maintain the guidance: an onboarding skill, a preset or template approach, or another reviewed option?
+- How should new installations and refreshes handle an existing or conflicting project constitution without silently replacing governance?
+- What project-state evidence confirms that the model was adopted, and how should a declined or incomplete adoption be reported?
 
 ## Cross-Cutting Notes
 
@@ -171,4 +185,4 @@ The workflow run order is start-feature, optional clarification, planning, task 
 
 The operator designated all eleven entries verified on 2026-09-26. Their `spec.md` headers still say `Draft`; this roadmap records the operator's lifecycle decision without rewriting historical feature artifacts. No configured ADR or PRD evidence was available for this creation.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-26
+**Version**: 1.1.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-26
