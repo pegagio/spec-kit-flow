@@ -147,6 +147,30 @@ class CatalogReleaseTests(unittest.TestCase):
             self.assertEqual("consumer-owned", conflict.read_text(encoding="utf-8"))
             self.assertFalse((project / ".specify/flow-kit/skills-install.json").exists())
 
+    def test_controllerRefresh_installsSkillsForLegacyBundleWithoutOwnershipRecord(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            archive = project / "controller-package.zip"
+            catalog.package_controller(archive)
+            catalog.install_controller_package(project, archive, refresh=True, source_digest=catalog.digest(archive), catalog_status="released")
+            record = json.loads((project / ".specify/flow-kit/skills-install.json").read_text(encoding="utf-8"))
+            self.assertEqual("installed", record["status"])
+            self.assertEqual(8, len(record["controllers"]))
+            self.assertTrue((project / ".agents/skills/flow-kit-tasks/SKILL.md").is_file())
+
+    def test_controllerRefresh_legacyBundleRejectsConsumerSkillCollision(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            conflict = project / ".agents/skills/flow-kit-tasks/SKILL.md"
+            conflict.parent.mkdir(parents=True)
+            conflict.write_text("consumer-owned", encoding="utf-8")
+            archive = project / "controller-package.zip"
+            catalog.package_controller(archive)
+            with self.assertRaisesRegex(ValueError, "consumer-owned path conflicts"):
+                catalog.install_controller_package(project, archive, refresh=True, source_digest=catalog.digest(archive), catalog_status="released")
+            self.assertEqual("consumer-owned", conflict.read_text(encoding="utf-8"))
+            self.assertFalse((project / ".specify/flow-kit/skills-install.json").exists())
+
     def test_controllerRefreshAndRemoval_preserveLocallyEditedOwnedFile(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)

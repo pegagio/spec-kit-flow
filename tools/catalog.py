@@ -367,9 +367,7 @@ def install_controller_package(
     old_record: dict[str, object] | None = None
     old_record_bytes: bytes | None = None
     old_files: dict[str, bytes | None] = {}
-    if refresh:
-        if not record_exists:
-            fail("cannot refresh FlowKit skills without an ownership record")
+    if refresh and record_exists:
         old_record_bytes = record_path.read_bytes()
         old_record = _read_ownership_record(record_path)
         old_owned = old_record["files"]
@@ -407,7 +405,7 @@ def install_controller_package(
         "catalog_status": catalog_status,
         "controllers": current_bindings,
         "files": files_record,
-        "status": "installing" if not refresh else "refreshing",
+        "status": "refreshing" if old_record is not None else "installing",
     }
     if preflight_only:
         return

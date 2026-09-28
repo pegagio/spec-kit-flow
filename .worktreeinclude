@@ -8,4 +8,5 @@
 .specify/extensions/flow-feedback/
 .specify/extensions/flow-roadmap/
 .specify/extensions/flow-wiki/
+.specify/flow-kit/
 .specify/workflows/speckit-flow-*/

@@ -70,17 +70,30 @@ Snapshot mode builds a temporary catalog from current source and the checked-in 
 
 ## Dogfood this repository
 
-Install into the checkout itself when developing Spec Kit Flow. Run this from its root:
+Use this checkout as a consumer when developing Spec Kit Flow. From the repository root, install the checked-in release if no `spec-kit-flow` bundle is present:
 
 ```sh
 mise run catalog:install .
-specify bundle list
-specify workflow list
 ```
 
-Edit reviewed workflow and extension source packages, not the installed copies under `.specify/`. This repository ignores the bundle's local installation records, copied default configuration, and installed payloads.
+If `specify bundle list` already shows `spec-kit-flow`, refresh the existing installation instead:
 
-After installing in this checkout, new local Codex-managed worktrees copy its ignored installation records, extension and workflow payloads, and generated agent files through `.worktreeinclude`. No worktree setup script is needed. Run `mise install` in a worktree if the pinned tools are not already available there.
+```sh
+mise run catalog:refresh .
+```
+
+Both catalog commands install or refresh the eight Specify workflows **and** the eight direct FlowKit Codex skills in `.agents/skills/flow-kit-*/`. They also write the separate skill ownership record under `.specify/flow-kit/`. Verify both parts from this checkout:
+
+```sh
+mise exec -- specify bundle list
+mise exec -- specify workflow list
+ls .agents/skills/flow-kit-*/SKILL.md
+test -f .specify/flow-kit/skills-install.json
+```
+
+The skill picker should then show FlowKit Start Feature, FlowKit Clarify, FlowKit Plan, FlowKit Tasks, FlowKit Analyze, FlowKit Implement, FlowKit Converge, and FlowKit Close Out in a Codex task for this project. If a task was already open before installation, open a fresh task to check discovery. Edit reviewed source under `controllers/`, `workflows/`, and the extension source packages, not the installed copies under `.agents/skills/` or `.specify/`. This repository ignores local installation records and installed payloads.
+
+After installing in this checkout, new local Codex-managed worktrees copy its ignored installation records, FlowKit skill ownership record, extension and workflow payloads, and generated agent files through `.worktreeinclude`. No worktree setup script is needed. Run `mise install` in a worktree if the pinned tools are not already available there.
 
 The copy reflects the source checkout's installed bundle. After changing reviewed release packages, run `mise run catalog:refresh .` in that checkout before creating a worktree. A fresh clone, remote worktree, or plain `git worktree add` does not receive this ignored state; run `mise run catalog:install .` there after preparing the checkout. The workflow registry can contain a temporary localhost catalog URL; use the catalog refresh task to update the bundle.
 
