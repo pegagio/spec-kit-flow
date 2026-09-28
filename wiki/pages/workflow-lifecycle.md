@@ -1,13 +1,17 @@
 ---
 title: Workflow lifecycle
 type: concept
-sources: [S002, S006, S007, S010, S013]
-updated: 2026-09-24
+sources: [S002, S006, S007, S010, S013, S017, S018]
+updated: 2026-09-28
 ---
 
 # Workflow lifecycle
 
 An operator prepares a constitution and approved roadmap, establishes cited wiki context, chooses an eligible feature, and invokes each workflow deliberately. The documented route is start-feature, optional clarify, plan, tasks, analyze-remediate, implement, converge, and closeout. (S002)
+
+Under the amended authority rule, one explicit workflow invocation may authorize its reviewed step-model assignments and bounded Codex subagents. Human questions and review gates stay in the main task; completing one workflow does not authorize a later phase. (S017)
+
+Verified Feature 013 keeps the eight workflow phases separate while providing desktop-task execution with a main controller and step subagents; it does not add automatic chaining to the next phase. Direct controller skills use the FlowKit catalog route alongside the Specify bundle. (S018)
 
 Planning and task generation are separate. Clarification may need another session after the current five-question command limit. Analyze follows task generation or consequential artifact reconciliation; converge follows implementation until identified gaps are resolved. (S002)
 
@@ -23,6 +27,7 @@ Closeout requires a separately approved completion operation, an exact roadmap v
 
 ## Related pages
 
+- [Codex workflow controller design](./codex-workflow-controllers.md)
 - [Project authority and review gates](./project-authority-and-review-gates.md)
 - [Bundle and workflow model](./bundle-and-workflow-model.md)
 - [Consumer feedback boundary](./consumer-feedback-boundary.md)

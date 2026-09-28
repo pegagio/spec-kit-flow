@@ -13,7 +13,7 @@ This repository owns the generic workflow and feedback source. The repository an
 
 ## What the bundle installs
 
-The [bundle manifest](bundles/spec-kit-flow/bundle.yml) is version `0.3.1` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The bundle pins these extensions:
+The [bundle manifest](bundles/spec-kit-flow/bundle.yml) is version `0.4.1` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The bundle pins these extensions:
 
 | Extension ID | Version | Purpose |
 | --- | --- | --- |
@@ -25,60 +25,86 @@ It also installs the eight workflows in [`workflows/`](workflows/README.md):
 
 | Workflow ID | Version | Role |
 | --- | --- | --- |
-| `speckit-flow-start-feature` | `0.2.0` | Assess an eligible roadmap feature, obtain approval for its exact patch, query context, specify, and brief |
-| `speckit-flow-clarify` | `0.1.0` | Run one bounded clarification session |
-| `speckit-flow-plan` | `0.1.0` | Review readiness and create the technical plan |
-| `speckit-flow-tasks` | `0.1.0` | Generate implementation tasks separately from planning |
-| `speckit-flow-analyze-remediate` | `0.1.0` | Analyze artifact consistency and route bounded remediation |
-| `speckit-flow-implement` | `0.1.0` | Implement eligible tasks within the selected agent's scope |
-| `speckit-flow-converge` | `0.1.0` | Compare implementation with the feature artifacts and close gaps |
-| `speckit-flow-closeout` | `0.2.0` | Review completion, roadmap verification, wiki maintenance, and commit readiness through explicit gates |
+| `speckit-flow-start-feature` | `0.3.0` | Assess an eligible roadmap feature, obtain approval for its exact patch, query context, specify, and brief |
+| `speckit-flow-clarify` | `0.2.0` | Run one bounded clarification session |
+| `speckit-flow-plan` | `0.2.0` | Review readiness and create the technical plan |
+| `speckit-flow-tasks` | `0.2.0` | Generate implementation tasks separately from planning |
+| `speckit-flow-analyze-remediate` | `0.2.0` | Analyze artifact consistency and route bounded remediation |
+| `speckit-flow-implement` | `0.2.0` | Implement eligible tasks within the selected agent's scope |
+| `speckit-flow-converge` | `0.2.0` | Compare implementation with the feature artifacts and close gaps |
+| `speckit-flow-closeout` | `0.3.0` | Review completion, roadmap verification, wiki maintenance, and commit readiness through explicit gates |
 
 The bundle does not include a preset or `speckit-flow-feedback-maintainer`. Maintainer intake belongs in this source environment, not a consumer project.
 
 ## Installation
 
-This repository contains a local released catalog package set for Roadmap `v0.2.1` and Wiki `v2.0.1`. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. From the Spec Kit Flow checkout, point the mise task at an existing consumer project directory:
+The checked-in catalog contains the locally built `0.4.1` release, including the eight FlowKit controller skills. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. The catalog has not been published or pushed.
+
+To install the checked-in release into another project, run `mise run catalog:install /path/to/my-project` after preparing the checkout. To validate source changes that have not reached the catalog, create and initialize a disposable consumer under the system temporary directory, then use development-snapshot mode:
 
 ```sh
 git clone https://github.com/pegagio/spec-kit-flow.git
 cd spec-kit-flow
 mise trust
-mkdir -p /path/to/my-project
-mise run catalog:install /path/to/my-project
+mise install
+SPECIFY_BIN="$(mise which specify)"
+CONSUMER_DIR="$(mktemp -d)"
+(cd "$CONSUMER_DIR" && "$SPECIFY_BIN" init --here --force --non-interactive --integration codex --integration-options="--skills")
+PATH="$(dirname "$SPECIFY_BIN"):$PATH" python3 tools/catalog.py install "$CONSUMER_DIR" --development-snapshot
 ```
 
-The task first requires a catalog marked `released`. It then checks the packaged component versions and checksums, serves the checked-in packages and workflow source on localhost for the duration of the install, and calls `specify bundle install` in the consumer directory. Specify initializes a new project when needed. The tested CLI is `1.0.10.dev0+pegagio.2`; compatibility with stock Spec Kit remains unverified. `mise install` can activate the pinned CLI only when that fork is obtainable in your environment. Inspect installed component IDs and provenance before use.
+Snapshot mode builds a temporary catalog from current source and verified extension packages, accepts only an already initialized consumer under the system temp directory, records the package as unreleased, and leaves checked-in release metadata unchanged. The tested CLI is `1.0.10.dev0+pegagio.2`; compatibility with stock Spec Kit remains unverified. Inspect installed component IDs and provenance before use.
 
-To dogfood the workflows while developing this repository, run `mise run catalog:install .` from its root. New local Codex-managed worktrees copy the ignored installed state through `.worktreeinclude`. Edit the reviewed source packages; local installation state is ignored. Use `mise run catalog:refresh .` after a newer reviewed release. See the [installation guide](docs/installation.md) for worktree and fresh-clone steps.
+The snapshot cannot be installed into the source checkout because snapshot installation is restricted to temporary consumers. The regular catalog task initializes and installs the checked-in release. New local Codex-managed worktrees copy ignored installed state through `.worktreeinclude` after a supported released installation; fresh clones and plain Git worktrees install the released catalog separately.
 
-After pulling a newer reviewed release of this repository, refresh the bundle with:
+After pulling a newer reviewed release of this repository, refresh the bundle and its Codex skills with:
 
 ```sh
 mise run catalog:refresh /path/to/my-project
 ```
 
-The same task must provide the temporary catalogs during refresh, and it also rejects snapshots. Maintainers build release packages from clean checkouts at matching annotated tags with `mise run catalog:build <roadmap-checkout> <wiki-checkout>`. The `--snapshot` build option is for development packages only; those packages cannot be installed through the consumer tasks. Review `catalog/release.json` and the packages before committing them. See [installation and lifecycle details](docs/installation.md) for provenance, removal, and release requirements.
+The same task serves the temporary catalogs during refresh and verifies controller ownership before changing installed skills. Ordinary install and refresh reject snapshots. For development, `tools/catalog.py install` and `refresh` accept `--development-snapshot` only for an already initialized disposable consumer under the system temporary directory. Maintainers build release packages from clean checkouts at matching annotated tags with `mise run catalog:build <roadmap-checkout> <wiki-checkout>`. Review `catalog/release.json` and the packages before preparing a release. See [installation and lifecycle details](docs/installation.md) for provenance, removal, and release requirements.
 
 ## Using the workflows
 
-Prepare a project constitution, use `speckit.flow-roadmap.write` for an approved roadmap, then use `speckit.flow-wiki.init` and `speckit.flow-wiki.ingest` to establish cited project context. The operator chooses an eligible feature and invokes each workflow deliberately. A typical route is:
+Prepare a project constitution, use `speckit.flow-roadmap.write` for an approved roadmap, then use `speckit.flow-wiki.init` and `speckit.flow-wiki.ingest` to establish cited project context. In a project installed through the FlowKit catalog route, invoke one named controller skill from the selected Codex task. The eight picker names and skill IDs are:
+
+| Codex display name | Skill ID | Required input |
+| --- | --- | --- |
+| FlowKit Start Feature | `flow-kit-start-feature` | `feature_request` |
+| FlowKit Clarify | `flow-kit-clarify` | `feature_context` |
+| FlowKit Plan | `flow-kit-plan` | `feature_context` |
+| FlowKit Tasks | `flow-kit-tasks` | `feature_context` |
+| FlowKit Analyze | `flow-kit-analyze-remediate` | `feature_context` |
+| FlowKit Implement | `flow-kit-implement` | `feature_context` |
+| FlowKit Converge | `flow-kit-converge` | `feature_context` |
+| FlowKit Close Out | `flow-kit-closeout` | `feature_context` |
+
+Use the `$skill-id key=value` form. For example, in the selected project's Codex task:
+
+```text
+$flow-kit-start-feature feature_request="Start feature 013"
+```
+
+The remaining workflows use the required `feature_context` input, for example `$flow-kit-tasks feature_context=013`. Each controller checks the compatible Specify runtime and installed workflow before starting. It shows all concrete step model and effort assignments, including untaken branches, and requires each distinct pair to pass a bounded availability probe. Omitted effort means Medium; the reviewed task-generation and implementation steps use GPT-6 Luna with High effort. An operator can provide a one-step override with `step_id`, `model`, and/or `reasoning_effort`. The task keeps questions and gates in the main chat, sends answers back to the same child, and shows results and workspace diffs.
+
+A typical operator-directed route is:
 
 ```text
 start-feature → clarify (as needed) → plan → tasks → analyze-remediate
               → implement → converge → closeout
 ```
 
-Inspect an installed workflow and supply its required context when running it. For example, after reviewing the roadmap and its eligibility:
+The native CLI path remains available. Inspect an installed workflow and supply its required context when running it. For example:
 
 ```sh
 specify workflow info speckit-flow-start-feature
 specify workflow run speckit-flow-start-feature --input "feature_request=Describe the chosen roadmap feature"
 ```
 
-The workflows preserve a manual-prompt fallback. Clarification may need another session after the current command's five-question cap. Analyze after task generation or consequential artifact reconciliation before implementation; converge after implementation until gaps are resolved. Planning and task generation remain separate. The closeout workflow requires a separately approved feature-completion operation and does not create one.
+The workflows preserve a manual-prompt fallback. Clarification may need another session after the current command's five-question cap. Analyze after task generation or consequential artifact reconciliation before implementation; converge after implementation until gaps are resolved. Planning and task generation remain separate. The closeout workflow requires a separately approved feature-completion operation and does not create one. The native `specify workflow run` path does not apply FlowKit's `reasoning_effort` values and does not provide the controller's child-chat experience.
 
-Human review controls roadmap patches, material scope and authority changes, ambiguous recovery, Git integration, and acceptance. A completed workflow does not select or launch another agent or imply that a feature was merged or accepted. See the [workflow command map](workflows/README.md) and [project constitution](.specify/memory/constitution.md) for the governing contracts.
+Human review controls roadmap patches, material scope and authority changes, ambiguous recovery, Git integration, and acceptance. A completed controller never launches a later phase or implies that a feature was merged or accepted. See the [workflow command map](workflows/README.md) and [project constitution](.specify/memory/constitution.md) for the governing contracts.
 
 ## Feedback and release status
 

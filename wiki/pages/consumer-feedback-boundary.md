@@ -2,7 +2,7 @@
 title: Consumer feedback boundary
 type: concept
 sources: [S001, S002, S004, S014, S015]
-updated: 2026-09-24
+updated: 2026-09-28
 ---
 
 # Consumer feedback boundary

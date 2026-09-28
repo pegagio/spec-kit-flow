@@ -1,17 +1,17 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.1.0 → 1.2.0
-Bump rationale: MINOR — add one planned feature for bundle-installed Codex workflow launcher skills.
+Version change: 1.4.1 → 1.4.2
+Bump rationale: PATCH — record the approved verification of feature 013 after its implementation debrief.
 
 Changes this revision:
-  - Added spec 013 as planned, independently of planned spec 012, without changing existing entry statuses.
-  - Updated the planned-feature summary and recorded the launcher packaging question.
+  - Transitioned feature 013 from in-progress to verified after the debrief found no Must-Address issues.
+  - Updated feature 013 status and open-question summaries to reflect the completed specification and bounded consumer validation.
 
 Specs affected: 013
-Open questions added/resolved: added consumer skill packaging and gate behavior; none resolved.
+Open questions added/resolved: resolved feature 013's workflow-definition, tested metadata, and consumer-interaction questions; model-role portability remains deferred.
 
-Notes: The operator requested skills installed into consumer projects by the FlowKit bundle, agreed to thin explicit launchers, and specified no dependency on planned feature 012. Prior verification of 001–011 remains intact.
+Notes: The operator requested verification after a non-blocking debrief. Evidence: `specs/013-bundle-workflow-launchers/roadmap-reviews/debrief-20260928T200419Z.md` and `specs/013-bundle-workflow-launchers/validation.md`. Prior verification of 001–011 remains intact, and feature 012 remains planned. This transition does not imply publication or feature acceptance.
 -->
 
 # Spec Kit Flow — Spec Roadmap
@@ -35,21 +35,21 @@ The constitution establishes the durable project direction; the completed specs 
 - Provide a reusable, human-directed Spec-Driven Development workbench whose feature artifacts stay consistent through merge-bounded flow-back and explicit review gates.
 - Keep generic workflows, independently versioned extensions, portable consumer feedback, maintainer intake, and the bundle catalog traceable to reviewed source and bounded validation evidence.
 - Preserve manual workflow paths and human control over agent selection, material scope, roadmap verification, Git integration, publication, and acceptance.
-- Treat additional features as future roadmap amendments. Features 012 and 013 are planned independently.
+- Treat additional features as future roadmap amendments. Feature 012 remains planned, while feature 013 is verified independently.
 
 ## Constraints and decisions
 
 These cross-cutting constraints come from the [constitution](constitution.md); they do not create new feature scope.
 
 - **C-01 — Merge-bounded persistence**: Before merge, accepted discoveries flow through the current spec, plan, tasks, and implementation; after merge, behavioral changes move into a new feature directory. This keeps reviewable intent and historical records coherent.
-- **C-02 — Human-directed authority**: The operator chooses tasks and agents and explicitly approves consequential roadmap, scope, integration, and acceptance decisions. Command success cannot confer those decisions.
+- **C-02 — Human-directed authority**: The operator chooses workflows and task scope. Reviewed workflow steps may declare concrete models; invocation authorizes those visible, overridable assignments. A Codex controller may launch bounded step subagents and must relay human decisions through the main task. Command success cannot confer roadmap, scope, integration, or acceptance decisions.
 - **C-03 — Generic component boundaries**: This repository owns generic workflow and feedback source; the bundle composes versioned components. The Diagram remains a consumer, with adapter behavior governed separately.
 - **C-04 — Reviewable source and fallback**: Changes target source packages, planning and task generation remain distinct, and each workflow retains a manual-prompt path. New build tools or dependencies require a documented need and approval.
 - **C-05 — Bounded validation and feedback**: Disposable consumer tests record component and CLI provenance without claiming publication, stock compatibility, or live-agent quality. Feedback capture and intake provide evidence and proposals, not direct source or authority changes.
 
 ## Planned Specs
 
-Entries 001–011 record all current feature directories as verified history. Features 012 and 013 are planned and have no spec directories yet. Dependencies describe delivery prerequisites between these specs, not the order in which an operator must run workflow phases.
+Entries 001–011 record verified history. Feature 012 is planned, and feature 013 is verified with a completed specification and bounded consumer validation. Dependencies describe delivery prerequisites between these specs, not the order in which an operator must run workflow phases.
 
 ### 001 — Start Eligible Feature  [status: verified]
 
@@ -171,15 +171,16 @@ Entries 001–011 record all current feature directories as verified history. Fe
 - **Governed by**: C-01, C-02, C-03, C-04, C-05.
 - **Notes**: The operator set the adoption goal and requested investigation followed by implementation. Agents should recommend the operator-invoked FlowKit consistency workflows and flag missing checks rather than independently launch those workflows or their core commands. `docs/merge-bounded-flow-back.md` is a starting proposal, not required verbatim text; the delivery mechanism remains subject to research and review.
 
-### 013 — Bundle-Installed Codex Workflow Launchers  [status: planned]
+### 013 — FlowKit Codex Workflow Controllers  [status: verified]
 
-- **Description**: Provide Codex skills that let an operator explicitly launch each installed FlowKit Specify workflow from a consumer project's Codex interface, and install those skills as part of the FlowKit bundle lifecycle.
-- **Outcome**: A consumer can discover and invoke a named skill for each of the eight FlowKit workflows; the skill checks the installed workflow and required inputs, launches that workflow, and reports its result while preserving its human review gates and separate phase boundaries.
-- **Scope (in)**: Investigate a supported way to package and install the skills with the bundle; implement thin launchers that delegate to the versioned installed workflows; make launchers explicit-invocation-only; validate fresh installation, refresh, removal, and interactive gate behavior in disposable consumers; document the operator-facing invocation path.
-- **Scope (out)**: Duplicating workflow logic in skills, implicitly launching a workflow, chaining to a later workflow without a separate operator instruction, changing workflow definitions merely to accommodate launchers, agent selection, Git integration, roadmap verification, or feature acceptance.
+- **Description**: Provide direct `flow-kit-*` Codex skills through the FlowKit catalog route alongside the Specify bundle so an operator can explicitly run each installed FlowKit workflow inside the consumer project's Codex task, with a main-task controller and bounded step subagents using concrete models declared in the workflow.
+- **Outcome**: A consumer can invoke a stable, named skill for each of the eight workflows under its FlowKit display name, see progress and diffs in the Codex desktop task, use declared per-step models and reasoning efforts without choosing them at every step, override one named step when needed, answer clarification and review questions in the main task, and receive the workflow result without losing its human gates or separate phase boundaries.
+- **Scope (in)**: Deliver and maintain direct Codex skill source through the supported FlowKit catalog install, refresh, and removal route with ownership-aware conflict handling; follow the installed, versioned workflow definition in a Codex task; define and validate concrete per-step model declarations in workflow YAML and FlowKit reasoning-effort metadata, using medium effort unless a step declaration or one-step operator override specifies otherwise; provide explicit invocation, required-input checks, visible effective assignments, bounded subagent dispatch, same-child continuation for interactive steps, and parent-mediated human decisions; validate fresh installation, refresh, removal, project context, interaction, and workflow outcomes in disposable consumers; document the operator-facing path and manual fallback.
+- **Scope (out)**: Model roles or consumer model mappings, duplicating workflow prompts or decision rules in skills, silent fallback or undeclared model selection, invoking a later workflow without separate instruction, changing workflow prompt behavior solely to accommodate the controller, scheduling, Git integration, roadmap verification, or feature acceptance.
 - **Depends on**: 011; no dependency on 012.
 - **Governed by**: C-02, C-03, C-04, C-05.
-- **Notes**: The operator approved the thin launcher approach and required consumer-project installation through the FlowKit bundle. Skill display names may be human-friendly, while invocation names should remain stable and unambiguous. Any unsupported skill-delivery mechanism or interactive gate limitation must be resolved during specification and validation rather than assumed away.
+- **Notes**: The previously approved thin launcher that delegates to `specify workflow run` is superseded for the Codex desktop path because its separate `codex exec` processes lose the desired task UI. The earlier bundle-installed skill delivery assumption is also superseded: native Specify bundle commands manage their declared Specify components, while the FlowKit catalog route manages direct Codex skills alongside them. Keep the installed workflow as the behavior authority and retain a manual-prompt fallback. The operator accepts that the initial concrete model IDs may be non-portable; model roles and consumer mappings are deferred to a later amendment. Live probes showed a different-model child task and parent-mediated answer relay; they did not prove full Specify integration or YAML model metadata support. The eight skills use stable `flow-kit-*` invocation names and the approved FlowKit display names in the feature specification.
+- **Spec dir**: `specs/013-bundle-workflow-launchers/`
 
 ## Open Questions
 
@@ -189,7 +190,7 @@ Feature 012 must answer these questions before its implementation path is settle
 - How should new installations and refreshes handle an existing or conflicting project constitution without silently replacing governance?
 - What project-state evidence confirms that the model was adopted, and how should a declined or incomplete adoption be reported?
 
-Feature 013 must determine which supported bundle-install mechanism delivers Codex skills to consumer projects and verify that invoking the workflow runner from a skill preserves interactive gates and the selected project context.
+Feature 013 settled direct Codex skill delivery through the FlowKit catalog route alongside the Specify bundle. The controller follows the installed workflow definition; the tested Specify CLI accepted its model and FlowKit effort metadata. Disposable-consumer and desktop validation covered project context, same-child clarification, human gates, diffs, and step outcomes within the limits recorded in `specs/013-bundle-workflow-launchers/validation.md`. Model roles and consumer mappings remain deferred; this verification does not claim publication or broader compatibility.
 
 ## Cross-Cutting Notes
 
@@ -197,4 +198,4 @@ The workflow run order is start-feature, optional clarification, planning, task 
 
 The operator designated all eleven entries verified on 2026-09-26. Their `spec.md` headers still say `Draft`; this roadmap records the operator's lifecycle decision without rewriting historical feature artifacts. No configured ADR or PRD evidence was available for this creation.
 
-**Version**: 1.2.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-26
+**Version**: 1.4.2 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-28

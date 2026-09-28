@@ -1,0 +1,3 @@
+interface:
+  display_name: "FlowKit Tasks"
+  short_description: "Generate dependency-ordered implementation tasks."

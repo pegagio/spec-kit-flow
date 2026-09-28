@@ -2,6 +2,8 @@
 
 Use the catalog tasks in this repository to install or refresh the bundle. They serve the checked-in release packages on localhost for the duration of each command, so you do not need separate roadmap or wiki source checkouts to install it. The [bundle manifest](../bundles/spec-kit-flow/bundle.yml) and [release metadata](../catalog/release.json) are the sources for current component versions.
 
+The checked-in catalog contains the locally built `0.4.1` release and controller package `0.1.1`. Ordinary catalog install and refresh use these reviewed packages. Development-snapshot mode is reserved for uncommitted source changes in a disposable initialized consumer; the catalog has not been published or pushed.
+
 ## Contents
 
 - [Prepare the checkout](#prepare-the-checkout)
@@ -44,6 +46,28 @@ specify workflow list
 
 The install task starts and stops its own localhost catalog. Do not add Specify's `--offline` flag; the resolver needs to contact that local catalog.
 
+For Codex skill integration, initialize a new disposable consumer with the skills integration enabled. Existing projects need a Codex installation that discovers project skills under `.agents/skills/`:
+
+```sh
+specify init --here --force --non-interactive --integration codex --integration-options="--skills"
+```
+
+The supported catalog install also installs eight direct FlowKit skills, shared controller files, and `.specify/flow-kit/skills-install.json`. Native `specify bundle install` manages the workflows and extensions, not those direct skills. Use the FlowKit catalog task so both parts are installed and verified together.
+
+To test unreleased controller/workflow changes, initialize an already-created disposable consumer under the system temporary directory, then use the explicit snapshot route:
+
+```sh
+consumer_dir="$(mktemp -d)"
+specify_bin="$(mise which specify)"
+(
+  cd "$consumer_dir"
+  "$specify_bin" init --here --force --non-interactive --integration codex --integration-options="--skills"
+)
+PATH="$(dirname "$specify_bin"):$PATH" python3 tools/catalog.py install "$consumer_dir" --development-snapshot
+```
+
+Snapshot mode builds a temporary catalog from current source and the checked-in extension packages. It is restricted to initialized temporary consumers, reports itself as unreleased in the ownership record, and does not change checked-in release metadata. The normal install and refresh routes continue to reject snapshots.
+
 ## Dogfood this repository
 
 Install into the checkout itself when developing Spec Kit Flow. Run this from its root:
@@ -71,6 +95,23 @@ specify workflow run speckit-flow-start-feature --input "feature_request=Describ
 
 The workflow stops at human review gates. Invoke each later workflow separately. The [workflow guide](../workflows/README.md) gives the route and manual fallback. While editing a workflow in this repository, you can run its source `workflow.yml` by path to test an uninstalled change.
 
+In the Codex app, invoke the corresponding FlowKit skill in a task whose selected project is the consumer. The visible names, skill IDs, and required inputs are:
+
+| Display name | Skill invocation | Required input |
+| --- | --- | --- |
+| FlowKit Start Feature | `$flow-kit-start-feature` | `feature_request` |
+| FlowKit Clarify | `$flow-kit-clarify` | `feature_context` |
+| FlowKit Plan | `$flow-kit-plan` | `feature_context` |
+| FlowKit Tasks | `$flow-kit-tasks` | `feature_context` |
+| FlowKit Analyze | `$flow-kit-analyze-remediate` | `feature_context` |
+| FlowKit Implement | `$flow-kit-implement` | `feature_context` |
+| FlowKit Converge | `$flow-kit-converge` | `feature_context` |
+| FlowKit Close Out | `$flow-kit-closeout` | `feature_context` |
+
+For example, enter `$flow-kit-tasks feature_context=013` in the selected project's Codex task. Optional workflow inputs have defaults and can be supplied in the same `key=value` form. The controller locates the selected compatible Specify executable (preferring the project's mise selection), reads the installed composed workflow without executing native workflow dispatch, and stops before workflow work if runtime, workflow, input, or skill provenance checks fail.
+
+Before the first step, the controller shows every concrete model and effective reasoning effort, including assignments in branches that will not be taken. Omitted effort is Medium. Task generation and implementation use GPT-6 Luna with High effort; the other declared assignments use GPT-6 Sol or GPT-6 Astra with Medium effort as listed in the workflow YAML. Each distinct pair must pass an availability probe in the selected Codex task. A named-step override uses `step_id`, with optional `model` and `reasoning_effort`; it changes only that step. Modeled steps use bounded children, while unmodeled steps and gates stay in the main task. The main task presents child questions as numbered options plus a custom answer when allowed and relays the response to the same child. Native `specify workflow run` ignores FlowKit reasoning-effort metadata and does not provide this controller interaction model.
+
 ## Refresh or remove the bundle
 
 After updating this checkout to a newer reviewed release, return to its root and refresh the target project:
@@ -90,6 +131,14 @@ specify bundle list
 ```
 
 Confirm that unrelated components remain. The consumer's feedback journal is local evidence and should remain available after removal.
+
+For a supported complete removal of the bundle and its direct FlowKit skills, run the catalog command from the source checkout:
+
+```sh
+mise run catalog:remove /path/to/my-project
+```
+
+It checks the recorded skill inventory and file digests before calling native bundle removal, then removes only unchanged FlowKit-owned skills and the ownership record. A collision or locally edited owned file stops removal for review. Recovery summaries under `.specify/flow-controllers/runs/`, unrelated skills, feedback, and independently installed components are preserved. The native `specify bundle remove` command alone removes the bundle contents but does not manage direct Codex skills.
 
 ## Build release packages
 

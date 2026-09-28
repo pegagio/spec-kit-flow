@@ -1,8 +1,23 @@
 # Spec Kit Flow Workflows
 
-These are the reviewed, versioned source packages for the human-directed Spec Kit Flow super-states. Install a package only from its reviewed directory, validate native list, information, resolution, registry attribution, and source-copy equality, and never edit an installed copy.
+These are the reviewed, versioned source packages for the human-directed Spec Kit Flow super-states. Install a package only from its reviewed directory, validate native list, information, resolution, registry attribution, and source-copy equality, and never edit an installed copy. The FlowKit catalog also installs a direct Codex skill for each workflow; these controller skills follow the installed YAML and keep its prompts, commands, gates, and branches authoritative.
 
-Each workflow preserves its manual prompt fallback and explicit human gates. None selects, ranks, assigns, launches, schedules, supervises, or terminates an agent; provider and model policy remain outside this bundle.
+Each packaged workflow preserves its manual-prompt fallback and explicit human gates. Executable steps with concrete model assignments run in bounded child tasks through the FlowKit controller. Omitted reasoning effort means Medium; task generation and implementation declare GPT-6 Luna with High effort. Native CLI dispatch does not apply the FlowKit reasoning-effort values. Gates, branch decisions, questions, and unmodeled steps remain in the main Codex task.
+
+Use the selected consumer project in the Codex task and invoke one skill at a time. Required inputs come from the installed workflow definition:
+
+| Workflow | Codex skill and display name | Required input | Modeled step assignments |
+| --- | --- | --- | --- |
+| `speckit-flow-start-feature` | `$flow-kit-start-feature` — FlowKit Start Feature | `feature_request` | `assess-eligibility`, `draft-specification`, `brief-against-roadmap`: GPT-6 Sol / Medium |
+| `speckit-flow-clarify` | `$flow-kit-clarify` — FlowKit Clarify | `feature_context` | `clarify-specification`: GPT-6 Sol / Medium |
+| `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`: GPT-6 Astra / Medium; `return-to-clarification`: GPT-6 Sol / Medium |
+| `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`: GPT-6 Luna / High; `return-to-plan`: GPT-6 Sol / Medium |
+| `speckit-flow-analyze-remediate` | `$flow-kit-analyze-remediate` — FlowKit Analyze | `feature_context` | `analyze-artifacts`, `reanalyze-*`, `replan-*`: GPT-6 Astra / Medium; `remediate-*`, `retask-*`: GPT-6 Sol / Medium |
+| `speckit-flow-implement` | `$flow-kit-implement` — FlowKit Implement | `feature_context` | `implement-eligible-work`: GPT-6 Luna / High; `return-to-*`: GPT-6 Sol / Medium |
+| `speckit-flow-converge` | `$flow-kit-converge` — FlowKit Converge | `feature_context` | `assess-convergence`: GPT-6 Astra / Medium; `return-remediation-to-analysis`: GPT-6 Sol / Medium |
+| `speckit-flow-closeout` | `$flow-kit-closeout` — FlowKit Close Out | `feature_context` | `debrief-roadmap`, `ingest-curated-context`, `lint-wiki`: GPT-6 Sol / Medium |
+
+For example: `$flow-kit-clarify feature_context=013`. The controller checks the selected compatible Specify runtime and installed workflow, shows every model-effort pair across possible branches, and probes each distinct pair before workflow work. An optional one-step override uses `step_id` plus `model` and/or `reasoning_effort`; all other assignments remain unchanged. Clarification questions and review gates appear in the main task. A child question is answered there and relayed to the same child. The main task reports results and visible workspace diffs. Use the manual paths below if Codex controller dispatch is unavailable.
 
 | Workflow | Core or extension commands |
 | --- | --- |
@@ -52,7 +67,7 @@ For routine findings within the issued scope, update the smallest affected artif
 
 When native implementation dispatch is unavailable, use `speckit.implement` only for the operator-selected feature, current agent, and remaining eligible tasks after clean analysis. Verify prerequisites and dependencies, execute within scope, and present task results, tests, discoveries, and blockers for human review.
 
-If work is complete, stop and let the operator invoke `speckit-flow-converge` separately. For a discovery, return to the smallest affected specification, plan, task, or analysis path; reconcile dependent artifacts and reanalyze before resuming implementation. For a blocker or unrecognized result, stop with the issue and required operator input. Do not infer roadmap verification, Git integration, or acceptance from execution.
+If work is complete, stop and let the operator invoke `speckit-flow-converge` separately. For a discovery, return to the smallest affected artifact: use `speckit.specify` for specification changes, `speckit.plan` for plan changes, `speckit.tasks` for task changes, and `speckit.analyze` to recheck the reconciled artifacts before resuming implementation. Follow only the operator-selected path. For a blocker or unrecognized result, stop with the issue and required operator input. Do not infer roadmap verification, Git integration, or acceptance from execution.
 
 ## Manual convergence path
 

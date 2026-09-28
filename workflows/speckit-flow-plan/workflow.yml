@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-plan"
   name: "Plan Implementation"
-  version: "0.1.0"
+  version: "0.2.0"
   author: "pegagio"
   description: "Create implementation design artifacts only after human confirmation that the clarified specification is ready for planning."
 
@@ -38,6 +38,7 @@ steps:
     cases:
       plan:
         - id: create-plan
+          model: "gpt-6-astra"
           command: "speckit.plan"
           integration: "{{ inputs.integration }}"
           input:
@@ -48,6 +49,7 @@ steps:
           prompt: "Stop at Design Planned. The operator reviews plan, research, data model, contracts, and quickstart before choosing speckit-flow-tasks."
       return-to-clarification:
         - id: return-to-clarification
+          model: "gpt-6-sol"
           command: "speckit.clarify"
           integration: "{{ inputs.integration }}"
           input:

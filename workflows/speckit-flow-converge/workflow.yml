@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-converge"
   name: "Converge Feature"
-  version: "0.1.0"
+  version: "0.2.0"
   author: "pegagio"
   description: "Assess implementation against the current feature artifacts, route bounded remediation through analysis, and stop cleanly or with a blocker."
 
@@ -27,6 +27,7 @@ inputs:
 
 steps:
   - id: assess-convergence
+    model: "gpt-6-astra"
     command: "speckit.converge"
     integration: "{{ inputs.integration }}"
     input:
@@ -48,6 +49,7 @@ steps:
           prompt: "Stop at Feature Converged. The operator may invoke speckit-flow-closeout; convergence is not Git integration or project acceptance."
       remediation:
         - id: return-remediation-to-analysis
+          model: "gpt-6-sol"
           command: "speckit.analyze"
           integration: "{{ inputs.integration }}"
           input:

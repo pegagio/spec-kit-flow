@@ -1,0 +1,58 @@
+schema_version: "1.0"
+
+workflow:
+  id: "flow-kit-controller-fixture"
+  name: "FlowKit Controller Fixture"
+  version: "0.1.0"
+  author: "pegagio"
+  description: "Exercise controller graph traversal and preflight in disposable tests."
+
+requires:
+  speckit_version: ">=1.0.10.dev0+pegagio.2"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  feature_context:
+    type: string
+    required: true
+
+steps:
+  - id: modeled-prompt
+    type: prompt
+    model: "gpt-6-sol"
+    input:
+      prompt: "Review {{ inputs.feature_context }}."
+  - id: main-task-command
+    command: "speckit.fixture"
+    integration: "codex"
+    input:
+      args: "Inspect {{ steps.modeled-prompt.output.summary }}."
+  - id: review-verdict
+    type: gate
+    message: "Choose a fixture route."
+    options: ["primary", "fallback"]
+    verdict_input: "review_decision"
+  - id: route-result
+    type: switch
+    expression: "{{ steps.review-verdict.output.choice }}"
+    cases:
+      primary:
+        - id: nested-modeled-command
+          command: "speckit.fixture"
+          integration: "codex"
+          model: "gpt-6-luna"
+          reasoning_effort: high
+          input:
+            args: "Continue {{ inputs.feature_context }}."
+      fallback:
+        - id: nested-unmodeled-prompt
+          type: prompt
+          input:
+            prompt: "Use the fallback for {{ inputs.feature_context }}."
+    default:
+      - id: unavailable-model-branch
+        type: prompt
+        model: "flowkit-test-unavailable-model"
+        input:
+          prompt: "This untaken branch still participates in preflight."

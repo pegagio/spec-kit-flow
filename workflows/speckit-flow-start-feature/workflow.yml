@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-start-feature"
   name: "Start Eligible Feature"
-  version: "0.2.0"
+  version: "0.3.0"
   author: "pegagio"
   description: "Prepare one uniquely eligible roadmap feature through an approval-gated roadmap transition, cited context, specification, and roadmap brief."
 
@@ -30,6 +30,7 @@ inputs:
 
 steps:
   - id: assess-eligibility
+    model: "gpt-6-sol"
     type: prompt
     integration: "{{ inputs.integration }}"
     prompt: "Assess the roadmap for one uniquely eligible feature matching: {{ inputs.feature_request }}. Read dependencies and governing context. Prepare an exact proposed status patch only; do not mutate the roadmap. Stop if eligibility is ambiguous, dependencies are unsatisfied, or governing context is incomplete."
@@ -55,11 +56,13 @@ steps:
           input:
             args: "For {{ inputs.feature_request }}, retrieve cited governing decisions, constraints, dependencies, and coverage classification. Report Partial or Uncovered rather than inventing a fact."
         - id: draft-specification
+          model: "gpt-6-sol"
           command: "speckit.specify"
           integration: "{{ inputs.integration }}"
           input:
             args: "Create the specification for the approved roadmap feature: {{ inputs.feature_request }}. Preserve the approved outcome, scope, dependencies, and cited governing context."
         - id: brief-against-roadmap
+          model: "gpt-6-sol"
           command: "speckit.flow-roadmap.brief"
           integration: "{{ inputs.integration }}"
           input:

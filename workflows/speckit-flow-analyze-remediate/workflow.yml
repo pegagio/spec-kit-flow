@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-analyze-remediate"
   name: "Analyze and Remediate"
-  version: "0.1.0"
+  version: "0.2.0"
   author: "pegagio"
   description: "Run read-only analysis, route routine findings through the smallest artifact flow-back path, and stop for consequential decisions."
 
@@ -27,6 +27,7 @@ inputs:
 
 steps:
   - id: analyze-artifacts
+    model: "gpt-6-astra"
     command: "speckit.analyze"
     integration: "{{ inputs.integration }}"
     input:
@@ -48,48 +49,57 @@ steps:
           prompt: "Stop at Tasks Analyzed. The operator may invoke speckit-flow-implement for eligible work."
       routine-spec-flowback:
         - id: remediate-specification
+          model: "gpt-6-sol"
           command: "speckit.specify"
           integration: "{{ inputs.integration }}"
           input:
             args: "Apply all routine, in-scope specification remediations identified by the latest analysis for {{ inputs.feature_context }}. Do not apply constitutional, authority, ambiguous-recovery, or material-scope changes."
         - id: replan-after-specification
+          model: "gpt-6-astra"
           command: "speckit.plan"
           integration: "{{ inputs.integration }}"
           input:
             args: "Re-plan {{ inputs.feature_context }} after its approved routine specification remediation."
         - id: retask-after-specification
+          model: "gpt-6-sol"
           command: "speckit.tasks"
           integration: "{{ inputs.integration }}"
           input:
             args: "Regenerate tasks for {{ inputs.feature_context }} after its replan."
         - id: reanalyze-after-specification
+          model: "gpt-6-astra"
           command: "speckit.analyze"
           integration: "{{ inputs.integration }}"
           input:
             args: "Re-run read-only analysis for {{ inputs.feature_context }} after the routine spec flow-back."
       routine-plan-flowback:
         - id: remediate-plan
+          model: "gpt-6-sol"
           command: "speckit.plan"
           integration: "{{ inputs.integration }}"
           input:
             args: "Apply all routine, in-scope design remediations identified by the latest analysis for {{ inputs.feature_context }}."
         - id: retask-after-plan
+          model: "gpt-6-sol"
           command: "speckit.tasks"
           integration: "{{ inputs.integration }}"
           input:
             args: "Regenerate tasks for {{ inputs.feature_context }} after the routine plan flow-back."
         - id: reanalyze-after-plan
+          model: "gpt-6-astra"
           command: "speckit.analyze"
           integration: "{{ inputs.integration }}"
           input:
             args: "Re-run read-only analysis for {{ inputs.feature_context }} after the routine plan flow-back."
       routine-task-flowback:
         - id: remediate-tasks
+          model: "gpt-6-sol"
           command: "speckit.tasks"
           integration: "{{ inputs.integration }}"
           input:
             args: "Apply all routine, in-scope task remediations identified by the latest analysis for {{ inputs.feature_context }}."
         - id: reanalyze-after-tasks
+          model: "gpt-6-astra"
           command: "speckit.analyze"
           integration: "{{ inputs.integration }}"
           input:

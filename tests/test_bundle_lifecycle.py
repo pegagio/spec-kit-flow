@@ -23,6 +23,8 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from tools import catalog
+
 
 ROOT = Path(__file__).parents[1]
 SPECIFY_BIN = Path(os.environ.get("SPECIFY_BIN", "specify"))
@@ -486,6 +488,53 @@ class BundleLifecycleTests(unittest.TestCase):
                 self.assertTrue(independent.is_file())
                 self.assertTrue(report_json.is_file())
                 self.assertTrue(journal.is_file())
+
+
+class FlowKitControllerLifecycleTests(unittest.TestCase):
+    """Exercise direct skill package ownership independently of Specify components."""
+
+    def test_installRefreshRemovePreservesConsumerSkillsAndRecovery(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="flow-kit-controller-consumer-") as temporary:
+            consumer = Path(temporary)
+            recovery = consumer / ".specify/flow-controllers/runs/retained/summary.json"
+            recovery.parent.mkdir(parents=True)
+            recovery.write_text('{"status":"stopped"}\n', encoding="utf-8")
+            local_skill = consumer / ".agents/skills/consumer-review/SKILL.md"
+            local_skill.parent.mkdir(parents=True)
+            local_skill.write_text("consumer-owned", encoding="utf-8")
+            archive = consumer / "controller-package.zip"
+            catalog.package_controller(archive)
+            catalog.install_controller_package(consumer, archive, refresh=False, source_digest=catalog.digest(archive), catalog_status="snapshot")
+            catalog.install_controller_package(consumer, archive, refresh=True, source_digest=catalog.digest(archive), catalog_status="snapshot")
+            catalog.remove_controller_package(consumer)
+            self.assertEqual("consumer-owned", local_skill.read_text(encoding="utf-8"))
+            self.assertTrue(recovery.is_file())
+            self.assertFalse((consumer / ".agents/skills/flow-kit-tasks/SKILL.md").exists())
+            self.assertFalse((consumer / ".specify/flow-kit/skills-install.json").exists())
+
+    def test_nameConflictAndEditedOwnedFileBlockLifecycleChanges(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="flow-kit-controller-conflict-") as temporary:
+            consumer = Path(temporary)
+            archive = consumer / "controller-package.zip"
+            catalog.package_controller(archive)
+            conflict = consumer / ".agents/skills/flow-kit-clarify/SKILL.md"
+            conflict.parent.mkdir(parents=True)
+            conflict.write_text("consumer-owned", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "consumer-owned path conflicts"):
+                catalog.install_controller_package(consumer, archive, refresh=False, source_digest=catalog.digest(archive), catalog_status="snapshot")
+            self.assertEqual("consumer-owned", conflict.read_text(encoding="utf-8"))
+            self.assertFalse((consumer / ".specify/flow-kit/skills-install.json").exists())
+
+            conflict.unlink()
+            conflict.parent.rmdir()
+            catalog.install_controller_package(consumer, archive, refresh=False, source_digest=catalog.digest(archive), catalog_status="snapshot")
+            owned = consumer / ".agents/skills/flow-kit-clarify/SKILL.md"
+            owned.write_text(owned.read_text(encoding="utf-8") + "local edit\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "locally changed FlowKit-owned"):
+                catalog.install_controller_package(consumer, archive, refresh=True, source_digest=catalog.digest(archive), catalog_status="snapshot")
+            with self.assertRaisesRegex(ValueError, "locally changed FlowKit-owned"):
+                catalog.remove_controller_package(consumer)
+            self.assertIn("local edit", owned.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

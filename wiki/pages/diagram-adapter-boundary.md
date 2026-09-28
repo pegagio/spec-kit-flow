@@ -2,12 +2,12 @@
 title: Diagram adapter boundary
 type: decision
 sources: [S001, S003]
-updated: 2026-09-24
+updated: 2026-09-28
 ---
 
 # Diagram adapter boundary
 
-The Diagram is a possible consumer of a pinned Spec Kit Flow release, not a prerequisite for the generic bundle. Diagram registration, canonical work, projections, adapter feedback, and future orchestration belong to a separately versioned adapter and its own authority decisions. (S001, S003)
+The Diagram is a consumer of Spec Kit Flow, not a runtime prerequisite for the generic bundle. Diagram registration, canonical work, projections, adapter feedback, and future orchestration belong to a separately versioned adapter and its own authority decisions. (S001, S003)
 
 Generic Spec Kit Flow source excludes Diagram executables, databases, registration commands, canonical-state mutation, and runtime service dependencies. Adapter-specific feedback requires a future authority decision. (S001, S003)
 

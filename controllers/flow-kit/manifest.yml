@@ -1,0 +1,35 @@
+schema_version: "1.0"
+
+package:
+  id: "flow-kit-controllers"
+  version: "0.1.1"
+  compatible_codex: true
+
+requires:
+  specify_cli_version: "1.0.10.dev0+pegagio.2"
+
+controllers:
+  - skill_id: "flow-kit-start-feature"
+    display_name: "FlowKit Start Feature"
+    workflow_id: "speckit-flow-start-feature"
+  - skill_id: "flow-kit-clarify"
+    display_name: "FlowKit Clarify"
+    workflow_id: "speckit-flow-clarify"
+  - skill_id: "flow-kit-plan"
+    display_name: "FlowKit Plan"
+    workflow_id: "speckit-flow-plan"
+  - skill_id: "flow-kit-tasks"
+    display_name: "FlowKit Tasks"
+    workflow_id: "speckit-flow-tasks"
+  - skill_id: "flow-kit-analyze-remediate"
+    display_name: "FlowKit Analyze"
+    workflow_id: "speckit-flow-analyze-remediate"
+  - skill_id: "flow-kit-implement"
+    display_name: "FlowKit Implement"
+    workflow_id: "speckit-flow-implement"
+  - skill_id: "flow-kit-converge"
+    display_name: "FlowKit Converge"
+    workflow_id: "speckit-flow-converge"
+  - skill_id: "flow-kit-closeout"
+    display_name: "FlowKit Close Out"
+    workflow_id: "speckit-flow-closeout"

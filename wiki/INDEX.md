@@ -7,6 +7,7 @@ page files, not here.
 ## Concept
 
 - [Bundle and workflow model](pages/bundle-and-workflow-model.md)
+- [Codex workflow controller design](pages/codex-workflow-controllers.md)
 - [Consumer feedback boundary](pages/consumer-feedback-boundary.md)
 - [Feature start contract](pages/feature-start-contract.md)
 - [Preimplementation review gates](pages/preimplementation-review-gates.md)
