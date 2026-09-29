@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-tasks"
   name: "Generate Implementation Tasks"
-  version: "0.2.0"
+  version: "0.3.0"
   author: "pegagio"
   description: "Generate tasks from reviewed design artifacts, surface surprising human work, and route readiness to analysis rather than implicit edits."
 
@@ -27,8 +27,9 @@ inputs:
 
 steps:
   - id: generate-tasks
-    model: "gpt-6-luna"
-    reasoning_effort: high
+    flow_kit:
+      delegated: true
+      agent: Architect
     command: "speckit.tasks"
     integration: "{{ inputs.integration }}"
     input:
@@ -50,7 +51,9 @@ steps:
           prompt: "Stop at Tasks Proposed. Invoke speckit-flow-analyze-remediate next; do not begin implementation directly."
       return-to-plan:
         - id: return-to-plan
-          model: "gpt-6-sol"
+          flow_kit:
+            delegated: true
+            agent: Architect
           command: "speckit.plan"
           integration: "{{ inputs.integration }}"
           input:

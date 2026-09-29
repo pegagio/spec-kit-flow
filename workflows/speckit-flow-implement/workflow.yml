@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-implement"
   name: "Implement Eligible Work"
-  version: "0.2.0"
+  version: "0.3.0"
   author: "pegagio"
   description: "Implement remaining eligible tasks under the current human-selected agent and return execution, flow-back, or blocker evidence."
 
@@ -27,8 +27,9 @@ inputs:
 
 steps:
   - id: implement-eligible-work
-    model: "gpt-6-luna"
-    reasoning_effort: high
+    flow_kit:
+      delegated: true
+      agent: Builder
     command: "speckit.implement"
     integration: "{{ inputs.integration }}"
     input:
@@ -50,28 +51,36 @@ steps:
           prompt: "Stop at Implementation Executed. The operator may invoke speckit-flow-converge; this workflow does not select or launch a follow-on agent."
       return-to-analysis:
         - id: return-to-analysis
-          model: "gpt-6-sol"
+          flow_kit:
+            delegated: true
+            agent: Architect
           command: "speckit.analyze"
           integration: "{{ inputs.integration }}"
           input:
             args: "Analyze {{ inputs.feature_context }} before implementation resumes."
       return-to-specification:
         - id: return-to-specification
-          model: "gpt-6-sol"
+          flow_kit:
+            delegated: true
+            agent: Architect
           command: "speckit.specify"
           integration: "{{ inputs.integration }}"
           input:
             args: "Update {{ inputs.feature_context }} through merge-bounded flow-back for the implementation discovery."
       return-to-plan:
         - id: return-to-plan
-          model: "gpt-6-sol"
+          flow_kit:
+            delegated: true
+            agent: Architect
           command: "speckit.plan"
           integration: "{{ inputs.integration }}"
           input:
             args: "Update the plan for {{ inputs.feature_context }} through merge-bounded flow-back for the implementation discovery."
       return-to-tasks:
         - id: return-to-tasks
-          model: "gpt-6-sol"
+          flow_kit:
+            delegated: true
+            agent: Architect
           command: "speckit.tasks"
           integration: "{{ inputs.integration }}"
           input:

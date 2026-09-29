@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-clarify"
   name: "Clarify Specification"
-  version: "0.2.0"
+  version: "0.3.0"
   author: "pegagio"
   description: "Run one interactive clarification session, preserve incremental edits, and return an explicit continuation, planning, or deferral result."
 
@@ -27,7 +27,9 @@ inputs:
 
 steps:
   - id: clarify-specification
-    model: "gpt-6-sol"
+    flow_kit:
+      delegated: true
+      agent: Architect
     command: "speckit.clarify"
     integration: "{{ inputs.integration }}"
     input:

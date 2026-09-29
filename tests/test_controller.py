@@ -141,6 +141,60 @@ class InstalledDefinitionTests(unittest.TestCase):
                 self.controller.verify_controller_install(project, "flow-kit-tasks", "speckit-flow-tasks")
 
 
+class NamedAgentAssignmentTests(unittest.TestCase):
+    """Delegated steps resolve only to their reviewed native Codex agent names."""
+
+    def setUp(self) -> None:
+        self.controller = load_module("flowkit_controller_agents", CONTROLLER_DIR / "controller.py")
+
+    def test_collectAgentAssignments_preservesDistinctNamesPerStep(self) -> None:
+        steps = [
+            {"id": "edit", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Coder"}},
+            {"id": "review", "type": "command", "flow_kit": {"delegated": True, "agent": "Verifier"}},
+            {"id": "summary", "type": "prompt", "prompt": "Summarize in the main task."},
+        ]
+        assignments = self.controller.collect_agent_assignments(steps)
+        self.assertEqual(
+            [
+                self.controller.StepAssignmentIntent("edit", "Coder"),
+                self.controller.StepAssignmentIntent("review", "Verifier"),
+            ],
+            assignments,
+        )
+
+    def test_collectAgentAssignments_includesDelegatedStepsInEveryBranch(self) -> None:
+        steps = [
+            {
+                "id": "route",
+                "type": "switch",
+                "cases": {"review": [{"id": "verify", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Verifier"}}]},
+                "default": [{"id": "build", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Builder"}}],
+            }
+        ]
+        assignments = self.controller.collect_agent_assignments(steps)
+        self.assertEqual(
+            [("verify", "Verifier"), ("build", "Builder")],
+            [(row.step_id, row.agent_name) for row in assignments],
+        )
+
+    def test_inspectRejectsPerRunAssignmentOverrides(self) -> None:
+        with redirect_stdout(io.StringIO()), patch("sys.stderr", io.StringIO()), patch.object(
+            self.controller, "verify_controller_install", side_effect=AssertionError("preflight must not run")
+        ), self.assertRaises(SystemExit) as error:
+            self.controller.main(
+                [
+                    "inspect",
+                    "--project", "/consumer",
+                    "--workflow-id", "speckit-flow-tasks",
+                    "--specify", "/usr/bin/specify",
+                    "--expected-version", "1.0.10.dev0+pegagio.2",
+                    "--skill-id", "flow-kit-tasks",
+                    "--override", "agent=Coder",
+                ]
+            )
+        self.assertEqual(2, error.exception.code)
+
+
 class GraphPreflightTests(unittest.TestCase):
     """Graph validation covers nested branches before any execution starts."""
 
@@ -149,21 +203,21 @@ class GraphPreflightTests(unittest.TestCase):
         self.workflow = {
             "inputs": {"feature_context": {"required": True}},
             "steps": [
-                {"id": "modeled-prompt", "type": "prompt", "model": "gpt-6-sol"},
+                {"id": "delegated-prompt", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Coder"}},
                 {"id": "review-verdict", "type": "gate"},
                 {"id": "route-result", "type": "switch", "cases": {"primary": [
-                    {"id": "nested-modeled-command", "command": "speckit.fixture", "model": "gpt-6-luna", "reasoning_effort": "high"}
+                    {"id": "nested-delegated-command", "command": "speckit.fixture", "flow_kit": {"delegated": True, "agent": "Verifier"}}
                 ]}, "default": [
-                    {"id": "unavailable-model-branch", "type": "prompt", "model": "flowkit-test-unavailable-model"}
+                    {"id": "alternate-agent", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Builder"}}
                 ]},
             ],
         }
 
-    def test_collectModels_includesUntakenNestedBranchesAndMediumDefault(self) -> None:
-        models = self.controller.collect_model_assignments(self.workflow["steps"], {})
+    def test_collectAgentAssignments_includesUntakenNestedBranches(self) -> None:
+        assignments = self.controller.collect_agent_assignments(self.workflow["steps"])
         self.assertEqual(
-            [("modeled-prompt", "gpt-6-sol", "medium"), ("nested-modeled-command", "gpt-6-luna", "high"), ("unavailable-model-branch", "flowkit-test-unavailable-model", "medium")],
-            [(item["step_id"], item["model"], item["reasoning_effort"]) for item in models],
+            [("delegated-prompt", "Coder"), ("nested-delegated-command", "Verifier"), ("alternate-agent", "Builder")],
+            [(item.step_id, item.agent_name) for item in assignments],
         )
 
     def test_requiredInputs_failBeforeWorkflowExecution(self) -> None:
@@ -180,7 +234,7 @@ class GraphPreflightTests(unittest.TestCase):
             "workflow": {"id": "probe", "version": "1.0"},
             "inputs": {"feature_context": {"required": True, "type": "string"}},
             "steps": [
-                {"id": "first", "type": "prompt", "prompt": "Start {{ inputs.feature_context }}", "model": "gpt-6-sol"},
+                {"id": "first", "type": "prompt", "prompt": "Start {{ inputs.feature_context }}"},
                 {"id": "route", "type": "switch", "expression": "{{ steps.first.output.choice }}", "cases": {
                     "later": [{"id": "bad", "type": "prompt", "prompt": "{{ unsupported.value }}"}],
                 }},
@@ -194,34 +248,13 @@ class GraphPreflightTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate step id"):
             self.controller.validate_workflow_graph(graph)
 
-    def test_collectModels_appliesOverrideToExactlyOneNamedStep(self) -> None:
-        models = self.controller.collect_model_assignments(
-            self.workflow["steps"],
-            {"step_id": "nested-modeled-command", "model": "gpt-6-sol", "reasoning_effort": "medium"},
-        )
-        nested = next(item for item in models if item["step_id"] == "nested-modeled-command")
-        self.assertEqual(("gpt-6-sol", "medium"), (nested["model"], nested["reasoning_effort"]))
-        self.assertEqual("gpt-6-sol", models[0]["model"])
-
-    def test_collectModels_rejectsUnknownOrUnmodeledOverride(self) -> None:
-        with self.assertRaisesRegex(ValueError, "one modeled step"):
-            self.controller.collect_model_assignments(self.workflow["steps"], {"step_id": "review-verdict", "model": "gpt-6-sol"})
-        with self.assertRaisesRegex(ValueError, "one modeled step"):
-            self.controller.collect_model_assignments(self.workflow["steps"], {"step_id": "missing", "model": "gpt-6-sol"})
-
-    def test_collectModels_rejectsEmptyModelAndUnsupportedEffort(self) -> None:
-        with self.assertRaisesRegex(ValueError, "nonempty concrete ID"):
-            self.controller.collect_model_assignments([{"id": "empty", "type": "prompt", "model": " "}])
-        with self.assertRaisesRegex(ValueError, "unsupported reasoning effort"):
-            self.controller.collect_model_assignments([{"id": "bad-effort", "type": "prompt", "model": "gpt-6-sol", "reasoning_effort": "sometimes"}])
-
-    def test_validateGraph_rejectsModelAndEffortOnGateAndEffortWithoutModel(self) -> None:
+    def test_validateGraph_rejectsConcreteModelDispatchSettings(self) -> None:
         for node in (
             {"id": "gate-model", "type": "gate", "model": "gpt-6-sol"},
             {"id": "switch-effort", "type": "switch", "reasoning_effort": "high", "cases": {}},
-            {"id": "effort-only", "type": "prompt", "reasoning_effort": "high"},
+            {"id": "legacy-model", "type": "prompt", "model": "gpt-6-sol"},
         ):
-            with self.subTest(node=node), self.assertRaises(ValueError):
+            with self.subTest(node=node), self.assertRaisesRegex(ValueError, "concrete model"):
                 self.controller.validate_workflow_graph([node])
 
     def test_resolveSkill_usesPinnedCommandNamingAndChecksDeclaredName(self) -> None:
@@ -242,9 +275,49 @@ class GraphPreflightTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "different name"):
                 self.controller.resolve_installed_skill(Path(temporary), "speckit.tasks")
 
-    def test_validateDefinition_rejectsWorkflowLevelModelDefaults(self) -> None:
-        definition = {"workflow": {"id": "test", "model": "gpt-6-sol"}, "steps": []}
+    def test_validateDefinition_rejectsWorkflowLevelAgentDefaults(self) -> None:
+        definition = {"workflow": {"id": "test", "version": "1.0", "agent": "Coder"}, "steps": []}
         with self.assertRaisesRegex(ValueError, "workflow-level"):
+            self.controller.validate_workflow_definition(definition)
+
+    def test_delegationBoundary_keepsMainTaskStepAndGateOutOfChildAssignments(self) -> None:
+        graph = [
+            {"id": "main-work", "type": "prompt", "prompt": "summarize"},
+            {"id": "delegated-work", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Coder"}},
+            {"id": "human-review", "type": "gate", "options": ["continue"]},
+        ]
+        assignments = self.controller.collect_agent_assignments(graph)
+        self.assertEqual([("delegated-work", "Coder")], [(item.step_id, item.agent_name) for item in assignments])
+
+    def test_delegationBoundary_rejectsAgentOnNonDelegatedStepAndDelegatedGate(self) -> None:
+        for graph in (
+            [{"id": "main-work", "type": "prompt", "agent": "Coder"}],
+            [{"id": "human-review", "type": "gate", "flow_kit": {"delegated": True, "agent": "Verifier"}}],
+            [{"id": "route", "type": "switch", "flow_kit": {"delegated": True, "agent": "Verifier"}, "cases": {}}],
+        ):
+            with self.subTest(graph=graph), self.assertRaises(ValueError):
+                self.controller.validate_workflow_graph(graph)
+
+    def test_agentPreflight_rejectsMissingUnknownMalformedAndLegacyAssignmentsAcrossBranches(self) -> None:
+        invalid_graphs = (
+            ([{"id": "missing-agent", "type": "prompt", "flow_kit": {"delegated": True}}], "missing-agent"),
+            ([{"id": "unknown-agent", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Researcher"}}], "unknown-agent"),
+            ([{"id": "case-mismatch", "type": "prompt", "flow_kit": {"delegated": True, "agent": "coder"}}], "case-mismatch"),
+            ([{"id": "malformed", "type": "prompt", "flow_kit": "Coder"}], "malformed"),
+            ([{"id": "null-metadata", "type": "prompt", "flow_kit": None}], "null-metadata"),
+            ([{"id": "legacy-model", "type": "prompt", "model": "gpt-6-sol"}], "legacy-model"),
+            ([{"id": "route", "type": "switch", "cases": {"taken": []}, "default": [
+                {"id": "invalid-untaken", "type": "command", "command": "speckit.fixture",
+                 "flow_kit": {"delegated": True, "agent": "coder"}}
+            ]}], "invalid-untaken"),
+        )
+        for graph, expected_step_id in invalid_graphs:
+            with self.subTest(step=expected_step_id), self.assertRaisesRegex(ValueError, expected_step_id):
+                self.controller.collect_agent_assignments(graph)
+
+    def test_agentPreflight_rejectsWorkflowLevelDefault(self) -> None:
+        definition = {"workflow": {"id": "test", "version": "1.0", "agent": "Architect"}, "steps": []}
+        with self.assertRaisesRegex(ValueError, "workflow-level agent"):
             self.controller.validate_workflow_definition(definition)
 
     def test_renderTemplate_resolvesInputsAndPriorOutputsAndRejectsUnknownForms(self) -> None:
@@ -355,7 +428,7 @@ class RecoveryTests(unittest.TestCase):
                 project,
                 {"workflow": {"id": "speckit-flow-tasks", "version": "0.2.0"}, "sha256": "a" * 64},
                 {"bundle_record": {"sha256": "b" * 64, "device": 1, "inode": 2}, "skill_record": {"sha256": "c" * 64, "device": 1, "inode": 3}},
-                [{"step_id": "generate-tasks", "model": "gpt-6-luna", "reasoning_effort": "high"}],
+                [{"step_id": "generate-tasks", "agent_name": "Architect"}],
                 preflight_passed=True,
             )
             path = project / ".specify/flow-controllers/runs" / summary["run_id"] / "summary.json"

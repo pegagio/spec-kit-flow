@@ -2,22 +2,43 @@
 
 These are the reviewed, versioned source packages for the human-directed Spec Kit Flow super-states. Install a package only from its reviewed directory, validate native list, information, resolution, registry attribution, and source-copy equality, and never edit an installed copy. The FlowKit catalog also installs a direct Codex skill for each workflow; these controller skills follow the installed YAML and keep its prompts, commands, gates, and branches authoritative.
 
-Each packaged workflow preserves its manual-prompt fallback and explicit human gates. Executable steps with concrete model assignments run in bounded child tasks through the FlowKit controller. Omitted reasoning effort means Medium; task generation and implementation declare GPT-6 Luna with High effort. Native CLI dispatch does not apply the FlowKit reasoning-effort values. Gates, branch decisions, questions, and unmodeled steps remain in the main Codex task.
+Each packaged workflow preserves its manual-prompt fallback and explicit human gates. Delegated executable steps name a reviewed Codex custom agent in `flow_kit.agent`; Codex loads that agent's consumer-owned configuration. FlowKit does not map roles to models or parse custom-agent TOML. Executable steps without delegation metadata, gates, branch decisions, and questions remain in the main Codex task.
 
 Use the selected consumer project in the Codex task and invoke one skill at a time. Required inputs come from the installed workflow definition:
 
-| Workflow | Codex skill and display name | Required input | Modeled step assignments |
+| Workflow | Codex skill and display name | Required input | Delegated step agents |
 | --- | --- | --- | --- |
-| `speckit-flow-start-feature` | `$flow-kit-start-feature` — FlowKit Start Feature | `feature_request` | `assess-eligibility`, `draft-specification`, `brief-against-roadmap`: GPT-6 Sol / Medium |
-| `speckit-flow-clarify` | `$flow-kit-clarify` — FlowKit Clarify | `feature_context` | `clarify-specification`: GPT-6 Sol / Medium |
-| `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`: GPT-6 Astra / Medium; `return-to-clarification`: GPT-6 Sol / Medium |
-| `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`: GPT-6 Luna / High; `return-to-plan`: GPT-6 Sol / Medium |
-| `speckit-flow-analyze-remediate` | `$flow-kit-analyze-remediate` — FlowKit Analyze | `feature_context` | `analyze-artifacts`, `reanalyze-*`, `replan-*`: GPT-6 Astra / Medium; `remediate-*`, `retask-*`: GPT-6 Sol / Medium |
-| `speckit-flow-implement` | `$flow-kit-implement` — FlowKit Implement | `feature_context` | `implement-eligible-work`: GPT-6 Luna / High; `return-to-*`: GPT-6 Sol / Medium |
-| `speckit-flow-converge` | `$flow-kit-converge` — FlowKit Converge | `feature_context` | `assess-convergence`: GPT-6 Astra / Medium; `return-remediation-to-analysis`: GPT-6 Sol / Medium |
-| `speckit-flow-closeout` | `$flow-kit-closeout` — FlowKit Close Out | `feature_context` | `debrief-roadmap`, `ingest-curated-context`, `lint-wiki`: GPT-6 Sol / Medium |
+| `speckit-flow-start-feature` | `$flow-kit-start-feature` — FlowKit Start Feature | `feature_request` | `assess-eligibility`, `draft-specification`: Architect; `brief-against-roadmap`: Verifier |
+| `speckit-flow-clarify` | `$flow-kit-clarify` — FlowKit Clarify | `feature_context` | `clarify-specification`: Architect |
+| `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`, `return-to-clarification`: Architect |
+| `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`, `return-to-plan`: Architect |
+| `speckit-flow-analyze-remediate` | `$flow-kit-analyze-remediate` — FlowKit Analyze | `feature_context` | `analyze-artifacts`, `reanalyze-*`: Verifier; remediation and replanning steps: Architect |
+| `speckit-flow-implement` | `$flow-kit-implement` — FlowKit Implement | `feature_context` | `implement-eligible-work`: Builder; `return-to-*`: Architect |
+| `speckit-flow-converge` | `$flow-kit-converge` — FlowKit Converge | `feature_context` | `assess-convergence`: Verifier; `return-remediation-to-analysis`: Architect |
+| `speckit-flow-closeout` | `$flow-kit-closeout` — FlowKit Close Out | `feature_context` | `debrief-roadmap`, `lint-wiki`: Verifier; `ingest-curated-context`: Builder |
 
-For example: `$flow-kit-clarify feature_context=013`. The controller checks the selected compatible Specify runtime and installed workflow, shows every model-effort pair across possible branches, and probes each distinct pair before workflow work. An optional one-step override uses `step_id` plus `model` and/or `reasoning_effort`; all other assignments remain unchanged. Clarification questions and review gates appear in the main task. A child question is answered there and relayed to the same child. The main task reports results and visible workspace diffs. Use the manual paths below if Codex controller dispatch is unavailable.
+For example: `$flow-kit-clarify feature_context=013`. The controller checks the selected compatible Specify runtime and installed workflow, then validates every named assignment across possible branches. It requests each native child with the exact reviewed `agent_type`. Codex's subagent activity shows each launch: probe labels include the agent name, and work-child labels include the agent name and step ID. Model and effort appear when Codex exposes them. The label provides launch visibility; the exact `agent_type` request establishes native selection. No run-time assignment override is available. Codex custom-agent configuration belongs to the consumer and is loaded by Codex itself. Clarification questions and review gates appear in the main task. A child question is answered there and relayed to the same child. The main task reports results and visible workspace diffs. Use the manual paths below if named-agent dispatch is unavailable.
+
+For a project-scoped agent, create a file such as `.codex/agents/architect.toml` in the consumer project:
+
+```toml
+name = "Architect"
+description = "Plans and reviews workflow changes."
+developer_instructions = "Follow the task scope and return a concise result to the parent."
+```
+
+A delegated workflow step names the matching native agent directly:
+
+```yaml
+- id: analyze-artifacts
+  flow_kit:
+    delegated: true
+    agent: Verifier
+  command: "speckit.analyze"
+  integration: "{{ inputs.integration }}"
+```
+
+Codex owns optional `model` and `model_reasoning_effort` fields and their inheritance behavior. FlowKit does not read or change `.codex/agents/` files. Each delegated workflow step must use one of the reviewed names: Architect, Builder, Coder, or Verifier.
 
 | Workflow | Core or extension commands |
 | --- | --- |

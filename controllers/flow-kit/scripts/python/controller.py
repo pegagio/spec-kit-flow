@@ -12,6 +12,7 @@ import shutil
 import stat
 import subprocess
 import sys
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -21,9 +22,21 @@ except ImportError:  # The controller is executed with the selected Specify runt
     WorkflowEngine = None  # type: ignore[assignment,misc]
 
 
-SUPPORTED_EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"}
+REVIEWED_AGENT_NAMES = {"Architect", "Builder", "Coder", "Verifier"}
 INPUT_REFERENCE = re.compile(r"\{\{\s*inputs\.([A-Za-z0-9_-]+)\s*\}\}")
 STEP_REFERENCE = re.compile(r"\{\{\s*steps\.([A-Za-z0-9_-]+)\.output\.([A-Za-z0-9_.-]+)\s*\}\}")
+
+
+@dataclass(frozen=True)
+class StepAssignmentIntent:
+    """Identify the native Codex agent assigned to one delegated workflow step."""
+
+    step_id: str
+    agent_name: str
+
+    def to_dict(self) -> dict[str, str]:
+        """Return the portable representation used by controller output and recovery."""
+        return asdict(self)
 
 
 def select_specify_executable(mise_selected: Path | None, path_candidates: Iterable[Path]) -> Path:
@@ -82,16 +95,16 @@ def load_installed_definition(project_root: Path, workflow_id: str) -> dict[str,
 
 
 def validate_workflow_definition(definition: dict[str, Any]) -> None:
-    """Validate controller-supported metadata placement before returning a graph."""
+    """Validate named-agent metadata placement before returning a workflow graph."""
     workflow = definition.get("workflow", {})
-    if any(key in workflow for key in ("model", "reasoning_effort", "default_model", "default_reasoning_effort")):
-        raise ValueError("workflow-level model and reasoning-effort defaults are unsupported")
-    if any(key in definition for key in ("model", "reasoning_effort", "default_model", "default_reasoning_effort")):
-        raise ValueError("top-level model and reasoning-effort defaults are unsupported")
+    if any(key in workflow for key in ("agent", "model", "reasoning_effort", "default_agent", "default_model", "default_reasoning_effort")):
+        raise ValueError("workflow-level agent and model defaults are unsupported")
+    if any(key in definition for key in ("agent", "model", "reasoning_effort", "default_agent", "default_model", "default_reasoning_effort")):
+        raise ValueError("top-level agent and model defaults are unsupported")
     if not isinstance(workflow.get("id"), str) or not isinstance(workflow.get("version"), str):
         raise ValueError("workflow ID and version must be strings")
     validate_workflow_graph(definition["steps"])
-    collect_model_assignments(definition["steps"])
+    collect_agent_assignments(definition["steps"])
     validate_template_forms(definition["steps"], set(definition.get("inputs", {})))
 
 
@@ -216,10 +229,19 @@ def validate_workflow_graph(steps: list[dict[str, Any]]) -> None:
                 raise ValueError(f"unsupported workflow step type {kind}: {step_id}")
             if kind == "command" and node.get("integration") not in (None, "codex", "{{ inputs.integration }}"):
                 raise ValueError(f"unsupported command integration on step {step_id}")
-            if kind in {"gate", "switch"} and ("model" in node or "reasoning_effort" in node):
-                raise ValueError(f"model and effort are not allowed on {kind} step {step_id}")
-            if "reasoning_effort" in node and "model" not in node:
-                raise ValueError(f"reasoning_effort requires a model on step {step_id}")
+            if "model" in node or "reasoning_effort" in node:
+                raise ValueError(f"concrete model and effort settings are unsupported on step {step_id}; use a named Codex agent")
+            if "agent" in node or "delegated" in node:
+                raise ValueError(f"agent assignment on step {step_id} must use explicit flow_kit metadata")
+            assignment = node.get("flow_kit")
+            if "flow_kit" in node:
+                if kind not in {"prompt", "command"}:
+                    raise ValueError(f"agent delegation is not allowed on {kind} step {step_id}")
+                if not isinstance(assignment, dict) or set(assignment) != {"delegated", "agent"} or assignment.get("delegated") is not True:
+                    raise ValueError(f"flow_kit metadata must explicitly delegate step {step_id}")
+                agent_name = assignment.get("agent")
+                if not isinstance(agent_name, str) or agent_name not in REVIEWED_AGENT_NAMES:
+                    raise ValueError(f"step {step_id} names an unknown or invalid Codex agent: {agent_name!r}")
             if kind == "switch":
                 cases = node.get("cases", {})
                 if not isinstance(cases, dict):
@@ -277,53 +299,25 @@ def parse_key_values(arguments: list[str] | None, *, argument_name: str) -> dict
     return values
 
 
-def collect_model_assignments(steps: list[dict[str, Any]], override: dict[str, str] | None = None) -> list[dict[str, str]]:
-    """Enumerate every modeled step, including every nested switch branch."""
+def collect_agent_assignments(steps: list[dict[str, Any]]) -> list[StepAssignmentIntent]:
+    """Enumerate explicitly delegated steps and their native agent names across every branch."""
     validate_workflow_graph(steps)
-    override = override or {}
-    step_ids: set[str] = set()
 
-    def collect(nodes: list[dict[str, Any]]) -> list[dict[str, str]]:
-        assignments: list[dict[str, str]] = []
+    def collect(nodes: list[dict[str, Any]]) -> list[StepAssignmentIntent]:
+        assignments: list[StepAssignmentIntent] = []
         for step in nodes:
             step_id = step["id"]
-            step_ids.add(step_id)
             kind = _node_kind(step)
-            if "model" in step:
-                model = step["model"]
-                if not isinstance(model, str) or not model.strip():
-                    raise ValueError(f"model must be a nonempty concrete ID on step {step_id}")
-                effort = step.get("reasoning_effort", "medium")
-                if not isinstance(effort, str) or effort not in SUPPORTED_EFFORTS:
-                    raise ValueError(f"unsupported reasoning effort on step {step_id}: {effort}")
-                assignments.append({"step_id": step_id, "model": model.strip(), "reasoning_effort": effort})
+            assignment = step.get("flow_kit")
+            if "flow_kit" in step:
+                assignments.append(StepAssignmentIntent(step_id=step_id, agent_name=assignment["agent"]))
             if kind == "switch":
                 for branch in step.get("cases", {}).values():
                     assignments.extend(collect(branch))
                 assignments.extend(collect(step.get("default", [])))
         return assignments
 
-    assignments = collect(steps)
-    if override:
-        step_id = override.get("step_id", "")
-        matches = [item for item in assignments if item["step_id"] == step_id]
-        if len(matches) != 1:
-            raise ValueError(f"override step_id must name one modeled step: {step_id}")
-        if set(override) - {"step_id", "model", "reasoning_effort"}:
-            raise ValueError("override accepts only step_id, model, and reasoning_effort")
-        target = matches[0]
-        if "model" in override:
-            if not isinstance(override["model"], str) or not override["model"].strip():
-                raise ValueError("model override must be nonempty")
-            target["model"] = override["model"].strip()
-        if "reasoning_effort" in override:
-            effort = override["reasoning_effort"]
-            if not isinstance(effort, str) or effort not in SUPPORTED_EFFORTS:
-                raise ValueError(f"unsupported reasoning effort override: {effort}")
-            target["reasoning_effort"] = effort
-    if "step_id" in override and override["step_id"] not in step_ids:
-        raise ValueError(f"override step_id does not exist: {override['step_id']}")
-    return assignments
+    return collect(steps)
 
 
 def render_template(value: Any, inputs: dict[str, Any], outputs: dict[str, dict[str, Any]]) -> Any:
@@ -500,7 +494,6 @@ def main(argv: list[str] | None = None) -> int:
     inspect_parser.add_argument("--expected-version", required=True)
     inspect_parser.add_argument("--skill-id", required=True)
     inspect_parser.add_argument("--input", action="append", default=[])
-    inspect_parser.add_argument("--override", action="append", default=[])
     question_parser = subparsers.add_parser("question", help="validate a structured child question from JSON on stdin")
     question_parser.add_argument("--step-id", required=True)
     answer_parser = subparsers.add_parser("answer", help="validate an answer and same-child relay from JSON on stdin")
@@ -517,10 +510,7 @@ def main(argv: list[str] | None = None) -> int:
         validate_workflow_definition(definition)
         supplied_inputs = parse_key_values(args.input, argument_name="workflow input")
         definition["resolved_inputs"] = validate_required_inputs(definition, supplied_inputs)
-        overrides = parse_key_values(args.override, argument_name="model override")
-        if set(overrides) - {"step_id", "model", "reasoning_effort"}:
-            raise ValueError("model override accepts only step_id, model, and reasoning_effort")
-        definition["model_assignments"] = collect_model_assignments(definition["steps"], overrides)
+        definition["agent_assignments"] = [item.to_dict() for item in collect_agent_assignments(definition["steps"])]
         definition["preflight_inputs_valid"] = True
         definition["installation_fingerprints"] = installation_fingerprints(args.project)
         print(json.dumps(definition, sort_keys=True))

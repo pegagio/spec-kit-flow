@@ -1,17 +1,19 @@
 ---
 title: Workflow lifecycle
 type: concept
-sources: [S002, S006, S007, S010, S013, S017, S018]
-updated: 2026-09-28
+sources: [S002, S006, S007, S010, S013, S017, S018, S019]
+updated: 2026-09-29
 ---
 
 # Workflow lifecycle
 
 An operator prepares a constitution and approved roadmap, establishes cited wiki context, chooses an eligible feature, and invokes each workflow deliberately. The documented route is start-feature, optional clarify, plan, tasks, analyze-remediate, implement, converge, and closeout. (S002)
 
-Under the amended authority rule, one explicit workflow invocation may authorize its reviewed step-model assignments and bounded Codex subagents. Human questions and review gates stay in the main task; completing one workflow does not authorize a later phase. (S017)
+Feature 013 used reviewed concrete step-model assignments for bounded Codex subagents. Updated Feature 015 source uses reviewed per-step native agent names instead. Human questions and review gates stay in the main task; completing one workflow does not authorize a later phase. (S002, S019)
 
 Verified Feature 013 keeps the eight workflow phases separate while providing desktop-task execution with a main controller and step subagents; it does not add automatic chaining to the next phase. Direct controller skills use the FlowKit catalog route alongside the Specify bundle. (S018)
+
+Verified Feature 015 assigns a reviewed native Codex agent name to each delegated step. Its supported desktop path shows the intended name in a task label and verifies native selection separately; model and effort appear when Codex exposes them. (S018)
 
 Planning and task generation are separate. Clarification may need another session after the current five-question command limit. Analyze follows task generation or consequential artifact reconciliation; converge follows implementation until identified gaps are resolved. (S002)
 

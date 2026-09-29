@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-closeout"
   name: "Close Out Feature"
-  version: "0.3.0"
+  version: "0.4.0"
   author: "pegagio"
   description: "Perform governed closeout after convergence while keeping feature completion, roadmap verification, wiki maintenance, Git integration, and project acceptance distinct."
 
@@ -48,7 +48,9 @@ steps:
           integration: "{{ inputs.integration }}"
           prompt: "Use the separately approved feature-completion operation for {{ inputs.feature_context }}. Do not infer completion from convergence."
         - id: debrief-roadmap
-          model: "gpt-6-sol"
+          flow_kit:
+            delegated: true
+            agent: Verifier
           command: "speckit.flow-roadmap.debrief"
           integration: "{{ inputs.integration }}"
           input:
@@ -70,13 +72,17 @@ steps:
                 input:
                   args: "Apply only the exact roadmap verification patch the operator approved for {{ inputs.feature_context }}."
               - id: ingest-curated-context
-                model: "gpt-6-sol"
+                flow_kit:
+                  delegated: true
+                  agent: Builder
                 command: "speckit.flow-wiki.ingest"
                 integration: "{{ inputs.integration }}"
                 input:
                   args: "Ingest the operator-selected durable closeout sources for {{ inputs.feature_context }}. Include roadmap, constitution, ADRs, workflow or architecture documents, public guides, and relevant feature artifacts; exclude ordinary code unless it is an agent-facing contract."
               - id: lint-wiki
-                model: "gpt-6-sol"
+                flow_kit:
+                  delegated: true
+                  agent: Verifier
                 command: "speckit.flow-wiki.lint"
                 integration: "{{ inputs.integration }}"
                 input:

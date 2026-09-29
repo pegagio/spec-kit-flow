@@ -278,6 +278,8 @@ class BundleLifecycleTests(unittest.TestCase):
                     consumer / ".specify/memory/constitution.md": "# Constitution\nConsumer-owned governance.\n",
                     consumer / "specs/example/adoption-review.md": "# Adoption review\nConsumer-owned evidence.\n",
                     consumer / "unrelated/README.md": "Unrelated content.\n",
+                    consumer / ".codex/agents/coder.toml": 'name = "Coder"\ninstructions = "consumer-owned coder"\n',
+                    consumer / ".codex/agents/verifier.toml": 'name = "Verifier"\ninstructions = "consumer-owned verifier"\n',
                 }
                 for path, contents in consumer_owned.items():
                     path.parent.mkdir(parents=True, exist_ok=True)
@@ -515,12 +517,22 @@ class FlowKitControllerLifecycleTests(unittest.TestCase):
             local_skill = consumer / ".agents/skills/consumer-review/SKILL.md"
             local_skill.parent.mkdir(parents=True)
             local_skill.write_text("consumer-owned", encoding="utf-8")
+            custom_agents = {
+                consumer / ".codex/agents/coder.toml": 'name = "Coder"\ninstructions = "consumer-owned coder"\n',
+                consumer / ".codex/agents/verifier.toml": 'name = "Verifier"\ninstructions = "consumer-owned verifier"\n',
+            }
+            for path, contents in custom_agents.items():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(contents, encoding="utf-8")
+            agent_hashes = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in custom_agents}
             archive = consumer / "controller-package.zip"
             catalog.package_controller(archive)
             catalog.install_controller_package(consumer, archive, refresh=False, source_digest=catalog.digest(archive), catalog_status="snapshot")
             catalog.install_controller_package(consumer, archive, refresh=True, source_digest=catalog.digest(archive), catalog_status="snapshot")
+            self.assertEqual(agent_hashes, {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in custom_agents})
             catalog.remove_controller_package(consumer)
             self.assertEqual("consumer-owned", local_skill.read_text(encoding="utf-8"))
+            self.assertEqual(agent_hashes, {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in custom_agents})
             self.assertTrue(recovery.is_file())
             self.assertFalse((consumer / ".agents/skills/flow-kit-tasks/SKILL.md").exists())
             self.assertFalse((consumer / ".specify/flow-kit/skills-install.json").exists())

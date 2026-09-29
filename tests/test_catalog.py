@@ -64,50 +64,64 @@ class CatalogReleaseTests(unittest.TestCase):
                     self.assertIn(f'display_name: "{display_name}"', metadata)
                     self.assertRegex(metadata, r"(?m)^  short_description: \"[^\"]+\"$")
 
-    def test_assignmentMatrix_matchesReviewedWorkflowPackage(self) -> None:
+    def test_namedAgentAssignments_matchReviewedWorkflowPackage(self) -> None:
         expectations = {
-            "speckit-flow-start-feature": {"assess-eligibility": ("gpt-6-sol", None), "draft-specification": ("gpt-6-sol", None), "brief-against-roadmap": ("gpt-6-sol", None)},
-            "speckit-flow-clarify": {"clarify-specification": ("gpt-6-sol", None)},
-            "speckit-flow-plan": {"create-plan": ("gpt-6-astra", None), "return-to-clarification": ("gpt-6-sol", None)},
-            "speckit-flow-tasks": {"generate-tasks": ("gpt-6-luna", "high"), "return-to-plan": ("gpt-6-sol", None)},
+            "speckit-flow-start-feature": {"assess-eligibility": "Architect", "draft-specification": "Architect", "brief-against-roadmap": "Verifier"},
+            "speckit-flow-clarify": {"clarify-specification": "Architect"},
+            "speckit-flow-plan": {"create-plan": "Architect", "return-to-clarification": "Architect"},
+            "speckit-flow-tasks": {"generate-tasks": "Architect", "return-to-plan": "Architect"},
             "speckit-flow-analyze-remediate": {
-                "analyze-artifacts": ("gpt-6-astra", None), "remediate-specification": ("gpt-6-sol", None),
-                "replan-after-specification": ("gpt-6-astra", None), "retask-after-specification": ("gpt-6-sol", None),
-                "reanalyze-after-specification": ("gpt-6-astra", None), "remediate-plan": ("gpt-6-sol", None),
-                "retask-after-plan": ("gpt-6-sol", None), "reanalyze-after-plan": ("gpt-6-astra", None),
-                "remediate-tasks": ("gpt-6-sol", None), "reanalyze-after-tasks": ("gpt-6-astra", None),
+                "analyze-artifacts": "Verifier", "remediate-specification": "Architect",
+                "replan-after-specification": "Architect", "retask-after-specification": "Architect",
+                "reanalyze-after-specification": "Verifier", "remediate-plan": "Architect",
+                "retask-after-plan": "Architect", "reanalyze-after-plan": "Verifier",
+                "remediate-tasks": "Architect", "reanalyze-after-tasks": "Verifier",
             },
             "speckit-flow-implement": {
-                "implement-eligible-work": ("gpt-6-luna", "high"), "return-to-analysis": ("gpt-6-sol", None),
-                "return-to-specification": ("gpt-6-sol", None), "return-to-plan": ("gpt-6-sol", None),
-                "return-to-tasks": ("gpt-6-sol", None),
+                "implement-eligible-work": "Builder", "return-to-analysis": "Architect",
+                "return-to-specification": "Architect", "return-to-plan": "Architect", "return-to-tasks": "Architect",
             },
-            "speckit-flow-converge": {"assess-convergence": ("gpt-6-astra", None), "return-remediation-to-analysis": ("gpt-6-sol", None)},
-            "speckit-flow-closeout": {"debrief-roadmap": ("gpt-6-sol", None), "ingest-curated-context": ("gpt-6-sol", None), "lint-wiki": ("gpt-6-sol", None)},
+            "speckit-flow-converge": {"assess-convergence": "Verifier", "return-remediation-to-analysis": "Architect"},
+            "speckit-flow-closeout": {"debrief-roadmap": "Verifier", "ingest-curated-context": "Builder", "lint-wiki": "Verifier"},
         }
-        for workflow_id, steps in expectations.items():
+        expected_versions = {
+            "speckit-flow-start-feature": "0.4.0", "speckit-flow-clarify": "0.3.0",
+            "speckit-flow-plan": "0.3.0", "speckit-flow-tasks": "0.3.0",
+            "speckit-flow-analyze-remediate": "0.3.0", "speckit-flow-implement": "0.3.0",
+            "speckit-flow-converge": "0.3.0", "speckit-flow-closeout": "0.4.0",
+        }
+        step_pattern = __import__("re").compile(r"^(\s*)- id: ([A-Za-z0-9_-]+)$")
+        for workflow_id, expected_steps in expectations.items():
             text = (catalog.ROOT / "workflows" / workflow_id / "workflow.yml").read_text(encoding="utf-8")
-            actual = {}
+            version = __import__("re").search(r'^  version: "([^"]+)"$', text, __import__("re").MULTILINE)
+            self.assertIsNotNone(version, workflow_id)
+            self.assertEqual(expected_versions[workflow_id], version.group(1), workflow_id)
             lines = text.splitlines()
+            actual_steps: dict[str, str] = {}
             for index, line in enumerate(lines):
-                match = __import__("re").match(r'^(\s*)- id: ([A-Za-z0-9_-]+)$', line)
+                match = step_pattern.match(line)
                 if not match:
                     continue
                 indent, step_id = match.groups()
-                model = effort = None
-                for following in lines[index + 1:]:
-                    if following.startswith(indent + "- id:") or (following.strip() and len(following) - len(following.lstrip()) < len(indent)):
+                depth = len(indent)
+                end = len(lines)
+                for following_index in range(index + 1, len(lines)):
+                    following = step_pattern.match(lines[following_index])
+                    if following and len(following.group(1)) <= depth:
+                        end = following_index
                         break
-                    model_match = __import__("re").match(r'^' + __import__("re").escape(indent) + r'  model: "([^\"]+)"$', following)
-                    effort_match = __import__("re").match(r"^" + __import__("re").escape(indent) + r"  reasoning_effort: (\S+)$", following)
-                    if model_match:
-                        model = model_match.group(1)
-                    if effort_match:
-                        effort = effort_match.group(1)
-                if model:
-                    actual[step_id] = (model, effort)
-            self.assertEqual(steps, actual, workflow_id)
-            self.assertNotRegex(text, r"(?m)^  (?:model|reasoning_effort):")
+                block = lines[index + 1:end]
+                agent_key_indent = indent + "  "
+                agent_value_indent = indent + "    "
+                if step_id in expected_steps:
+                    self.assertIn(agent_key_indent + "flow_kit:", block, f"{workflow_id}:{step_id}")
+                    self.assertIn(agent_value_indent + "delegated: true", block, f"{workflow_id}:{step_id}")
+                    matching_agents = [line.strip().removeprefix("agent: ") for line in block if line.startswith(agent_value_indent + "agent: ")]
+                    self.assertEqual([expected_steps[step_id]], matching_agents, f"{workflow_id}:{step_id}")
+                    actual_steps[step_id] = matching_agents[0]
+            self.assertEqual(expected_steps, actual_steps, workflow_id)
+            self.assertNotRegex(text, r"(?m)^\s+model:\s")
+            self.assertNotRegex(text, r"(?m)^\s+reasoning_effort:\s")
 
     def test_controllerInstallAndRemoval_preservesConsumerOwnedContentAndRecovery(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

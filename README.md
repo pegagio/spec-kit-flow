@@ -13,7 +13,7 @@ This repository owns the generic workflow and feedback source. The repository an
 
 ## What the bundle installs
 
-The [bundle manifest](bundles/spec-kit-flow/bundle.yml) is version `0.4.1` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The bundle pins these extensions:
+The [bundle source manifest](bundles/spec-kit-flow/bundle.yml) is version `0.5.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The changed controller source is version `0.2.0`; the checked-in catalog still contains the earlier `0.4.1` bundle and `0.1.1` controller release. The bundle pins these extensions:
 
 | Extension ID | Version | Purpose |
 | --- | --- | --- |
@@ -25,22 +25,22 @@ It also installs the eight workflows in [`workflows/`](workflows/README.md):
 
 | Workflow ID | Version | Role |
 | --- | --- | --- |
-| `speckit-flow-start-feature` | `0.3.0` | Assess an eligible roadmap feature, obtain approval for its exact patch, query context, specify, and brief |
-| `speckit-flow-clarify` | `0.2.0` | Run one bounded clarification session |
-| `speckit-flow-plan` | `0.2.0` | Review readiness and create the technical plan |
-| `speckit-flow-tasks` | `0.2.0` | Generate implementation tasks separately from planning |
-| `speckit-flow-analyze-remediate` | `0.2.0` | Analyze artifact consistency and route bounded remediation |
-| `speckit-flow-implement` | `0.2.0` | Implement eligible tasks within the selected agent's scope |
-| `speckit-flow-converge` | `0.2.0` | Compare implementation with the feature artifacts and close gaps |
-| `speckit-flow-closeout` | `0.3.0` | Review completion, roadmap verification, wiki maintenance, and commit readiness through explicit gates |
+| `speckit-flow-start-feature` | `0.4.0` | Assess an eligible roadmap feature, obtain approval for its exact patch, query context, specify, and brief |
+| `speckit-flow-clarify` | `0.3.0` | Run one bounded clarification session |
+| `speckit-flow-plan` | `0.3.0` | Review readiness and create the technical plan |
+| `speckit-flow-tasks` | `0.3.0` | Generate implementation tasks separately from planning |
+| `speckit-flow-analyze-remediate` | `0.3.0` | Analyze artifact consistency and route bounded remediation |
+| `speckit-flow-implement` | `0.3.0` | Implement eligible tasks within the selected agent's scope |
+| `speckit-flow-converge` | `0.3.0` | Compare implementation with the feature artifacts and close gaps |
+| `speckit-flow-closeout` | `0.4.0` | Review completion, roadmap verification, wiki maintenance, and commit readiness through explicit gates |
 
 The bundle does not include a preset or `speckit-flow-feedback-maintainer`. Maintainer intake belongs in this source environment, not a consumer project.
 
 ## Installation
 
-The checked-in catalog contains the locally built `0.4.1` release, including the eight FlowKit controller skills. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. The catalog has not been published or pushed.
+The checked-in catalog contains the locally built `0.4.1` release, including controller package `0.1.1` and the eight FlowKit controller skills. Source versions `0.5.0` and `0.2.0` are not released. The normal catalog installer verifies that release metadata matches source; it rejects the old catalog from this unreleased source checkout. Use a checkout matching the release for ordinary installation, or use a disposable initialized consumer and development-snapshot mode to validate current source. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. The catalog has not been published or pushed.
 
-To install the checked-in release into another project, run `mise run catalog:install /path/to/my-project` after preparing the checkout. To validate source changes that have not reached the catalog, create and initialize a disposable consumer under the system temporary directory, then use development-snapshot mode:
+To install the checked-in release from a checkout matching that release, run `mise run catalog:install /path/to/my-project` after preparing the checkout. To validate source changes that have not reached the catalog, create and initialize a disposable consumer under the system temporary directory, then use development-snapshot mode:
 
 ```sh
 git clone https://github.com/pegagio/spec-kit-flow.git
@@ -88,7 +88,7 @@ Use the `$skill-id key=value` form. For example, in the selected project's Codex
 $flow-kit-start-feature feature_request="Start feature 013"
 ```
 
-The remaining workflows use the required `feature_context` input, for example `$flow-kit-tasks feature_context=013`. Each controller checks the compatible Specify runtime and installed workflow before starting. It shows all concrete step model and effort assignments, including untaken branches, and requires each distinct pair to pass a bounded availability probe. Omitted effort means Medium; the reviewed task-generation and implementation steps use GPT-6 Luna with High effort. An operator can provide a one-step override with `step_id`, `model`, and/or `reasoning_effort`. The task keeps questions and gates in the main chat, sends answers back to the same child, and shows results and workspace diffs.
+The remaining workflows use the required `feature_context` input, for example `$flow-kit-tasks feature_context=013`. Each controller checks the compatible Specify runtime and installed workflow before starting. In the updated source workflows, every delegated step names a reviewed Codex custom agent. The controller validates assignments across all branches and probes each distinct native agent before workflow work. Codex loads the consumer-owned agent configuration, including optional model and effort settings; FlowKit has no per-run agent, model, or effort override. Native subagent activity shows a task label containing the agent name, and Codex may show model and effort in the child pane. The task keeps questions and gates in the main chat, sends answers back to the same child, and shows results and workspace diffs. The checked-in `0.4.1` release retains the earlier concrete-model behavior; use a matching release checkout for that version.
 
 A typical operator-directed route is:
 

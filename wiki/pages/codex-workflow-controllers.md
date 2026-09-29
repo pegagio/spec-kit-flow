@@ -1,8 +1,8 @@
 ---
 title: Codex workflow controller design
 type: concept
-sources: [S018, S019]
-updated: 2026-09-28
+sources: [S002, S018, S019, S020]
+updated: 2026-09-29
 ---
 
 # Codex workflow controller design
@@ -15,9 +15,11 @@ The installed workflow remains the authority for prompts, commands, branches, an
 
 Model roles and consumer mappings are outside Feature 013; initial concrete model IDs may be non-portable. (S019)
 
+Verified Feature 015 uses reviewed Codex custom-agent names on explicitly delegated steps, with consumer-owned native agent files and Codex-managed optional model and effort settings. Its [assignment contract](./agent-roles-and-inheritance.md) supersedes the concrete step-model approach for updated workflows without rewriting verified Feature 013 history. (S018, S020)
+
 ## Step and interaction rules
 
-A concrete model on an executable step makes it a bounded child step; unmodeled steps and human gates stay in the main task. FlowKit uses medium reasoning effort for a modeled step unless its reviewed declaration or one named-step operator override selects another supported effort. The controller shows and validates every effective model-effort pair across all branches before work begins and stops for an invalid or unavailable pair without fallback. (S019)
+Feature 013's earlier controller used concrete models and permitted a one-step model or effort override. In updated Feature 015 source, each delegated step instead names a reviewed Codex custom agent; the controller validates all branches and probes each selected native agent before work. No per-run agent, model, or effort override is available. Main-task steps and human gates remain with the driving agent. (S002, S019)
 
 Clarification questions and review gates appear in the main task. The controller relays an accepted human answer to the same interactive child before continuation. Completing a workflow does not start the next phase. (S019)
 
@@ -25,7 +27,7 @@ Clarification questions and review gates appear in the main task. The controller
 
 A failed child preserves partial project edits and stops without automatic rollback or retry. An interrupted main task preserves files and completed-step evidence without built-in resume. A rejected preflight creates no workflow run or recovery record. (S019)
 
-After execution starts, a compact local record keeps workflow identity and version, step statuses, effective models and efforts, repository-relative changed files, and the blocker, without full child transcripts. A bundle or skill-package refresh lets an active child finish, then stops before another step and requires a new invocation. (S019)
+After execution starts, a compact local record keeps workflow identity and version, step statuses, reviewed agent assignments, repository-relative changed files, and the blocker, without full child transcripts. A bundle or skill-package refresh lets an active child finish, then stops before another step and requires a new invocation. (S002, S019)
 
 ## Delivery boundary
 
@@ -33,5 +35,6 @@ The FlowKit catalog route installs, refreshes, and removes its direct controller
 
 ## Related pages
 
+- [Agent roles and assignment inheritance](./agent-roles-and-inheritance.md)
 - [Bundle and workflow model](./bundle-and-workflow-model.md)
 - [Workflow lifecycle](./workflow-lifecycle.md)

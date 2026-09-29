@@ -2,7 +2,7 @@
 
 Use the catalog tasks in this repository to install or refresh the bundle. They serve the checked-in release packages on localhost for the duration of each command, so you do not need separate roadmap or wiki source checkouts to install it. The [bundle manifest](../bundles/spec-kit-flow/bundle.yml) and [release metadata](../catalog/release.json) are the sources for current component versions.
 
-The checked-in catalog contains the locally built `0.4.1` release and controller package `0.1.1`. Ordinary catalog install and refresh use these reviewed packages. Development-snapshot mode is reserved for uncommitted source changes in a disposable initialized consumer; the catalog has not been published or pushed.
+The checked-in catalog contains the locally built `0.4.1` release and controller package `0.1.1`. Ordinary catalog install and refresh use those reviewed packages only from a checkout whose source matches that release; the installer rejects a catalog/source mismatch. The current source manifests declare bundle `0.5.0` and controller `0.2.0`, so this unreleased source checkout requires development-snapshot mode in a disposable initialized consumer until a separate release build is approved. The catalog has not been published or pushed.
 
 ## Contents
 
@@ -72,7 +72,7 @@ Snapshot mode builds a temporary catalog from current source and the checked-in 
 
 ## Dogfood this repository
 
-Use this checkout as a consumer when developing Spec Kit Flow. From the repository root, install the checked-in release if no `spec-kit-flow` bundle is present:
+Use a checkout whose source matches the checked-in release as a consumer when developing Spec Kit Flow. From its root, install the release if no `spec-kit-flow` bundle is present:
 
 ```sh
 mise run catalog:install .
@@ -83,6 +83,8 @@ If `specify bundle list` already shows `spec-kit-flow`, refresh the existing ins
 ```sh
 mise run catalog:refresh .
 ```
+
+The current unreleased source checkout does not match the checked-in catalog, so these ordinary commands reject it. Validate current source in a disposable initialized consumer with the development-snapshot route above.
 
 Both catalog commands install or refresh the eight Specify workflows **and** the eight direct FlowKit Codex skills in `.agents/skills/flow-kit-*/`. They also write the separate skill ownership record under `.specify/flow-kit/`. Verify both parts from this checkout:
 
@@ -125,7 +127,17 @@ In the Codex app, invoke the corresponding FlowKit skill in a task whose selecte
 
 For example, enter `$flow-kit-tasks feature_context=013` in the selected project's Codex task. Optional workflow inputs have defaults and can be supplied in the same `key=value` form. The controller locates the selected compatible Specify executable (preferring the project's mise selection), reads the installed composed workflow without executing native workflow dispatch, and stops before workflow work if runtime, workflow, input, or skill provenance checks fail.
 
-Before the first step, the controller shows every concrete model and effective reasoning effort, including assignments in branches that will not be taken. Omitted effort is Medium. Task generation and implementation use GPT-6 Luna with High effort; the other declared assignments use GPT-6 Sol or GPT-6 Astra with Medium effort as listed in the workflow YAML. Each distinct pair must pass an availability probe in the selected Codex task. A named-step override uses `step_id`, with optional `model` and `reasoning_effort`; it changes only that step. Modeled steps use bounded children, while unmodeled steps and gates stay in the main task. The main task presents child questions as numbered options plus a custom answer when allowed and relays the response to the same child. Native `specify workflow run` ignores FlowKit reasoning-effort metadata and does not provide this controller interaction model.
+Before workflow work, the FlowKit controller validates every delegated step name, including untaken branches, and probes each distinct native agent with that exact name as the Codex `agent_type`. Codex's native subagent activity shows each launched child. Probe labels include the agent name; work-child labels include the agent name and step ID, while the pane may also show model and reasoning effort. The task label helps the operator see what was launched; the exact `agent_type` request establishes native selection. FlowKit does not require a separate launch message or a per-run agent, model, or effort override. Each delegated step uses a bounded child; steps without explicit delegation metadata and all gates stay in the main task. The main task presents child questions as numbered options plus a custom answer when allowed and relays the response to the same child.
+
+Codex custom-agent files are consumer-owned. For example, save this as `.codex/agents/architect.toml` in the consumer project:
+
+```toml
+name = "Architect"
+description = "Plans and reviews workflow changes."
+developer_instructions = "Follow the task scope and return a concise result to the parent."
+```
+
+Use the exact reviewed name declared by the workflow step. Codex loads the matching custom-agent configuration and owns optional model and reasoning-effort settings, including inheritance. FlowKit neither parses these files nor modifies them during install, refresh, or removal. A successful workflow loader check does not establish that native `specify workflow run` performs FlowKit's named-agent dispatch procedure; use the direct FlowKit Codex skill for that behavior and retain the manual workflow path as fallback.
 
 ## Refresh or remove the bundle
 

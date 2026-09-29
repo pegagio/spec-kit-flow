@@ -1,0 +1,5 @@
+name = "Coder"
+description = "Temporary named-agent launch probe."
+model = "gpt-6-luna"
+model_reasoning_effort = "high"
+developer_instructions = "For this probe, reply only CODER_FROM_PROJECT_AGENT_LUNA_HIGH."

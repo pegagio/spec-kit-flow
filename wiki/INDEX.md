@@ -6,6 +6,7 @@ page files, not here.
 
 ## Concept
 
+- [Named agents for delegated steps](pages/agent-roles-and-inheritance.md)
 - [Bundle and workflow model](pages/bundle-and-workflow-model.md)
 - [Codex workflow controller design](pages/codex-workflow-controllers.md)
 - [Consumer feedback boundary](pages/consumer-feedback-boundary.md)

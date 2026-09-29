@@ -1,12 +1,12 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 3.0.0 → 4.0.0
-Bump rationale: MAJOR — replace the prohibitions on model selection and agent launch with reviewed step models and bounded subagent execution.
-Modified principles: II. Human-Directed Authority (expanded); IV. Reviewable Source and Manual Fallback (clarified).
+Version change: 4.0.0 → 5.0.0
+Bump rationale: MAJOR — replace concrete step-model and per-run override authority with reviewed Codex agent names on explicitly delegated steps.
+Modified principles: II. Human-Directed Authority (assignment rule and rationale).
 Added sections: none.
 Removed sections: none.
-Follow-up: align AGENTS.md and the active Feature 013 specification before implementation; validate full Specify integration in a disposable consumer.
+Follow-up: Existing workflow/controller source still implements Feature 013 concrete step-model behavior; Feature 015 migration requires reviewed source changes and named-agent dispatch validation. The roadmap's Feature 015 role-map entry requires a separate approved amendment; the wiki's prior draft claims require re-ingest. AGENTS.md is aligned with this amendment.
 -->
 
 # Spec Kit Flow Constitution
@@ -33,9 +33,9 @@ The project MUST use the **Merge-Bounded Flow-Back Spec Persistence Model**.
 
 ### II. Human-Directed Authority
 
-The human operator MUST select the workflow and task scope. A reviewed workflow MAY declare a concrete model for each agent step. Explicit invocation authorizes those declared assignments for the run without requiring a separate model choice at every step, and the operator MAY override them. A Codex controller MAY launch subagents for bounded workflow steps, MUST show the effective model assignments before dispatch, and MUST follow the declared or operator-overridden assignments. It MUST stop for operator resolution when an assignment is missing, invalid, or unavailable; it MUST NOT silently choose a fallback model, expand the task scope, schedule work, or launch a later workflow phase. The controller MUST present clarification questions and consequential review gates in the main task and relay the operator's answer to the same step subagent when continuation is needed. Successful commands MUST NOT implicitly verify a roadmap item, integrate Git changes, accept a feature, or grant acceptance in The Diagram. Roadmap patches, constitutional amendments, authority changes, material scope changes, and ambiguous recovery MUST pass an explicit human decision gate. Routine remediation MAY flow back only within the operator-issued controller scope.
+The human operator MUST select the workflow and task scope. Every explicitly delegated workflow step MUST declare a reviewed Codex agent name. Naming an agent MUST NOT itself delegate a main-task step. Invocation authorizes those named assignments without a per-run agent, model, or effort override. A Codex controller MAY launch bounded step subagents and MUST follow the named assignments. It MUST stop for operator resolution when an assignment is missing, invalid, or unavailable; it MUST NOT silently choose a fallback assignment, expand the task scope, schedule work, or launch a later workflow phase. The controller MUST present clarification questions and consequential review gates in the main task and relay the operator's answer to the same step subagent when continuation is needed. Successful commands MUST NOT implicitly verify a roadmap item, integrate Git changes, accept a feature, or grant acceptance in The Diagram. Roadmap patches, constitutional amendments, authority changes, material scope changes, and ambiguous recovery MUST pass an explicit human decision gate. Routine remediation MAY flow back only within the operator-issued controller scope.
 
-**Rationale:** Reviewed step models avoid repeated selection while keeping each effective assignment visible and overridable. The main task retains human conversation and decisions, and delegation cannot inherit authority beyond the selected workflow and scope.
+**Rationale:** Reviewed agent names keep selection explicit while consumers configure those agents through Codex.
 
 ### III. Generic Source and Component Boundaries
 
@@ -69,4 +69,4 @@ This constitution governs project decisions when lower-level guidance conflicts 
 
 Constitution versions use semantic versioning: MAJOR for incompatible governance changes or principle removal/redefinition, MINOR for a new principle or material expansion, and PATCH for non-semantic clarification. The first ratified constitution is version 1.0.0. Every amendment MUST update the version and last-amended date, and its review MUST verify compliance with the principles and identify any unresolved exceptions. Exceptions MUST be explicit, scoped, and approved by the human operator; an exception does not silently amend this constitution.
 
-**Version**: 4.0.0 | **Ratified**: 2026-09-22 | **Last Amended**: 2026-09-26
+**Version**: 5.0.0 | **Ratified**: 2026-09-22 | **Last Amended**: 2026-09-29

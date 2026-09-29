@@ -1,17 +1,17 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.12.2 → 1.13.0
-Bump rationale: MINOR — add the operator-approved Feature 015 for agent roles and assignment inheritance.
+Version change: 1.14.3 → 1.14.4
+Bump rationale: PATCH — verify completed Feature 015 and reconcile its answered roadmap questions.
 
 Changes this revision:
-  - Added planned Feature 015 as separate scope from Feature 014, with consumer-local role mappings and step, workflow, and inherited assignment precedence.
-  - Recorded the open design questions and retained explicit delegation and human-gate boundaries.
+  - Transitioned Feature 015 from in-progress to verified after a debrief with no Must-Address findings.
+  - Recorded dispositions for its four planning questions and the superseded role-map note.
 
 Specs affected: 015
-Open questions added/resolved: four Feature 015 questions added; Feature 014 questions remain open.
+Open questions added/resolved: Feature 015's four questions resolved; Feature 014 questions remain open.
 
-Notes: The operator approved a distinct role-mapping feature after reviewing the proposed entry. Feature 015 is planned scope, not an implemented configuration mechanism or a claim of native Specify parity.
+Notes: The operator requested Feature 015 verification. The debrief recommended verified with two nonblocking roadmap-stale recommendations. This amendment does not claim publication, native Specify parity, or Feature 014 completion.
 -->
 
 # Spec Kit Flow — Spec Roadmap
@@ -35,14 +35,14 @@ The constitution establishes the durable project direction; the completed specs 
 - Provide a reusable, human-directed Spec-Driven Development workbench whose feature artifacts stay consistent through merge-bounded flow-back and explicit review gates.
 - Keep generic workflows, independently versioned extensions, portable consumer feedback, maintainer intake, and the bundle catalog traceable to reviewed source and bounded validation evidence.
 - Preserve manual workflow paths and human control over agent selection, material scope, roadmap verification, Git integration, publication, and acceptance.
-- Treat additional features as future roadmap amendments. Features 012 and 013 are verified independently; feature 014 covers accepted workflow improvements, and feature 015 covers agent roles and assignment inheritance.
+- Treat additional features as future roadmap amendments. Features 012 and 013 are verified independently; feature 014 covers accepted workflow improvements, and feature 015 covers named Codex agents for delegated steps.
 
 ## Constraints and decisions
 
 These cross-cutting constraints come from the [constitution](constitution.md); they do not create new feature scope.
 
 - **C-01 — Merge-bounded persistence**: Before merge, accepted discoveries flow through the current spec, plan, tasks, and implementation; after merge, behavioral changes move into a new feature directory. This keeps reviewable intent and historical records coherent.
-- **C-02 — Human-directed authority**: The operator chooses workflows and task scope. Reviewed workflow steps may declare concrete models; invocation authorizes those visible, overridable assignments. A Codex controller may launch bounded step subagents and must relay human decisions through the main task. Command success cannot confer roadmap, scope, integration, or acceptance decisions.
+- **C-02 — Human-directed authority**: The operator chooses workflows and task scope. Every delegated workflow step declares a reviewed Codex agent name; invocation authorizes that assignment without a per-run agent, model, or effort override. A Codex controller may launch bounded step subagents and must relay human decisions through the main task. Command success cannot confer roadmap, scope, integration, or acceptance decisions.
 - **C-03 — Generic component boundaries**: This repository owns generic workflow and feedback source; the bundle composes versioned components. The Diagram remains a consumer, with adapter behavior governed separately.
 - **C-04 — Reviewable source and fallback**: Changes target source packages, planning and task generation remain distinct, and each workflow retains a manual-prompt path. New build tools or dependencies require a documented need and approval.
 - **C-05 — Bounded validation and feedback**: Disposable consumer tests record component and CLI provenance without claiming publication, stock compatibility, or live-agent quality. Feedback capture and intake provide evidence and proposals, not direct source or authority changes.
@@ -202,15 +202,17 @@ Entries 001–011 record verified history. Features 012 and 013 are verified wit
 - **Close Out debrief continuation**: The first Feature 012 debrief found stale current-artifact completion claims and no verification patch. After those claims were corrected, the operator had to invoke a fresh debrief manually; that second report recommended `verified`. The operator expects the invoked Close Out workflow to perform bounded in-scope reconciliation and rerun debrief itself, stopping only for a material decision, untrustworthy delta, repeated finding, or lack of progress. This is not authority to apply a roadmap patch, commit, or accept the feature without the existing review gates. The current installed workflow has no such loop, so Feature 014 must reconcile this target with the controller protocol and verified Feature 008 prospectively.
 - **Converge loop correction**: The operator expects an invoked Converge run to identify gaps, create bounded tasks, flow back to spec and plan when needed, analyze the updated tasks, implement eligible fixes, and repeat Converge until clean or stopped by a real blocker or consequential decision. Constitution II currently prohibits launching a later workflow phase, and verified Feature 007 explicitly requires a stop for separate Implement and a later Converge run. Feature 014 must resolve that authority conflict prospectively through the normal governance and specification process; do not edit verified Feature 007 history or treat this roadmap entry as a constitutional amendment.
 
-### 015 — Agent Roles and Assignment Inheritance  [status: planned]
+### 015 — Named Agents for Delegated Steps  [status: verified]
 
-- **Description**: Allow delegated FlowKit workflow steps to use portable agent roles resolved by a consumer-local map to concrete Codex models and reasoning efforts.
-- **Outcome**: For each explicitly delegated step, a step role takes precedence over a workflow role; without either, the child inherits the invoking agent's model and reasoning effort. The controller shows and validates the effective assignment before dispatch. A role such as Architect, Builder, Coder, or Verifier can be mapped to a consumer-selected model and effort without changing reviewed workflow intent.
-- **Scope (in)**: Define stable role names and a consumer-local role map; support Specify-compatible workflow-level and step-level role declarations; resolve assignment precedence and any operator override; validate missing, malformed, or unavailable mappings and inherited assignments without silent fallback; retain an explicit boundary between main-task steps and delegated steps; preserve human gates; document native Specify behavior and validate the supported Codex path in disposable consumers.
-- **Scope (out)**: Implicitly turning every unmodeled step into a child, selecting an undeclared fallback model or effort, changing Feature 014 workflow behavior, modifying verified Feature 013 history, or claiming identical role behavior from native `specify workflow run` without evidence.
+- **Description**: Let each explicitly delegated FlowKit workflow step name a consumer-configured Codex custom agent.
+- **Outcome**: Every delegated step names a reviewed agent; different steps may name different agents. Main-task steps and human gates stay in the driving task. Codex's native subagent activity shows each launched child under a task label containing its reviewed agent name; exact native selection is verified separately, and the child pane shows model and reasoning effort when Codex exposes them.
+- **Scope (in)**: A fixed reviewed set of agent names; Specify-compatible per-step agent declarations; explicit delegation; native Codex custom-agent configuration; all-branch named-agent preflight; native subagent visibility; main-task and human-gate boundaries; disposable-consumer and native-runner validation.
+- **Scope (out)**: Feature 014 workflow changes and retrospective edits to verified Feature 013 artifacts.
 - **Depends on**: 013; no dependency on 014.
 - **Governed by**: C-02, C-03, C-04, C-05.
-- **Notes**: Feature 013 deliberately deferred model roles and consumer mappings. The operator approved this separate roadmap entry and the three-level precedence: explicit step role, workflow role, then inheritance from the top-level agent for a delegated step. The location and schema of the local map, Specify-compatible YAML representation, and reliable inherited-assignment discovery remain design questions.
+- **Notes**: Architect, Builder, Coder, and Verifier are the reviewed names. Codex owns each agent's optional model and reasoning settings; Feature 015 must prove exact named dispatch in the supported client.
+- **Spec dir**: `specs/015-agent-roles-assignment-inheritance/`
+- **Verification**: The completed spec, 29 checked tasks, final clean convergence pass, focused tests, and bounded native Codex observations are recorded in `specs/015-agent-roles-assignment-inheritance/validation.md` and `specs/015-agent-roles-assignment-inheritance/roadmap-reviews/debrief-20260929T225206Z.md`. The debrief returned `PROCEED WITH UPDATES` with no Must-Address findings; its two roadmap-stale recommendations are addressed below. This status does not imply a published catalog release or native Specify runner parity.
 
 ## Open Questions
 
@@ -230,14 +232,16 @@ Feature 014 must resolve these questions before its source changes are selected:
 - Which inspectable spec status and convergence evidence lets Close Out finish the existing completion edit or recognize it as done without an operator classification gate, and what genuine ambiguity must stop the workflow?
 - Which debrief findings can Close Out correct and reassess within its invoked scope, and what snapshot, iteration, and nonprogress rules stop repetition before the exact roadmap-patch gate?
 
-Feature 015 must resolve these questions before its source changes are selected:
+Feature 015's planning questions, now resolved by its specification and validation, were:
 
-- Where should the consumer-local role map live, and how are its ownership and updates validated?
-- How should workflow-level and step-level roles be represented in Specify-compatible YAML without changing the meaning of an unmodeled main-task step?
-- Can the controller reliably identify the invoking agent's model and reasoning effort for inheritance, and how should it stop when either is unavailable?
-- Which role and inheritance behavior can native `specify workflow run` support, and how should any difference from the Codex controller be documented?
+- Can the supported Codex client select a custom agent by exact name for each delegated child and confirm its instructions load?
+- How should a delegated step's agent name and explicit child marker be represented in Specify-compatible YAML while main-task steps remain in the driving task?
+- Can the controller validate every possible named child before workflow work, and can the supported Codex client visibly identify each launched agent?
+- Which named-agent behavior can native `specify workflow run` support, and how should any difference from the direct Codex controller be documented?
 
-Feature 013 settled direct Codex skill delivery through the FlowKit catalog route alongside the Specify bundle. The controller follows the installed workflow definition; the tested Specify CLI accepted its model and FlowKit effort metadata. Disposable-consumer and desktop validation covered project context, same-child clarification, human gates, diffs, and step outcomes within the limits recorded in `specs/013-bundle-workflow-launchers/validation.md`. Model roles and consumer mappings remain unimplemented and are now planned in Feature 015; Feature 013 verification does not claim publication or broader compatibility.
+The supported Codex desktop demonstrated exact named selection and agent-specific instructions. Reviewed per-step `flow_kit.delegated` and `flow_kit.agent` metadata, full-graph preflight, and native task-label visibility are specified in `specs/015-agent-roles-assignment-inheritance/spec.md` and evidenced in its `validation.md`. The Specify loader preserved the metadata, while the separate native runner attempt stopped at disposable checkout trust before a delegated step; the documentation records that limit without claiming parity.
+
+Feature 013 settled direct Codex skill delivery through the FlowKit catalog route alongside the Specify bundle. The controller follows the installed workflow definition; the tested Specify CLI accepted its model and FlowKit effort metadata. Disposable-consumer and desktop validation covered project context, same-child clarification, human gates, diffs, and step outcomes within the limits recorded in `specs/013-bundle-workflow-launchers/validation.md`. Its earlier plan for model roles and consumer mappings was superseded by Feature 015's native named-agent design; Feature 013 verification does not claim publication or broader compatibility.
 
 ## Cross-Cutting Notes
 
@@ -245,4 +249,4 @@ The workflow run order is start-feature, optional clarification, planning, task 
 
 The operator designated all eleven entries verified on 2026-09-26. Their `spec.md` headers still say `Draft`; this roadmap records the operator's lifecycle decision without rewriting historical feature artifacts. No configured ADR or PRD evidence was available for this creation.
 
-**Version**: 1.13.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-29
+**Version**: 1.14.4 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-29
