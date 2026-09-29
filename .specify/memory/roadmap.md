@@ -1,22 +1,22 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.4.1 → 1.4.2
-Bump rationale: PATCH — record the approved verification of feature 013 after its implementation debrief.
+Version change: 1.12.1 → 1.12.2
+Bump rationale: PATCH — record the operator-approved Feature 012 verification lifecycle transition without changing its outcome or scope.
 
 Changes this revision:
-  - Transitioned feature 013 from in-progress to verified after the debrief found no Must-Address issues.
-  - Updated feature 013 status and open-question summaries to reflect the completed specification and bounded consumer validation.
+  - Transitioned Feature 012 from `in-progress` to `verified` and aligned roadmap status summaries.
+  - Recorded the complete specification, clean bounded debrief recommendation, and explicit operator decision as verification provenance.
 
-Specs affected: 013
-Open questions added/resolved: resolved feature 013's workflow-definition, tested metadata, and consumer-interaction questions; model-role portability remains deferred.
+Specs affected: 012
+Open questions added/resolved: none; the three Feature 012 planning questions were resolved in the previous amendment, and Feature 014 questions remain open.
 
-Notes: The operator requested verification after a non-blocking debrief. Evidence: `specs/013-bundle-workflow-launchers/roadmap-reviews/debrief-20260928T200419Z.md` and `specs/013-bundle-workflow-launchers/validation.md`. Prior verification of 001–011 remains intact, and feature 012 remains planned. This transition does not imply publication or feature acceptance.
+Notes: The fresh Feature 012 debrief recommended `verified` with zero Must-Address findings, and the operator explicitly directed the transition. Evidence: `specs/012-consumer-adoption/spec.md`, `specs/012-consumer-adoption/validation.md`, `specs/012-consumer-adoption/roadmap-reviews/debrief-20260929T162707Z.md`, and the direct operator decision. This verifies the roadmap entry within documented validation limits; it does not commit, merge, publish, or establish adoption in a real consumer.
 -->
 
 # Spec Kit Flow — Spec Roadmap
 
-This living roadmap records the project's completed specifications and leaves room for future features. It is not a commitment to new scope or sequence. The [constitution](constitution.md) governs this ledger; each entry points to its feature specification. The operator designated every current spec as verified on 2026-09-26.
+This living roadmap records the project's completed specifications and leaves room for future features. It is not a commitment to new scope or sequence. The [constitution](constitution.md) governs this ledger; each entry points to its feature specification. The operator designated entries 001–011 verified on 2026-09-26; later entries carry their own lifecycle states below.
 
 ## Contents
 
@@ -35,7 +35,7 @@ The constitution establishes the durable project direction; the completed specs 
 - Provide a reusable, human-directed Spec-Driven Development workbench whose feature artifacts stay consistent through merge-bounded flow-back and explicit review gates.
 - Keep generic workflows, independently versioned extensions, portable consumer feedback, maintainer intake, and the bundle catalog traceable to reviewed source and bounded validation evidence.
 - Preserve manual workflow paths and human control over agent selection, material scope, roadmap verification, Git integration, publication, and acceptance.
-- Treat additional features as future roadmap amendments. Feature 012 remains planned, while feature 013 is verified independently.
+- Treat additional features as future roadmap amendments. Feature 012 and feature 013 are verified independently, and feature 014 is planned for the accepted workflow improvements.
 
 ## Constraints and decisions
 
@@ -49,7 +49,7 @@ These cross-cutting constraints come from the [constitution](constitution.md); t
 
 ## Planned Specs
 
-Entries 001–011 record verified history. Feature 012 is planned, and feature 013 is verified with a completed specification and bounded consumer validation. Dependencies describe delivery prerequisites between these specs, not the order in which an operator must run workflow phases.
+Entries 001–011 record verified history. Features 012 and 013 are verified with completed specifications and bounded validation, and feature 014 is planned. Dependencies describe delivery prerequisites between these specs, not the order in which an operator must run workflow phases.
 
 ### 001 — Start Eligible Feature  [status: verified]
 
@@ -161,7 +161,7 @@ Entries 001–011 record verified history. Feature 012 is planned, and feature 0
 - **Governed by**: C-02, C-03, C-04, C-05.
 - **Spec dir**: `specs/011-bundle-catalog/`.
 
-### 012 — Consumer Adoption of Merge-Bounded Flow-Back  [status: planned]
+### 012 — Consumer Adoption of Merge-Bounded Flow-Back  [status: verified]
 
 - **Description**: Investigate how the FlowKit bundle should bring the Merge-Bounded Flow-Back Spec Persistence Model into consumer projects, then implement the selected mechanism.
 - **Outcome**: New and refreshed bundle consumers have a validated, reviewable path to use the model in project guidance and governance; adoption is confirmed from project state rather than assumed from installation.
@@ -169,7 +169,12 @@ Entries 001–011 record verified history. Feature 012 is planned, and feature 0
 - **Scope (out)**: Silent replacement of existing project governance, retroactive edits to merged feature history, a separate scope-creep policy, Diagram-specific behavior, and changes to Specify's global base template.
 - **Depends on**: 011.
 - **Governed by**: C-01, C-02, C-03, C-04, C-05.
-- **Notes**: The operator set the adoption goal and requested investigation followed by implementation. Agents should recommend the operator-invoked FlowKit consistency workflows and flag missing checks rather than independently launch those workflows or their core commands. `docs/merge-bounded-flow-back.md` is a starting proposal, not required verbatim text; the delivery mechanism remains subject to research and review.
+- **Notes**: The operator set the adoption goal and requested investigation followed by implementation. Agents should recommend the operator-invoked FlowKit consistency workflows and flag missing checks rather than independently launch those workflows or their core commands. `docs/merge-bounded-flow-back.md` is a starting proposal, not required verbatim text; the selected delivery mechanism and bounded observations are recorded in Feature 012 research, contract, and validation.
+- **Spec dir**: `specs/012-consumer-adoption/`
+- **Verification**: The specification is `Complete`; the [fresh debrief](../../specs/012-consumer-adoption/roadmap-reviews/debrief-20260929T162707Z.md) recommends `verified` with zero Must-Address findings, and the operator explicitly approved this transition. The [validation record](../../specs/012-consumer-adoption/validation.md) bounds the result to reviewed source and disposable consumers; real-consumer adoption and Git integration remain separate.
+- **Resolved delivery decision**: Use a reviewed runbook, reusable proposal text, evidence worksheet, and copyable manual prompt linked from installation and refresh instructions. A dedicated onboarding skill or installed preset was not selected for this delivery; see [research](../../specs/012-consumer-adoption/research.md#delivery-mechanism).
+- **Resolved conflict decision**: Inspect existing governance and active guidance rule by rule, preserve equivalent or stricter compatible wording, present minimal exact patches, require an operator decision for constitutional amendments or material conflicts, and recheck baselines before accepted edits; see [research](../../specs/012-consumer-adoption/research.md#review-and-conflict-resolution) and the [adoption contract](../../specs/012-consumer-adoption/contracts/adoption.md#review-and-mutation-contract).
+- **Resolved evidence decision**: Confirm adoption only with M1–M5 evidence in applicable active agent guidance and compatible governance, a known integration boundary, project-relative citations and digests, and a separate operator decision. Report incomplete or declined paths as `partial`, `declined`, or `unresolved` according to observed state; see [research](../../specs/012-consumer-adoption/research.md#adoption-evidence-and-outcomes), the [output contract](../../specs/012-consumer-adoption/contracts/adoption.md#output-contract), and [bounded validation](../../specs/012-consumer-adoption/validation.md). This does not assert adoption in a real consumer.
 
 ### 013 — FlowKit Codex Workflow Controllers  [status: verified]
 
@@ -182,13 +187,38 @@ Entries 001–011 record verified history. Feature 012 is planned, and feature 0
 - **Notes**: The previously approved thin launcher that delegates to `specify workflow run` is superseded for the Codex desktop path because its separate `codex exec` processes lose the desired task UI. The earlier bundle-installed skill delivery assumption is also superseded: native Specify bundle commands manage their declared Specify components, while the FlowKit catalog route manages direct Codex skills alongside them. Keep the installed workflow as the behavior authority and retain a manual-prompt fallback. The operator accepts that the initial concrete model IDs may be non-portable; model roles and consumer mappings are deferred to a later amendment. Live probes showed a different-model child task and parent-mediated answer relay; they did not prove full Specify integration or YAML model metadata support. The eight skills use stable `flow-kit-*` invocation names and the approved FlowKit display names in the feature specification.
 - **Spec dir**: `specs/013-bundle-workflow-launchers/`
 
+### 014 — FlowKit Workflow Improvements  [status: planned]
+
+- **Description**: Address accepted generic workflow feedback in one reviewable change set, covering start-feature handoff, clarify readiness, plan readiness, task-generation completion, a complete bounded Converge remediation loop, and Close Out completion routing and debrief continuation.
+- **Outcome**: The start-feature brief resolves the created specification to its intended roadmap entry or stops with a clear recoverable linkage problem; clarify reports an evidence-backed assessment of remaining significant ambiguity; plan assesses readiness from the clarified specification without an unconditional confirmation gate and stops on a specific missing prerequisite or material product ambiguity; Tasks invocation authorizes generation, and the agent assesses task completeness and exits successfully when satisfied without a routine human review gate. The operator reviews generated tasks and separately invokes the ordinary Analyze workflow. Within an operator-invoked Converge run for the selected feature, the controller identifies gaps, appends remediation tasks, flows accepted discoveries back through affected specification, plan, and task artifacts as needed, analyzes the resulting tasks, implements eligible fixes, and reassesses until clean or a bounded blocker or consequential decision stops the run. It does not infer closeout, Git integration, roadmap verification, or feature acceptance. Close Out verifies the selected spec’s existing completion state and proceeds without a redundant operation-availability choice when the authorized action and evidence are clear; roadmap verification and Git actions remain separate decisions. Within an operator-invoked Close Out run, the controller reconciles routine, bounded debrief findings and repeats the debrief until its evidence supports an exact patch proposal or a specific blocker stops progress. This target requires an explicit resolution of the current authority rule before workflow source changes.
+- **Scope (in)**: Investigate and implement reviewed source changes to the start-feature, clarify, plan, and tasks workflows and their manual paths; establish or safely stop on missing, stale, or conflicting spec-directory mappings with exact roadmap approval; assess and explain residual significant ambiguity after clarification without treating the five-question cap as readiness; replace plan's unconditional readiness confirmation with an evidence-based agent check and specific stop for missing prerequisites or material product ambiguity; avoid redundant pre-generation task confirmation after operator invocation, assess generated-task coverage against reviewed design, and exit successfully when complete while reporting material gaps; design and validate an operator-scoped Converge loop that classifies results from inspectable evidence, reconciles upstream artifacts when discoveries require it, analyzes new tasks, implements eligible remediation, and reassesses until clean or a bounded stop, without routine classification gates; resolve the Constitution II and Feature 007 authority conflict before changing source; validate questions, required gates, loop termination, successful paths, and stopped paths in disposable initialized consumers and the direct Codex controller path. Reconcile the standard Close Out prompt with the installed `speckit-specify` behavior; define when the reviewed Close Out scope authorizes an in-place spec status update and replace the routine operation-availability gate with an evidence-based check while preserving a bounded stop for genuine ambiguity. Define safe in-scope artifact reconciliation, debrief repetition, snapshot refresh, and termination when a Close Out review finds a routine correctable issue; keep the exact roadmap patch and consequential decisions behind their existing human gates.
+- **Scope (out)**: Silent roadmap mutation, unbounded work or work outside the operator-selected feature, automatic closeout, Git integration, roadmap verification, or feature acceptance, changes to independent extension behavior without its own review, retroactive edits to verified feature history, Feature 012's adoption mechanism, and additional feedback items without an approved roadmap amendment.
+- **Depends on**: 001, 002, 003, 004, 007, 008, 013; no dependency on 012.
+- **Governed by**: C-02, C-03, C-04, C-05.
+- **Notes**: Five accepted maintainer intakes and the operator's corrected Converge-loop request define the current change set. `intake-4c31665697a1` records `speckit-flow-start-feature` 0.3.0 (`sha256:ccab39bda126a92f3f3242fc747702525f3677cb6e7ad52cd8211e50681302db`) reaching a roadmap brief without a `Spec dir` mapping despite a correct active feature pointer. Its proposed disposition is a workflow source change to establish or safely stop on the missing specification-to-roadmap linkage. `intake-0e38806b5f69` records `speckit-flow-clarify` 0.2.0 (`sha256:792b68979817fef06bbac3521b0f3034910dba44162a46ca208db27e218d6eb6`) leaving the operator to judge whether significant ambiguity remained after the agent's assessment. Its proposed disposition is an evidence-backed residual-ambiguity assessment and recommendation, preserving operator authority over substantive answers and separate workflow invocation; investigate final-gate presentation without assuming a UI cause. `intake-50695033844a` records `speckit-flow-plan` 0.2.0 (`sha256:5c5cfac1fbad27e5e87f159307bd06cc2efc4c20aa565bc3e126b10014418f21`) presenting an unconditional readiness gate after the operator invoked planning; the operator requested its removal. Its proposed disposition is an agent readiness assessment with a specific stop for missing prerequisites or material product ambiguity, without launching a later workflow. These three records were accepted as proposals, not authorization for source changes. Their local inbox and triage files are excluded from Git.
+- **Task feedback**: `intake-1fb76e5dfaca` records a `speckit.tasks` command child asking for an extra design-choice confirmation before generating tasks, despite the operator invoking Tasks; investigate the cause without assuming the installed workflow defines that pre-generation gate. `intake-c95ee8c49f7e` records the operator request to replace the installed post-generation review gate with an agent coverage and completeness assessment that exits successfully when complete and reports specific material gaps otherwise. Both observed `speckit-flow-tasks` 0.2.0 (`sha256:8912f7c87e3ad6204a8cf325aa2823608c54bab37ab148aecb01dce46956ec30`). The second request supersedes the first intake's assumption that the post-generation gate should remain. Both are accepted proposals, not authorization for source changes; their local inbox and triage files are excluded from Git. The operator retains task review and separate Analyze invocation. This entry is the durable scope record for the normal specification, planning, task, implementation, and convergence flow.
+- **Earlier Converge feedback (partly superseded)**: The operator chose remediation after `speckit-flow-converge` 0.2.0 (`sha256:90e0970e907ed84ca4c21d6f1b2d9a3d025766b7a2b7f59dacaa8c556481865f`) appended Feature 012 T017, then requested evidence-based routing to the existing Analyze step without a routine human classification gate. The recorded run `.specify/flow-controllers/runs/e5a89918-dbbf-4b1e-9494-2a2c1e31cc04/summary.json` shows the gate. Its proposal to stop after analysis for separate Implement and later Converge invocations is superseded by the operator's subsequent full-loop request; the evidence-based classification and analysis-before-implementation requirements remain.
+- **Close Out gate correction**: In Feature 012, the operator authorized changing the existing spec status to `Complete`, and the resulting project state was inspectable. The installed Close Out workflow still required the operator to select `operation-available` before roadmap debrief. Feature 014 must let the agent recognize this routine case from evidence and continue without that classification question; if no authorized completion action or reliable evidence exists, it must stop with a specific reason. The installed `speckit-specify` skill creates a new feature and must not be used as a completion substitute. Preserve explicit approval for the exact roadmap verification patch and separate Git authority. This updates source prospectively rather than rewriting verified Feature 008 history.
+- **Close Out debrief continuation**: The first Feature 012 debrief found stale current-artifact completion claims and no verification patch. After those claims were corrected, the operator had to invoke a fresh debrief manually; that second report recommended `verified`. The operator expects the invoked Close Out workflow to perform bounded in-scope reconciliation and rerun debrief itself, stopping only for a material decision, untrustworthy delta, repeated finding, or lack of progress. This is not authority to apply a roadmap patch, commit, or accept the feature without the existing review gates. The current installed workflow has no such loop, so Feature 014 must reconcile this target with the controller protocol and verified Feature 008 prospectively.
+- **Converge loop correction**: The operator expects an invoked Converge run to identify gaps, create bounded tasks, flow back to spec and plan when needed, analyze the updated tasks, implement eligible fixes, and repeat Converge until clean or stopped by a real blocker or consequential decision. Constitution II currently prohibits launching a later workflow phase, and verified Feature 007 explicitly requires a stop for separate Implement and a later Converge run. Feature 014 must resolve that authority conflict prospectively through the normal governance and specification process; do not edit verified Feature 007 history or treat this roadmap entry as a constitutional amendment.
+
 ## Open Questions
 
-Feature 012 must answer these questions before its implementation path is settled:
+Feature 014 must resolve these questions before its source changes are selected:
 
-- Which supported mechanism should deliver and maintain the guidance: an onboarding skill, a preset or template approach, or another reviewed option?
-- How should new installations and refreshes handle an existing or conflicting project constitution without silently replacing governance?
-- What project-state evidence confirms that the model was adopted, and how should a declined or incomplete adoption be reported?
+- Which reviewed step or component should establish the roadmap `Spec dir` mapping after the specification directory is known?
+- How should the operator review an exact linkage patch, and how should missing, stale, or conflicting mappings stop or recover?
+- How should the clarify agent classify and explain remaining significant ambiguity without mistaking the five-question session cap for readiness?
+- How should the main task present clarification findings and any substantive human questions while preserving separate operator invocation of later workflows?
+- Which specification evidence establishes planning readiness, and how should the plan workflow stop with a specific missing prerequisite or material product ambiguity without an unconditional confirmation gate?
+- How should Tasks invocation signal authorization to generate from a reviewed plan without masking a material design gap?
+- Which task-coverage evidence is sufficient for successful exit, and how should the agent report incomplete or materially divergent task proposals without a routine human review gate?
+- Which command output and artifact evidence reliably distinguishes clean, appended-remediation, and blocked Converge results without asking the operator to classify routine outcomes?
+- How can one explicit Converge invocation authorize bounded task analysis, implementation, and reassessment under Constitution II, and what governance amendment or scoped authority rule is required?
+- When a convergence discovery changes intended behavior or technical approach, which spec → plan → tasks → analysis sequence must complete before remediation implementation resumes, and what stops or iteration bounds end the loop?
+- Which disposable-consumer cases prove the start-feature, clarify, plan, tasks, and Converge changes through manual and direct Codex paths?
+- Which inspectable spec status and convergence evidence lets Close Out finish the existing completion edit or recognize it as done without an operator classification gate, and what genuine ambiguity must stop the workflow?
+- Which debrief findings can Close Out correct and reassess within its invoked scope, and what snapshot, iteration, and nonprogress rules stop repetition before the exact roadmap-patch gate?
 
 Feature 013 settled direct Codex skill delivery through the FlowKit catalog route alongside the Specify bundle. The controller follows the installed workflow definition; the tested Specify CLI accepted its model and FlowKit effort metadata. Disposable-consumer and desktop validation covered project context, same-child clarification, human gates, diffs, and step outcomes within the limits recorded in `specs/013-bundle-workflow-launchers/validation.md`. Model roles and consumer mappings remain deferred; this verification does not claim publication or broader compatibility.
 
@@ -198,4 +228,4 @@ The workflow run order is start-feature, optional clarification, planning, task 
 
 The operator designated all eleven entries verified on 2026-09-26. Their `spec.md` headers still say `Draft`; this roadmap records the operator's lifecycle decision without rewriting historical feature artifacts. No configured ADR or PRD evidence was available for this creation.
 
-**Version**: 1.4.2 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-28
+**Version**: 1.12.2 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-29

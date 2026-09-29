@@ -54,6 +54,8 @@ specify init --here --force --non-interactive --integration codex --integration-
 
 The supported catalog install also installs eight direct FlowKit skills, shared controller files, and `.specify/flow-kit/skills-install.json`. Native `specify bundle install` manages the workflows and extensions, not those direct skills. Use the FlowKit catalog task so both parts are installed and verified together.
 
+After installation, adoption of project governance is a separate operator decision. Follow the [consumer adoption review](consumer-adoption.md) to inspect active agent guidance and governance, review exact changes, and record the evidence. Installation does not edit those project-owned files or confirm adoption.
+
 To test unreleased controller/workflow changes, initialize an already-created disposable consumer under the system temporary directory, then use the explicit snapshot route:
 
 ```sh
@@ -152,6 +154,8 @@ mise run catalog:remove /path/to/my-project
 ```
 
 It checks the recorded skill inventory and file digests before calling native bundle removal, then removes only unchanged FlowKit-owned skills and the ownership record. A collision or locally edited owned file stops removal for review. Recovery summaries under `.specify/flow-controllers/runs/`, unrelated skills, feedback, and independently installed components are preserved. The native `specify bundle remove` command alone removes the bundle contents but does not manage direct Codex skills.
+
+After refresh, reassess current project state with the [consumer adoption review](consumer-adoption.md); refresh does not edit or confirm adoption. Bundle removal also leaves project-owned guidance, governance, feature history, and adoption review records intact.
 
 ## Build release packages
 

@@ -15,6 +15,18 @@ This project uses the **Merge-Bounded Flow-Back Spec Persistence Model**. While 
 When the feature is accepted into the project's designated integration branch, those documents become a historical record and must not be substantively changed. Later changes belong in a new feature directory, with a reference to the earlier feature when relevant.
 ```
 
+## Active Agent Guidance
+
+The following section is intended for inclusion in project instructions that agents read during feature work, such as `AGENTS.md`. A README alone does not establish that agents receive these rules.
+
+```md
+## Merge-Bounded Feature Work
+
+- Before the designated integration branch accepts a feature, treat its `spec.md`, `plan.md`, `tasks.md`, and implementation as one mutable change set. Flow accepted discoveries to the affected artifacts and reconcile their consequences before continuing from the changed direction.
+- Flag missing checks and unresolved divergence. Recommend the applicable operator-invoked FlowKit analysis/remediation, convergence, or pre-merge review. Do not launch workflows or their underlying commands independently. Known divergence blocks implementation or merge until reconciliation or an explicitly documented operator resolution.
+- Acceptance into the project's designated integration branch freezes the feature's meaning. Make later behavioral changes in a new feature directory and reference earlier features they materially amend, replace, or depend on. Preserve the merged feature as history; allow editorial corrections only when meaning stays unchanged.
+```
+
 ## Constitution Principle: Spec Evolution and Merge-Bounded Persistence
 
 The following section is intended for inclusion in a project's Spec Kit constitution.

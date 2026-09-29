@@ -273,6 +273,16 @@ class BundleLifecycleTests(unittest.TestCase):
                     "codex",
                     "--integration-options=--skills",
                 )
+                consumer_owned = {
+                    consumer / "AGENTS.md": "# Consumer instructions\nPreserve active project guidance.\n",
+                    consumer / ".specify/memory/constitution.md": "# Constitution\nConsumer-owned governance.\n",
+                    consumer / "specs/example/adoption-review.md": "# Adoption review\nConsumer-owned evidence.\n",
+                    consumer / "unrelated/README.md": "Unrelated content.\n",
+                }
+                for path, contents in consumer_owned.items():
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(contents, encoding="utf-8")
+                consumer_owned_hashes = {path: sha256(path) for path in consumer_owned}
                 self.run_specify(consumer, environment, "workflow", "add", "--dev", str(CONSUMER_FIXTURE))
                 independent = consumer / ".specify/workflows/independent-consumer-check/workflow.yml"
                 self.assertTrue(independent.is_file())
@@ -283,6 +293,7 @@ class BundleLifecycleTests(unittest.TestCase):
                     "install",
                     str(ROOT / "bundles/spec-kit-flow/bundle.yml"),
                 )
+                self.assertEqual(consumer_owned_hashes, {path: sha256(path) for path in consumer_owned})
 
                 record = json.loads((consumer / ".specify/bundle-records.json").read_text(encoding="utf-8"))
                 self.assertEqual("spec-kit-flow", record["bundles"][0]["bundle_id"])
@@ -476,6 +487,7 @@ class BundleLifecycleTests(unittest.TestCase):
                     str(ROOT / "bundles/spec-kit-flow/bundle.yml"),
                     "--refresh",
                 )
+                self.assertEqual(consumer_owned_hashes, {path: sha256(path) for path in consumer_owned})
                 refreshed_record = json.loads((consumer / ".specify/bundle-records.json").read_text(encoding="utf-8"))
                 self.assertEqual(
                     {(component["kind"], component["id"]) for component in contributions},
@@ -483,6 +495,7 @@ class BundleLifecycleTests(unittest.TestCase):
                 )
                 self.assertTrue(independent.is_file())
                 self.run_specify(consumer, environment, "bundle", "remove", "spec-kit-flow")
+                self.assertEqual(consumer_owned_hashes, {path: sha256(path) for path in consumer_owned})
                 self.assertFalse((consumer / ".specify/extensions/flow-feedback").exists())
                 self.assertFalse((consumer / ".specify/workflows/speckit-flow-converge").exists())
                 self.assertTrue(independent.is_file())

@@ -11,3 +11,6 @@ dist/
 .DS_Store
 *.tmp
 *.swp
+
+# Maintainer feedback reports and intake records are local evidence.
+feedback/

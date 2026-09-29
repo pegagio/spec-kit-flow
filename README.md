@@ -57,6 +57,8 @@ Snapshot mode builds a temporary catalog from current source and verified extens
 
 The snapshot cannot be installed into the source checkout because snapshot installation is restricted to temporary consumers. The regular catalog task initializes and installs the checked-in release. New local Codex-managed worktrees copy ignored installed state through `.worktreeinclude` after a supported released installation; fresh clones and plain Git worktrees install the released catalog separately.
 
+Consider project governance separately from installation: use the [consumer adoption review](docs/consumer-adoption.md) to inspect and decide whether to adopt the model. Installing FlowKit alone does not change project guidance or confirm adoption.
+
 After pulling a newer reviewed release of this repository, refresh the bundle and its Codex skills with:
 
 ```sh
