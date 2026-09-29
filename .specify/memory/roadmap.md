@@ -1,17 +1,17 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.12.1 → 1.12.2
-Bump rationale: PATCH — record the operator-approved Feature 012 verification lifecycle transition without changing its outcome or scope.
+Version change: 1.12.2 → 1.13.0
+Bump rationale: MINOR — add the operator-approved Feature 015 for agent roles and assignment inheritance.
 
 Changes this revision:
-  - Transitioned Feature 012 from `in-progress` to `verified` and aligned roadmap status summaries.
-  - Recorded the complete specification, clean bounded debrief recommendation, and explicit operator decision as verification provenance.
+  - Added planned Feature 015 as separate scope from Feature 014, with consumer-local role mappings and step, workflow, and inherited assignment precedence.
+  - Recorded the open design questions and retained explicit delegation and human-gate boundaries.
 
-Specs affected: 012
-Open questions added/resolved: none; the three Feature 012 planning questions were resolved in the previous amendment, and Feature 014 questions remain open.
+Specs affected: 015
+Open questions added/resolved: four Feature 015 questions added; Feature 014 questions remain open.
 
-Notes: The fresh Feature 012 debrief recommended `verified` with zero Must-Address findings, and the operator explicitly directed the transition. Evidence: `specs/012-consumer-adoption/spec.md`, `specs/012-consumer-adoption/validation.md`, `specs/012-consumer-adoption/roadmap-reviews/debrief-20260929T162707Z.md`, and the direct operator decision. This verifies the roadmap entry within documented validation limits; it does not commit, merge, publish, or establish adoption in a real consumer.
+Notes: The operator approved a distinct role-mapping feature after reviewing the proposed entry. Feature 015 is planned scope, not an implemented configuration mechanism or a claim of native Specify parity.
 -->
 
 # Spec Kit Flow — Spec Roadmap
@@ -35,7 +35,7 @@ The constitution establishes the durable project direction; the completed specs 
 - Provide a reusable, human-directed Spec-Driven Development workbench whose feature artifacts stay consistent through merge-bounded flow-back and explicit review gates.
 - Keep generic workflows, independently versioned extensions, portable consumer feedback, maintainer intake, and the bundle catalog traceable to reviewed source and bounded validation evidence.
 - Preserve manual workflow paths and human control over agent selection, material scope, roadmap verification, Git integration, publication, and acceptance.
-- Treat additional features as future roadmap amendments. Feature 012 and feature 013 are verified independently, and feature 014 is planned for the accepted workflow improvements.
+- Treat additional features as future roadmap amendments. Features 012 and 013 are verified independently; feature 014 covers accepted workflow improvements, and feature 015 covers agent roles and assignment inheritance.
 
 ## Constraints and decisions
 
@@ -49,7 +49,7 @@ These cross-cutting constraints come from the [constitution](constitution.md); t
 
 ## Planned Specs
 
-Entries 001–011 record verified history. Features 012 and 013 are verified with completed specifications and bounded validation, and feature 014 is planned. Dependencies describe delivery prerequisites between these specs, not the order in which an operator must run workflow phases.
+Entries 001–011 record verified history. Features 012 and 013 are verified with completed specifications and bounded validation; features 014 and 015 are planned. Dependencies describe delivery prerequisites between these specs, not the order in which an operator must run workflow phases.
 
 ### 001 — Start Eligible Feature  [status: verified]
 
@@ -202,6 +202,16 @@ Entries 001–011 record verified history. Features 012 and 013 are verified wit
 - **Close Out debrief continuation**: The first Feature 012 debrief found stale current-artifact completion claims and no verification patch. After those claims were corrected, the operator had to invoke a fresh debrief manually; that second report recommended `verified`. The operator expects the invoked Close Out workflow to perform bounded in-scope reconciliation and rerun debrief itself, stopping only for a material decision, untrustworthy delta, repeated finding, or lack of progress. This is not authority to apply a roadmap patch, commit, or accept the feature without the existing review gates. The current installed workflow has no such loop, so Feature 014 must reconcile this target with the controller protocol and verified Feature 008 prospectively.
 - **Converge loop correction**: The operator expects an invoked Converge run to identify gaps, create bounded tasks, flow back to spec and plan when needed, analyze the updated tasks, implement eligible fixes, and repeat Converge until clean or stopped by a real blocker or consequential decision. Constitution II currently prohibits launching a later workflow phase, and verified Feature 007 explicitly requires a stop for separate Implement and a later Converge run. Feature 014 must resolve that authority conflict prospectively through the normal governance and specification process; do not edit verified Feature 007 history or treat this roadmap entry as a constitutional amendment.
 
+### 015 — Agent Roles and Assignment Inheritance  [status: planned]
+
+- **Description**: Allow delegated FlowKit workflow steps to use portable agent roles resolved by a consumer-local map to concrete Codex models and reasoning efforts.
+- **Outcome**: For each explicitly delegated step, a step role takes precedence over a workflow role; without either, the child inherits the invoking agent's model and reasoning effort. The controller shows and validates the effective assignment before dispatch. A role such as Architect, Builder, Coder, or Verifier can be mapped to a consumer-selected model and effort without changing reviewed workflow intent.
+- **Scope (in)**: Define stable role names and a consumer-local role map; support Specify-compatible workflow-level and step-level role declarations; resolve assignment precedence and any operator override; validate missing, malformed, or unavailable mappings and inherited assignments without silent fallback; retain an explicit boundary between main-task steps and delegated steps; preserve human gates; document native Specify behavior and validate the supported Codex path in disposable consumers.
+- **Scope (out)**: Implicitly turning every unmodeled step into a child, selecting an undeclared fallback model or effort, changing Feature 014 workflow behavior, modifying verified Feature 013 history, or claiming identical role behavior from native `specify workflow run` without evidence.
+- **Depends on**: 013; no dependency on 014.
+- **Governed by**: C-02, C-03, C-04, C-05.
+- **Notes**: Feature 013 deliberately deferred model roles and consumer mappings. The operator approved this separate roadmap entry and the three-level precedence: explicit step role, workflow role, then inheritance from the top-level agent for a delegated step. The location and schema of the local map, Specify-compatible YAML representation, and reliable inherited-assignment discovery remain design questions.
+
 ## Open Questions
 
 Feature 014 must resolve these questions before its source changes are selected:
@@ -220,7 +230,14 @@ Feature 014 must resolve these questions before its source changes are selected:
 - Which inspectable spec status and convergence evidence lets Close Out finish the existing completion edit or recognize it as done without an operator classification gate, and what genuine ambiguity must stop the workflow?
 - Which debrief findings can Close Out correct and reassess within its invoked scope, and what snapshot, iteration, and nonprogress rules stop repetition before the exact roadmap-patch gate?
 
-Feature 013 settled direct Codex skill delivery through the FlowKit catalog route alongside the Specify bundle. The controller follows the installed workflow definition; the tested Specify CLI accepted its model and FlowKit effort metadata. Disposable-consumer and desktop validation covered project context, same-child clarification, human gates, diffs, and step outcomes within the limits recorded in `specs/013-bundle-workflow-launchers/validation.md`. Model roles and consumer mappings remain deferred; this verification does not claim publication or broader compatibility.
+Feature 015 must resolve these questions before its source changes are selected:
+
+- Where should the consumer-local role map live, and how are its ownership and updates validated?
+- How should workflow-level and step-level roles be represented in Specify-compatible YAML without changing the meaning of an unmodeled main-task step?
+- Can the controller reliably identify the invoking agent's model and reasoning effort for inheritance, and how should it stop when either is unavailable?
+- Which role and inheritance behavior can native `specify workflow run` support, and how should any difference from the Codex controller be documented?
+
+Feature 013 settled direct Codex skill delivery through the FlowKit catalog route alongside the Specify bundle. The controller follows the installed workflow definition; the tested Specify CLI accepted its model and FlowKit effort metadata. Disposable-consumer and desktop validation covered project context, same-child clarification, human gates, diffs, and step outcomes within the limits recorded in `specs/013-bundle-workflow-launchers/validation.md`. Model roles and consumer mappings remain unimplemented and are now planned in Feature 015; Feature 013 verification does not claim publication or broader compatibility.
 
 ## Cross-Cutting Notes
 
@@ -228,4 +245,4 @@ The workflow run order is start-feature, optional clarification, planning, task 
 
 The operator designated all eleven entries verified on 2026-09-26. Their `spec.md` headers still say `Draft`; this roadmap records the operator's lifecycle decision without rewriting historical feature artifacts. No configured ADR or PRD evidence was available for this creation.
 
-**Version**: 1.12.2 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-29
+**Version**: 1.13.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-09-29
