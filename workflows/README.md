@@ -11,7 +11,7 @@ Use the selected consumer project in the Codex task and invoke one skill at a ti
 | `speckit-flow-start-feature` | `$flow-kit-start-feature` — FlowKit Start Feature | `feature_request` | `assess-eligibility`, `draft-specification`: Architect; `assess-created-spec-linkage`, `verify-repaired-spec-linkage`, both brief steps: Verifier |
 | `speckit-flow-clarify` | `$flow-kit-clarify` — FlowKit Clarify | `feature_context` | `clarify-session`: Architect; ambiguity assessments: Verifier |
 | `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`: Architect; `verify-plan-output`: Verifier |
-| `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`, `return-to-plan`: Architect |
+| `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`: Architect; `verify-task-output`: Verifier |
 | `speckit-flow-analyze-remediate` | `$flow-kit-analyze-remediate` — FlowKit Analyze | `feature_context` | `analyze-artifacts`, `reanalyze-*`: Verifier; remediation and replanning steps: Architect |
 | `speckit-flow-implement` | `$flow-kit-implement` — FlowKit Implement | `feature_context` | task assessments: Verifier; `implement-eligible-work`: Builder |
 | `speckit-flow-converge` | `$flow-kit-converge` — FlowKit Converge | `feature_context` | `assess-convergence`: Verifier; `return-remediation-to-analysis`: Architect |
@@ -76,9 +76,9 @@ Check that required and applicable outputs exist and contain substantive content
 
 ## Manual task-generation path
 
-When native task workflow dispatch is unavailable, assess reviewed design prerequisites and material product questions from current artifacts, then run `speckit.tasks` without a routine pre-generation question. Reassess task coverage against the current specification, plan, and design artifacts. Repeat generation within the same invocation only when fresh evidence shows that a prior coverage gap was resolved and other specific in-scope gaps remain. A complete proposal stops successfully with the task artifact for the operator's separate review.
+When native task workflow dispatch is unavailable, record exact missing task output or coverage gaps from the reviewed specification and design, then invoke `speckit.tasks` without a routine pre-generation question. Check that tasks.md is populated with correctly formatted tasks, applicable story phases, dependency coverage, independent test criteria, and the core skill's supporting sections. Unchecked implementation tasks are expected; completion here means generation is finished.
 
-Stop with the exact material design gap, missing prerequisite, substantive question, no-progress result, stale evidence, or five-pass cap. Do not implement work or launch Analyze. After review, the operator may separately invoke Analyze with `speckit-flow-analyze-remediate`.
+If gaps remain and a prior gap was filled, feed the exact remaining gaps back into `speckit.tasks`, preserving task IDs, completion markers, approved decisions, and completed work. Stop with the exact material design gap, missing prerequisite, operator question, no-progress result, or five-pass safety limit. Present the task plan for review; the operator may separately invoke Analyze. Task generation does not change reviewed design or begin implementation.
 
 ## Manual analysis and remediation path
 

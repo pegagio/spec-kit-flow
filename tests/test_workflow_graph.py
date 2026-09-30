@@ -68,7 +68,7 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         for projection in projections:
             with self.subTest(workflow=projection["workflow_id"]):
                 self.assertTrue(projection["entry_step_id"])
-                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan"}:
+                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan", "speckit-flow-tasks"}:
                     self.assertFalse(projection["branches"])
                     self.assertFalse(projection["human_decisions"])
                 else:
@@ -175,28 +175,22 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         self.assertIn("wait for the operator's answer", manual)
         self.assertIn("without invoking Plan", manual)
 
-    def testTasksGraphAssessesCoverageWithoutRoutineReviewAndKeepsAnalyzeSeparate(self) -> None:
+    def testTasksGraphUsesOnlyCoreSkillAndOutputLoop(self) -> None:
         workflow = next(item for item in self.inventory.load_workflows()
                         if item["workflow"]["id"] == "speckit-flow-tasks")
-        steps = workflow["steps"]
-        self.assertEqual("assess-task-readiness", steps[0]["id"])
-        route = find_step(steps, "route-initial-task-readiness")
-        self.assertEqual("task-generation-loop", route["cases"]["continue"][0]["id"])
-        self.assertEqual("task-design-gap-stop", route["cases"]["blocked"][0]["id"])
-        loop = find_step(steps, "task-generation-loop")
-        self.assertEqual(5, loop["max_iterations"])
-        self.assertEqual("assess-task-coverage-after-pass", loop["steps"][-1]["id"])
-        gates = {node["id"] for node, _, _ in self.inventory._walk(steps) if node.get("type") == "gate"}
-        self.assertEqual({"task-material-decision-gate", "task-final-material-decision-gate"}, gates)
-        self.assertFalse(any("routine" in node.get("message", "").lower()
-                             for node, _, _ in self.inventory._walk(steps) if node.get("type") == "gate"))
-        self.assertFalse(any(command.startswith("speckit.flow-") or command.startswith("speckit.analyze")
-                             for command in commands(steps)))
-        manual = (ROOT / "workflows/README.md").read_text(encoding="utf-8").split(
-            "## Manual task-generation path", 1
-        )[1].split("## Manual analysis and remediation path", 1)[0]
+        self.assertEqual(["tasks-output-loop", "report-task-outcome"],
+                         [step["id"] for step in workflow["steps"]])
+        self.assertEqual(["speckit.tasks"], commands(workflow["steps"]))
+        graph = self.inventory.project_workflow(workflow)
+        self.assertFalse(graph["branches"])
+        self.assertFalse(graph["human_decisions"])
+        self.assertTrue(graph["continuation_edges"])
+        self.assertFalse(graph["unexplained_terminal_paths"])
+        manual = (ROOT / "workflows/README.md").read_text().split(
+            "## Manual task-generation path", 1)[1].split("## Manual analysis and remediation path", 1)[0]
         self.assertIn("without a routine pre-generation question", manual)
         self.assertIn("separately invoke Analyze", manual)
+        self.assertIn("preserving task IDs, completion markers", manual)
 
     def testConvergeGraphOrdersRemediationAndStopsWithoutStartingCloseOut(self) -> None:
         workflow = next(item for item in self.inventory.load_workflows()

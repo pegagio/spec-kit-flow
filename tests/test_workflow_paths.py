@@ -375,51 +375,38 @@ class WorkflowPathTests(unittest.TestCase):
             previous_assessment=initial)["blocker"])
         self.assertIn("separate operator invocation", steps[1]["prompt"])
 
-    def testTasksGeneratesWithoutRoutineGateAndAssessesCoverageBeforeSuccess(self) -> None:
+    def testTasksRetriesGenerationGapsAndPreservesTaskHistory(self) -> None:
         workflow = load_workflow("speckit-flow-tasks")
-        steps = workflow["steps"]
-        self.assertEqual("assess-task-readiness", steps[0]["id"])
-        self.assertIn("next_step_id to assess-task-coverage-before-pass", steps[0]["prompt"])
-        initial_route = find_step(steps, "route-initial-task-readiness")
-        self.assertEqual({"complete", "continue", "needs-human", "blocked"}, set(initial_route["cases"]))
-        self.assertEqual("task-generation-loop", initial_route["cases"]["continue"][0]["id"])
-        self.assertEqual("task-material-decision-gate", initial_route["cases"]["needs-human"][0]["id"])
-        self.assertEqual("task-design-gap-stop", initial_route["cases"]["blocked"][0]["id"])
-        loop = find_step(steps, "task-generation-loop")
+        loop, report = workflow["steps"]
+        self.assertEqual("tasks-output-loop", loop["id"])
         self.assertEqual(5, loop["max_iterations"])
-        self.assertEqual("assess-task-coverage-before-pass", loop["steps"][0]["id"])
-        self.assertEqual("assess-task-coverage-after-pass", loop["steps"][-1]["id"])
-        self.assertIn("next_step_id to route-task-generation-pass", loop["steps"][0]["prompt"])
-        self.assertIn("task-final-material-decision-gate", loop["steps"][0]["prompt"])
-        route = find_step(steps, "route-task-generation-pass")
-        self.assertEqual("select-task-action", route["cases"]["continue"][0]["id"])
-        self.assertEqual("speckit.tasks", find_step(steps, "generate-tasks")["command"])
-        final_route = find_step(steps, "route-final-task-coverage")
-        self.assertEqual({"complete", "needs-human", "blocked", "continue", "default"}, set(final_route["cases"]))
-        self.assertEqual("tasks-coverage-complete-stop", final_route["cases"]["complete"][0]["id"])
-        self.assertEqual("task-coverage-bounded-stop", final_route["cases"]["continue"][0]["id"])
-        self.assertFalse(any(node.get("type") == "gate" and "review" in node.get("message", "").lower()
-                             for node in steps))
-        self.assertFalse(any(command.startswith("speckit.flow-") or command.startswith("speckit.analyze")
-                             for command in commands(steps)))
-        manual = (ROOT / "workflows/README.md").read_text(encoding="utf-8").split(
-            "## Manual task-generation path", 1
-        )[1].split("## Manual analysis and remediation path", 1)[0]
-        self.assertIn("without a routine pre-generation question", manual)
-        self.assertIn("Stop with the exact material design gap", manual)
-        self.assertIn("separately invoke Analyze", manual)
-
-        initial = {"state": "continue", "next_step_id": "generate-tasks", "remaining_ids": ["COV-1", "COV-2"]}
-        progress = {"state": "continue", "next_step_id": "generate-tasks", "remaining_ids": ["COV-2"],
-                    "resolved_ids": ["COV-1"]}
-        self.assertEqual({"action": "continue", "next_step_id": "generate-tasks"}, self.controller.route_loop_assessment(
-            progress, iteration=1, max_iterations=5, loop_body_step_ids={"generate-tasks"},
-            previous_assessment=initial,
-        ))
-        self.assertEqual({"action": "blocked", "blocker": "no-progress"}, self.controller.route_loop_assessment(
-            {**initial, "resolved_ids": []}, iteration=1, max_iterations=5,
-            loop_body_step_ids={"generate-tasks"}, previous_assessment=initial,
-        ))
+        self.assertEqual("{{ steps.verify-task-output.output.state == 'continue' }}", loop["condition"])
+        prepare, generate, verify = loop["steps"]
+        self.assertEqual(["prepare-task-request", "generate-tasks", "verify-task-output"],
+                         [step["id"] for step in loop["steps"]])
+        self.assertEqual(["speckit.tasks"], commands(workflow["steps"]))
+        self.assertEqual("{{ steps.prepare-task-request.output.args }}", generate["input"]["args"])
+        self.assertIn("latest verify-task-output remaining_ids", prepare["prompt"])
+        self.assertIn("{{ steps.prepare-task-request.output.remaining_ids }}", verify["prompt"])
+        self.assertIn("{{ steps.prepare-task-request.output.task_history }}", verify["prompt"])
+        self.assertIn("unchecked implementation tasks do not make task generation incomplete", verify["prompt"])
+        self.assertIn("lost task history", verify["prompt"])
+        self.assertNotIn("task_decision", workflow["inputs"])
+        self.assertIn("Analyze, and implementation require separate operator action", report["prompt"])
+        initial = {"state": "continue", "next_step_id": "prepare-task-request",
+                   "remaining_ids": ["tasks.md:US1", "tasks.md:dependencies"]}
+        repaired = {**initial, "remaining_ids": ["tasks.md:dependencies"],
+                    "resolved_ids": ["tasks.md:US1"]}
+        body_ids = {step["id"] for step in loop["steps"]}
+        self.assertEqual("continue", self.controller.route_loop_assessment(
+            repaired, iteration=1, max_iterations=5, loop_body_step_ids=body_ids,
+            previous_assessment=initial)["action"])
+        self.assertEqual("no-progress", self.controller.route_loop_assessment(
+            initial, iteration=1, max_iterations=5, loop_body_step_ids=body_ids,
+            previous_assessment=initial)["blocker"])
+        self.assertEqual("complete", self.controller.route_loop_assessment(
+            {"state": "complete", "remaining_ids": []}, iteration=5, max_iterations=5,
+            loop_body_step_ids=body_ids)["action"])
 
     def testConvergeRunsOrderedRemediationAndReassessesUntilCleanOrBoundedStop(self) -> None:
         workflow = load_workflow("speckit-flow-converge")

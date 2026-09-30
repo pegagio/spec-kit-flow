@@ -61,7 +61,7 @@ After clarification, the operator receives an evidence-backed assessment of rema
 
 ### User Story 4 - Generate and Assess Tasks (Priority: P1)
 
-The operator invokes Tasks for a reviewed plan. The workflow generates a proposal, assesses coverage, and exits successfully when complete. The operator may review it and separately invoke Analyze.
+The operator invokes Tasks for a reviewed plan. The workflow invokes the core task skill, verifies generation output, and retries exact output or coverage gaps while progress is verified. The operator may review it and separately invoke Analyze.
 
 **Independent Test**: Run Tasks with complete design artifacts and with a material design gap; inspect generation, coverage, and the resulting stop or success.
 
@@ -134,7 +134,7 @@ Constitution 6.0.0 prospectively permits declared, bounded correction and reasse
 - **FR-004**: Clarify MUST keep substantive operator questions and routing in the main task and MUST NOT launch Plan.
 - **FR-005**: Plan MUST invoke `speckit.plan` for the selected reviewed specification and present the resulting design artifacts or exact blocker. The core skill owns prerequisite checks, research, design generation, and constitutional gates. The wrapper MUST check that required and applicable output artifacts are present and populated, then feed exact missing files or placeholder sections back into the core skill while output gaps are being resolved. It MUST preserve completed design, accept justified not-applicable sections, and stop for operator input, blockers, no progress, or the reviewed safety bound. This is output verification, not design review. Substantive product decisions remain operator-provided and Tasks remains separately invoked.
 - **FR-006**: Tasks MUST treat invocation as authorization to generate from reviewed design without a routine pre-generation confirmation; a material design gap MUST cause a specific stop.
-- **FR-007**: Tasks MUST assess generated coverage against reviewed design, report material gaps, and exit successfully when complete without a routine post-generation human gate. Task review and Analyze invocation remain separate operator actions.
+- **FR-007**: Tasks MUST wrap `speckit.tasks` in a bounded output-verification loop: prepare exact gaps, invoke the core skill, verify tasks.md is populated with required format, sections, and story/dependency coverage, then retry remaining gaps while progress is verified. Retries MUST preserve existing task IDs, completion markers, completed work, and reviewed design. Unchecked implementation tasks MUST NOT count as incomplete generation. Operator input, material design gaps, missing prerequisites, no progress, or the reviewed cap cause a specific stop. Task review, Analyze, and implementation remain separate operator actions.
 - **FR-008**: Converge MUST classify clean, remediable, and blocked outcomes from inspectable current evidence without asking the operator to classify routine results.
 - **FR-009**: An invoked Converge run MUST stay within selected feature and task scope, append bounded remediation tasks, reconcile accepted changes through affected spec, plan, and task artifacts, analyze changed tasks, implement eligible fixes, and reassess until clean or a bounded stop.
 - **FR-010**: Converge MUST stop on consequential decisions, ambiguous recovery, failed prerequisites, repeated findings, lack of progress, or an exhausted reviewed iteration bound; preserve partial work and explain the blocker. Successful commands alone MUST NOT establish a clean result.
