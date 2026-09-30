@@ -250,6 +250,12 @@ def validate_workflow_graph(steps: list[dict[str, Any]]) -> None:
                 agent_name = assignment.get("agent")
                 if not isinstance(agent_name, str) or agent_name not in REVIEWED_AGENT_NAMES:
                     raise ValueError(f"step {step_id} names an unknown or invalid Codex agent: {agent_name!r}")
+            if kind == "gate":
+                options = node.get("options")
+                if (not isinstance(options, list) or not options
+                    or any(not isinstance(option, str) or not option.strip() for option in options)
+                    or len(set(options)) != len(options)):
+                    raise ValueError(f"gate options must be distinct nonempty strings: {step_id}")
             if kind == "switch":
                 cases = node.get("cases", {})
                 if not isinstance(cases, dict):
@@ -558,7 +564,23 @@ def render_template(value: Any, inputs: dict[str, Any], outputs: dict[str, dict[
     if isinstance(value, list):
         return [render_template(item, inputs, outputs) for item in value]
     if isinstance(value, dict):
-        return {key: render_template(item, inputs, outputs) for key, item in value.items()}
+        rendered_mapping = {key: render_template(item, inputs, outputs) for key, item in value.items()}
+        if rendered_mapping.get("type") == "gate":
+            source_options = value.get("options")
+            dynamic = (isinstance(source_options, list) and len(source_options) == 1
+                       and isinstance(source_options[0], str)
+                       and STEP_REFERENCE.fullmatch(source_options[0].strip()) is not None)
+            if dynamic:
+                options = rendered_mapping.get("options")
+                if not isinstance(options, list) or len(options) != 1 or not isinstance(options[0], list):
+                    raise ValueError("dynamic gate options must resolve to an array")
+                rendered_mapping["options"] = list(options[0])
+            options = rendered_mapping.get("options")
+            if (not isinstance(options, list) or not options
+                or any(not isinstance(option, str) or not option.strip() for option in options)
+                or len(set(options)) != len(options)):
+                raise ValueError("rendered gate options must be distinct nonempty strings")
+        return rendered_mapping
     if not isinstance(value, str):
         return value
 
@@ -579,6 +601,17 @@ def render_template(value: Any, inputs: dict[str, Any], outputs: dict[str, dict[
             current = current[key]
         return str(current)
 
+    # A whole output reference may carry a dynamic gate option list.
+    whole_output = STEP_REFERENCE.fullmatch(rendered.strip())
+    if whole_output is not None:
+        step_id, key_path = whole_output.groups()
+        current: Any = outputs.get(step_id)
+        for key in key_path.split("."):
+            if not isinstance(current, dict) or key not in current:
+                raise ValueError(f"unresolved step output reference: {step_id}.{key_path}")
+            current = current[key]
+        if isinstance(current, list):
+            return list(current)
     rendered = STEP_REFERENCE.sub(output_value, rendered)
     if "{{" in rendered or "}}" in rendered:
         raise ValueError(f"unsupported or unresolved template expression: {rendered}")

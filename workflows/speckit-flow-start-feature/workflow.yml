@@ -1,209 +1,188 @@
-schema_version: "1.0"
-
+schema_version: '1.0'
 workflow:
-  id: "speckit-flow-start-feature"
-  name: "Start Eligible Feature"
-  version: "0.5.0"
-  author: "pegagio"
-  description: "Prepare one uniquely eligible roadmap feature through an approval-gated roadmap transition, cited context, specification, and roadmap brief."
-
+  id: speckit-flow-start-feature
+  name: Start Eligible Feature
+  version: "0.5.1"
+  author: pegagio
+  description: Create one eligible roadmap feature with cited context, exact roadmap approvals, verified specification linkage, and one shared brief and outcome report.
 requires:
-  speckit_version: ">=1.0.10.dev0"
+  speckit_version: '>=1.0.10.dev0'
   integrations:
-    any: ["codex"]
-
+    any:
+      - codex
 inputs:
   feature_request:
     type: string
-    required: true
-    prompt: "Describe the eligible roadmap feature to assess"
+    default: ''
+    prompt: Optional roadmap filter or area of interest; the operator still selects a listed feature
   integration:
     type: string
-    default: "codex"
-    enum: ["codex"]
+    default: codex
+    enum:
+      - codex
   roadmap_decision:
     type: string
-    default: ""
+    default: ''
   linkage_patch_decision:
     type: string
-    default: ""
-  final_review_decision:
+    default: ''
+  feature_selection:
     type: string
-    default: ""
-
+    default: ''
 steps:
-  - id: assess-eligibility
+  - id: list-roadmap-options
+    type: prompt
     flow_kit:
       delegated: true
       agent: Architect
-    type: prompt
-    integration: "{{ inputs.integration }}"
-    prompt: "Assess the roadmap for one uniquely eligible feature matching: {{ inputs.feature_request }}. Read dependencies and governing context. Return a structured result with the exact selected_entry_id as displayed in the roadmap and the exact proposed_status_patch. Do not mutate the roadmap. Stop if eligibility or entry identity is ambiguous, dependencies are unsatisfied, or governing context is incomplete. Never use the feature number alone as the entry identity."
-  - id: approve-roadmap-patch
+    prompt: >-
+      Read the configured roadmap and its documented lifecycle/dependency rules without modifying any file. Inventory available features before selecting one. Optional operator interest: {{ inputs.feature_request }}; it may highlight candidates but must not select one or hide their prerequisite chains. Return report, selection_options (a JSON array of distinct strings containing exact selectable roadmap entry identifiers plus defer), and evidence. In report, present a numbered table of dependency-ready candidates with exact entry ID/title, status, prerequisites, direct_unlock_count, and downstream_dependent_count. Also show blocked unfinished features with unsatisfied prerequisites, so the operator can see why a prerequisite may be the best next choice. Availability means eligible to start under the roadmap rules; do not treat terminal, deferred, abandoned, already-active, or ambiguous entries as new-start candidates. Later selected-feature assessment still checks governing context. Show simple text dependency chains for relevant unfinished features and the full prerequisite closure, e.g. Feature 29 -> Feature 28 -> Feature 26 (arrow means depends on); show every branch for multiple prerequisites and include current statuses. Use only actual roadmap edges. direct_unlock_count counts currently blocked features that would become dependency-ready if this candidate alone were completed under the roadmap rules; downstream_dependent_count counts distinct unfinished transitive dependents, not immediate unlocks. Deduplicate shared descendants and do not count completed features. Missing references, cycles, ambiguous entry identity, or undefined readiness rules must be reported rather than guessed; exclude unsafe candidates. If no candidates are safely selectable, explain why and return selection_options containing only defer. Order the candidate table by direct unlock count descending, then downstream dependent count descending, then roadmap order. Keep table numbers in the same order as selection_options, with defer last. Use full entry identifiers including titles so feature numbers cannot be mistaken for menu indices. Display the choices and dependency report for the human; do not pick a candidate, infer an answer from the request, mutate the roadmap, create a specification, or invoke another workflow.
+  - id: select-roadmap-feature
     type: gate
-    message: "Review the exact roadmap patch and context coverage. Approve only a uniquely eligible, exact patch; otherwise amend the roadmap, resolve context, or defer."
-    options: ["approve", "amend-roadmap", "resolve-context", "defer"]
-    verdict_input: "roadmap_decision"
-    on_reject: "skip"
-  - id: route-roadmap-decision
+    message: |-
+      Choose the feature to start from this roadmap inventory. Dependency arrows mean depends on; direct unlocks and downstream dependents are different measures.
+      {{ steps.list-roadmap-options.output.report }}
+      Select one exact listed entry or defer. Choosing a feature does not approve a roadmap patch.
+    options:
+      - '{{ steps.list-roadmap-options.output.selection_options }}'
+    verdict_input: feature_selection
+    on_reject: skip
+  - id: route-feature-selection
     type: switch
-    expression: "{{ steps.approve-roadmap-patch.output.choice }}"
+    expression: '{{ steps.select-roadmap-feature.output.choice }}'
     cases:
-      approve:
-        - id: apply-approved-roadmap-patch
-          command: "speckit.flow-roadmap.write"
-          integration: "{{ inputs.integration }}"
-          input:
-            args: "Apply only the exact roadmap patch the operator just approved for: {{ inputs.feature_request }}."
-        - id: retrieve-governing-context
-          command: "speckit.flow-wiki.query"
-          integration: "{{ inputs.integration }}"
-          input:
-            args: "For {{ inputs.feature_request }}, retrieve cited governing decisions, constraints, dependencies, and coverage classification. Report Partial or Uncovered rather than inventing a fact."
-        - id: draft-specification
-          flow_kit:
-            delegated: true
-            agent: Architect
-          command: "speckit.specify"
-          integration: "{{ inputs.integration }}"
-          input:
-            args: "Create the specification for the approved roadmap feature: {{ inputs.feature_request }}. Preserve the approved outcome, scope, dependencies, and cited governing context."
-        - id: assess-created-spec-linkage
+      defer: []
+    default:
+      - id: retrieve-governing-context
+        command: speckit.flow-wiki.query
+        integration: '{{ inputs.integration }}'
+        input:
+          args: >-
+            For exact operator-selected roadmap entry {{ steps.select-roadmap-feature.output.choice }}, retrieve cited governing decisions, constraints, dependencies, and coverage classification before any roadmap mutation. Return the cited context and coverage gaps in a report output field. Report Partial or Uncovered rather than inventing a fact. Do not change the roadmap or start another workflow.
+      - id: assess-eligibility
+        flow_kit:
+          delegated: true
+          agent: Architect
+        type: prompt
+        integration: '{{ inputs.integration }}'
+        prompt: >-
+          Assess only the exact operator-selected roadmap entry {{ steps.select-roadmap-feature.output.choice }} against roadmap dependencies and this cited governing context: {{ steps.retrieve-governing-context.output.report }}. Return a structured result with state ready, needs-human, or blocked, exact selected_entry_id as displayed in the roadmap, feature_brief containing the selected entry's approved intended outcome, scope and dependencies, exact proposed_status_patch, and specific evidence or required operator action. Use ready only when entry identity and eligibility are unique, prerequisites are satisfied, and governing context is sufficient to draft the specification. Partial or Uncovered context that prevents a safe draft requires needs-human or blocked; never manufacture governing facts. The status patch must name the exact existing entry and intended lifecycle transition without implying implementation or acceptance. Do not mutate the roadmap. Never use the feature number alone as the entry identity. Re-read current roadmap dependencies and status; if the selected candidate is no longer eligible, stop instead of substituting another entry. Ask substantive product, authority, or scope questions rather than assuming answers.
+      - id: route-start-readiness
+        type: switch
+        expression: '{{ steps.assess-eligibility.output.state }}'
+        cases:
+          ready:
+            - id: approve-roadmap-patch
+              type: gate
+              message: |-
+                Review the exact start transition for roadmap entry {{ steps.assess-eligibility.output.selected_entry_id }}:
+                {{ steps.assess-eligibility.output.proposed_status_patch }}
+                Feature scope and dependencies: {{ steps.assess-eligibility.output.feature_brief }}
+                Governing context and coverage: {{ steps.retrieve-governing-context.output.report }}
+                Approve only this patch verbatim; otherwise request an amendment, resolve context, or defer. No alternative choice authorizes a write.
+              options:
+                - approve
+                - amend-roadmap
+                - resolve-context
+                - defer
+              verdict_input: roadmap_decision
+              on_reject: skip
+            - id: route-roadmap-decision
+              type: switch
+              expression: '{{ steps.approve-roadmap-patch.output.choice }}'
+              cases:
+                approve:
+                  - id: apply-approved-roadmap-patch
+                    command: speckit.flow-roadmap.write
+                    integration: '{{ inputs.integration }}'
+                    input:
+                      args: >-
+                        Apply only the exact patch approved at approve-roadmap-patch for existing roadmap entry {{ steps.assess-eligibility.output.selected_entry_id }}: {{ steps.assess-eligibility.output.proposed_status_patch }}. Do not infer the target from the feature request or number, broaden the delta, or choose another lifecycle transition.
+                  - id: draft-specification
+                    flow_kit:
+                      delegated: true
+                      agent: Architect
+                    command: speckit.specify
+                    integration: '{{ inputs.integration }}'
+                    input:
+                      args: >-
+                        Create the specification for exact roadmap entry {{ steps.assess-eligibility.output.selected_entry_id }} using this approved feature brief: {{ steps.assess-eligibility.output.feature_brief }}. Preserve its intended outcome, scope, and dependencies and this cited governing context: {{ steps.retrieve-governing-context.output.report }}. Do not expand scope or resolve substantive unanswered questions without the operator. Return the actual created repository-relative specification directory ending in slash as actual_spec_dir and the creation result in report. Do not invoke planning or another FlowKit workflow.
+                  - id: assess-created-spec-linkage
+                    flow_kit:
+                      delegated: true
+                      agent: Verifier
+                    type: prompt
+                    integration: '{{ inputs.integration }}'
+                    prompt: >-
+                      Inspect the created specification at {{ steps.draft-specification.output.actual_spec_dir }} and .specify/feature.json feature_directory, then compare them with every roadmap Spec dir mapping. Use exact selected_entry_id {{ steps.assess-eligibility.output.selected_entry_id }} and never infer identity from feature number alone. Return one structured result with state (linked, repairable, conflict, or ambiguous), selected_entry_id, actual_spec_dir, and evidence. Format actual_spec_dir as a repository-relative directory ending in slash. Use linked only when that one entry has exactly one exact mapping to this directory and no other entry claims the same directory. Use repairable only when the selected entry is uniquely identified and its Spec dir is missing or stale, no other entry claims the actual directory, and you can present a minimal exact patch to that row as proposed_patch. Write the patch as the exact Markdown row with the path inside backticks and no trailing punctuation inside the backticks. Return conflict when another entry claims the directory or mapping ownership conflicts. Return ambiguous when the selected roadmap entry or created spec directory cannot be identified uniquely. Do not edit the roadmap.
+                  - id: route-created-spec-linkage
+                    type: switch
+                    expression: '{{ steps.assess-created-spec-linkage.output.state }}'
+                    cases:
+                      linked: []
+                      repairable:
+                        - id: review-spec-dir-patch
+                          type: gate
+                          message: |-
+                            Review this exact Spec dir patch for roadmap entry {{ steps.assess-created-spec-linkage.output.selected_entry_id }} and directory {{ steps.assess-created-spec-linkage.output.actual_spec_dir }}:
+                            {{ steps.assess-created-spec-linkage.output.proposed_patch }}
+                            Approve only this patch verbatim; amendment or deferral makes no roadmap change.
+                          options:
+                            - approve-exact-patch
+                            - amend
+                            - defer
+                          verdict_input: linkage_patch_decision
+                          on_reject: skip
+                        - id: route-spec-dir-patch-decision
+                          type: switch
+                          expression: '{{ steps.review-spec-dir-patch.output.choice }}'
+                          cases:
+                            approve-exact-patch:
+                              - id: apply-approved-spec-dir-patch
+                                command: speckit.flow-roadmap.write
+                                integration: '{{ inputs.integration }}'
+                                input:
+                                  args: >-
+                                    Apply only this exact Spec dir patch, which was explicitly approved at review-spec-dir-patch, for roadmap entry {{ steps.assess-created-spec-linkage.output.selected_entry_id }} and actual directory {{ steps.assess-created-spec-linkage.output.actual_spec_dir }}: {{ steps.assess-created-spec-linkage.output.proposed_patch }}. Do not infer the target from its feature number or broaden the patch.
+                              - id: verify-repaired-spec-linkage
+                                flow_kit:
+                                  delegated: true
+                                  agent: Verifier
+                                type: prompt
+                                integration: '{{ inputs.integration }}'
+                                prompt: >-
+                                  Re-read the roadmap after the approved write and re-check .specify/feature.json plus the actual created spec directory. Return a structured result with state and fresh evidence. Return state linked only if selected_entry_id {{ steps.assess-created-spec-linkage.output.selected_entry_id }} is the unique exact owner of actual_spec_dir {{ steps.assess-created-spec-linkage.output.actual_spec_dir }}. Otherwise return repairable, conflict, or ambiguous. Do not edit the roadmap.
+                            amend: []
+                            defer: []
+                      conflict: []
+                      ambiguous: []
+                amend-roadmap: []
+                resolve-context: []
+                defer: []
+          needs-human: []
+          blocked: []
+  - id: prepare-start-outcome
+    type: prompt
+    prompt: >-
+      Use the validated select-roadmap-feature choice from this run; defer skips all feature work and reports the selection inventory without requiring outputs from untaken branches. Summarize the current Start Feature path for {{ inputs.feature_request }} without repeating eligibility or linkage analysis. Return state ready-for-brief, needs-human, blocked, or deferred; the exact reason and evidence; and brief_args only when ready-for-brief. Inspect only completed steps in this run; never require output from an untaken branch. Eligibility needs-human or blocked and non-approve roadmap choices skip the brief. Preserve the operator's amendment, context-resolution, or defer choice in the report. After specification creation, ready-for-brief requires the validated initial linkage state linked, or an explicitly approved exact Spec dir repair followed by fresh verify-repaired-spec-linkage state linked. A repair amendment, deferral, missing verification, repairable result after writing, ownership conflict, ambiguous result, failed command, or invalid outcome cannot authorize the brief. For a verified link, construct brief_args with explicit SPEC_TARGET equal to the observed actual_spec_dir and ROADMAP_ENTRY equal to the exact selected_entry_id. Do not infer either from feature number, change the roadmap, or apply another repair in this run. Preserve created artifacts and report the smallest safe next action when stopped.
+  - id: route-start-outcome
+    type: switch
+    expression: '{{ steps.prepare-start-outcome.output.state }}'
+    cases:
+      ready-for-brief:
+        - id: brief-against-roadmap
           flow_kit:
             delegated: true
             agent: Verifier
-          type: prompt
-          integration: "{{ inputs.integration }}"
-          prompt: "Inspect the created specification's actual directory and .specify/feature.json feature_directory, then compare them with every roadmap Spec dir mapping. Use the exact selected_entry_id returned by assess-eligibility and never infer identity from feature number alone. Return one structured result with state (linked, repairable, conflict, or ambiguous), selected_entry_id, actual_spec_dir, and evidence. Format actual_spec_dir as a repository-relative directory ending in slash. Use linked only when that one entry has exactly one exact mapping to this directory and no other entry claims the same directory. Use repairable only when the selected entry is uniquely identified and its Spec dir is missing or stale, no other entry claims the actual directory, and you can present a minimal exact patch to that row as proposed_patch. Write the patch as the exact Markdown row with the path inside backticks and no trailing punctuation inside the backticks. Return conflict when another entry claims the directory or mapping ownership conflicts. Return ambiguous when the selected roadmap entry or created spec directory cannot be identified uniquely. Do not edit the roadmap."
-        - id: route-created-spec-linkage
-          type: switch
-          expression: "{{ steps.assess-created-spec-linkage.output.state }}"
-          cases:
-            linked:
-              - id: brief-against-roadmap
-                flow_kit:
-                  delegated: true
-                  agent: Verifier
-                command: "speckit.flow-roadmap.brief"
-                integration: "{{ inputs.integration }}"
-                input:
-                  args: "Run the roadmap brief with explicit constraints SPEC_TARGET={{ steps.assess-created-spec-linkage.output.actual_spec_dir }} and ROADMAP_ENTRY={{ steps.assess-created-spec-linkage.output.selected_entry_id }}. The brief must resolve the exact selected entry and spec directory."
-              - id: review-specification-and-brief
-                type: gate
-                message: "Review the uniquely matched specification and roadmap brief. Choose the next human-directed state; this workflow does not start it automatically."
-                options: ["clarify", "amend-roadmap", "resolve-context", "begin-planning", "defer"]
-                verdict_input: "final_review_decision"
-                on_reject: "skip"
-            repairable:
-              - id: review-spec-dir-patch
-                type: gate
-                message: "Review this exact Spec dir patch for roadmap entry {{ steps.assess-created-spec-linkage.output.selected_entry_id }} and directory {{ steps.assess-created-spec-linkage.output.actual_spec_dir }}:\n{{ steps.assess-created-spec-linkage.output.proposed_patch }}\nApprove only this patch verbatim; amendment or deferral makes no roadmap change."
-                options: ["approve-exact-patch", "amend", "defer"]
-                verdict_input: "linkage_patch_decision"
-                on_reject: "skip"
-              - id: route-spec-dir-patch-decision
-                type: switch
-                expression: "{{ steps.review-spec-dir-patch.output.choice }}"
-                cases:
-                  approve-exact-patch:
-                    - id: apply-approved-spec-dir-patch
-                      command: "speckit.flow-roadmap.write"
-                      integration: "{{ inputs.integration }}"
-                      input:
-                        args: "Apply only this exact Spec dir patch, which was explicitly approved at review-spec-dir-patch, for roadmap entry {{ steps.assess-created-spec-linkage.output.selected_entry_id }} and actual directory {{ steps.assess-created-spec-linkage.output.actual_spec_dir }}: {{ steps.assess-created-spec-linkage.output.proposed_patch }}. Do not infer the target from its feature number or broaden the patch."
-                    - id: verify-repaired-spec-linkage
-                      flow_kit:
-                        delegated: true
-                        agent: Verifier
-                      type: prompt
-                      integration: "{{ inputs.integration }}"
-                      prompt: "Re-read the roadmap after the approved write and re-check .specify/feature.json plus the actual created spec directory. Return a structured result with state and fresh evidence. Return state linked only if selected_entry_id {{ steps.assess-created-spec-linkage.output.selected_entry_id }} is the unique exact owner of actual_spec_dir {{ steps.assess-created-spec-linkage.output.actual_spec_dir }}. Otherwise return repairable, conflict, or ambiguous. Do not edit the roadmap."
-                    - id: route-rechecked-spec-linkage
-                      type: switch
-                      expression: "{{ steps.verify-repaired-spec-linkage.output.state }}"
-                      cases:
-                        linked:
-                          - id: brief-after-linkage-repair
-                            flow_kit:
-                              delegated: true
-                              agent: Verifier
-                            command: "speckit.flow-roadmap.brief"
-                            integration: "{{ inputs.integration }}"
-                            input:
-                              args: "Refresh the roadmap brief with explicit constraints SPEC_TARGET={{ steps.assess-created-spec-linkage.output.actual_spec_dir }} and ROADMAP_ENTRY={{ steps.assess-created-spec-linkage.output.selected_entry_id }}; verify it resolves this exact pair."
-                          - id: review-specification-and-refreshed-brief
-                            type: gate
-                            message: "Review the refreshed brief tied to the unique selected roadmap entry and exact specification directory. Choose the next human-directed state; this workflow does not start it automatically."
-                            options: ["clarify", "amend-roadmap", "resolve-context", "begin-planning", "defer"]
-                            verdict_input: "final_review_decision"
-                            on_reject: "skip"
-                        repairable:
-                          - id: stop-after-linkage-recheck-repairable
-                            type: prompt
-                            integration: "{{ inputs.integration }}"
-                            prompt: "Stop because the approved mapping patch did not produce one exact unique link. Preserve the refreshed roadmap/spec evidence and report the smallest safe next action; do not propose or apply another patch in this run."
-                        conflict:
-                          - id: stop-after-linkage-recheck-conflict
-                            type: prompt
-                            integration: "{{ inputs.integration }}"
-                            prompt: "Stop because the refreshed roadmap shows conflicting Spec dir ownership after the approved patch. Preserve evidence and report the conflicting entries and required operator resolution."
-                        ambiguous:
-                          - id: stop-after-linkage-recheck-ambiguous
-                            type: prompt
-                            integration: "{{ inputs.integration }}"
-                            prompt: "Stop because the refreshed roadmap/spec evidence still cannot identify a unique mapping. Preserve evidence and report the smallest safe operator action."
-                      default:
-                        - id: stop-after-linkage-recheck-invalid
-                          type: prompt
-                          integration: "{{ inputs.integration }}"
-                          prompt: "Stop because the refreshed linkage assessment returned an invalid state. Preserve evidence and report the validation error."
-                  amend:
-                    - id: stop-for-linkage-amendment
-                      type: prompt
-                      integration: "{{ inputs.integration }}"
-                      prompt: "Stop without changing the roadmap. The operator requested amendment of the proposed Spec dir patch; prepare a new exact patch for review before any write."
-                  defer:
-                    - id: stop-with-deferred-linkage
-                      type: prompt
-                      integration: "{{ inputs.integration }}"
-                      prompt: "Stop without changing the roadmap. Record that the operator deferred roadmap linkage repair and preserve the exact proposed patch and evidence."
-                default:
-                  - id: stop-invalid-linkage-patch-decision
-                    type: prompt
-                    integration: "{{ inputs.integration }}"
-                    prompt: "Stop without changing the roadmap because the exact linkage-patch decision was not recognized. Preserve the proposed patch and request a valid operator decision."
-            conflict:
-              - id: stop-on-linkage-conflict
-                type: prompt
-                integration: "{{ inputs.integration }}"
-                prompt: "Stop because roadmap Spec dir ownership conflicts. Preserve the selected entry, conflicting mapping evidence, and created spec path; request operator resolution without proposing an automatic patch."
-            ambiguous:
-              - id: stop-on-ambiguous-linkage
-                type: prompt
-                integration: "{{ inputs.integration }}"
-                prompt: "Stop because the selected roadmap entry or actual specification directory is ambiguous. Preserve candidate entries and paths; do not infer identity from feature number or mutate the roadmap."
-          default:
-            - id: stop-invalid-created-spec-linkage
-              type: prompt
-              integration: "{{ inputs.integration }}"
-              prompt: "Stop because the post-specification linkage assessment returned an invalid state. Preserve evidence and report the validation error."
-      amend-roadmap:
-        - id: stop-for-roadmap-amendment
-          type: prompt
-          integration: "{{ inputs.integration }}"
-          prompt: "Stop the start-feature workflow. Prepare a new exact approval-gated roadmap amendment; do not invent a replacement feature."
-      resolve-context:
-        - id: stop-for-context-resolution
-          type: prompt
-          integration: "{{ inputs.integration }}"
-          prompt: "Stop the start-feature workflow. Report the missing or partial wiki coverage and the smallest evidence or human decision needed to continue."
-      defer:
-        - id: stop-with-deferred-feature
-          type: prompt
-          integration: "{{ inputs.integration }}"
-          prompt: "Stop the start-feature workflow without changing roadmap, feature, branch, or specification state. Record that the operator deferred the candidate."
-    default:
-      - id: stop-invalid-roadmap-decision
-        type: prompt
-        integration: "{{ inputs.integration }}"
-        prompt: "Stop. The roadmap decision was not recognized; retain the manual start-feature prompt as fallback."
+          command: speckit.flow-roadmap.brief
+          integration: '{{ inputs.integration }}'
+          input:
+            args: >-
+              Run the roadmap brief with these exact verified constraints: {{ steps.prepare-start-outcome.output.brief_args }}. Resolve only this selected entry and actual specification directory. Return the full brief, constraints, and errors in a report output field. Do not implement or invoke another workflow.
+      needs-human: []
+      blocked: []
+      deferred: []
+  - id: report-start-feature-outcome
+    type: prompt
+    prompt: >-
+      Include the operator-selected entry or their explicit deferral, and preserve the dependency inventory when no feature was started. Report the outcome for {{ inputs.feature_request }}, exact selected roadmap entry when established, approved roadmap changes, specification path when created, current linkage evidence, and completed brief when available. Missing, failed, or mismatched brief output is a blocker, not successful preparation. Present the specification and uniquely matched brief for operator review when ready. Otherwise preserve any created artifacts and explain the exact deferred choice, amendment request, missing context, ambiguity, ownership conflict, failed prerequisite, or command failure with the smallest safe next action. Stop here. Clarify and Plan require separate operator invocation; do not ask the operator to choose a terminal routing label, start another workflow, integrate Git, or claim acceptance.

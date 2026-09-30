@@ -131,7 +131,11 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         workflow = next(item for item in self.inventory.load_workflows()
                         if item["workflow"]["id"] == "speckit-flow-start-feature")
         graph = self.inventory.project_workflow(workflow)
-        self.assertEqual("0.5.0", graph["version"])
+        self.assertEqual("0.5.1", graph["version"])
+        self.assertEqual(3, len(graph["human_decisions"]))
+        self.assertEqual("list-roadmap-options", graph["entry_step_id"])
+        self.assertEqual(["speckit.flow-wiki.query", "speckit.flow-roadmap.write", "speckit.specify",
+                          "speckit.flow-roadmap.write", "speckit.flow-roadmap.brief"], commands(workflow["steps"]))
         self.assertIn("assess-created-spec-linkage", {item["step_id"] for item in graph["nodes"]})
         self.assertIn("verify-repaired-spec-linkage", {item["step_id"] for item in graph["nodes"]})
         readme = (ROOT / "workflows/README.md").read_text(encoding="utf-8")

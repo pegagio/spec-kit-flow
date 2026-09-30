@@ -193,6 +193,10 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 
 - [X] T053 [US5] Simplify Converge to one shared task-recording and specification → plan → tasks waterfall, one task analyzer and eligibility check, one implementation command, and one convergence assessment; run speckit.converge on every pass with assessment before a guarded correction branch, allow five corrections plus final confirmation, preserve task history and stop propagation, and refresh diagram, manual path, versions, and focused tests.
 
+- [X] T054 [US2] Simplify Start Feature with cited context before approval, explicit exact-patch and feature-context handoffs, one shared brief for verified linkage paths, and one final report; retain exact roadmap approval and post-repair verification, remove terminal choice gates, and refresh diagram, manual path, versions, and focused tests.
+
+- [X] T055 [US2] Begin Start Feature with a read-only candidate and dependency inventory and an explicit human feature-selection gate; distinguish immediate unlocks from downstream dependents, support validated dynamic gate option lists, make the feature request optional, preserve exact selected identity through later handoffs, and update diagram, manual path, controller protocol/version, and tests.
+
 **Checkpoint**: Automated evidence and documentation cover the delivered source; optional desktop observations are separate. Release, roadmap verification, Git integration, and feature acceptance retain their own explicit decisions.
 
 ## Dependencies and Execution Order

@@ -224,90 +224,115 @@ class WorkflowPathTests(unittest.TestCase):
         self.assertIn("five-pass safety cap", implement)
         self.assertIn("Leave Converge", implement)
 
-    def testStartFeatureLinkageCasesRequireExactApprovalAndRefreshBriefEvidence(self) -> None:
+    def testStartFeatureExplicitHandoffsAndOnlyVerifiedLinksReachSharedBrief(self) -> None:
         workflow = load_workflow("speckit-flow-start-feature")
         steps = workflow["steps"]
-        initial_route = find_step(steps, "route-roadmap-decision")
-        self.assertEqual("apply-approved-roadmap-patch", initial_route["cases"]["approve"][0]["id"])
-        for decision in ("amend-roadmap", "resolve-context", "defer"):
-            self.assertEqual([], commands(initial_route["cases"][decision]))
-
-        linkage_route = find_step(steps, "route-created-spec-linkage")
-        self.assertIsNotNone(linkage_route)
-        self.assertEqual({"linked", "repairable", "conflict", "ambiguous"}, set(linkage_route["cases"]))
-        self.assertEqual("brief-against-roadmap", linkage_route["cases"]["linked"][0]["id"])
-        self.assertEqual("review-spec-dir-patch", linkage_route["cases"]["repairable"][0]["id"])
-        self.assertEqual("stop-on-linkage-conflict", linkage_route["cases"]["conflict"][0]["id"])
-        self.assertEqual("stop-on-ambiguous-linkage", linkage_route["cases"]["ambiguous"][0]["id"])
-        self.assertEqual([], commands(linkage_route["cases"]["conflict"]))
-        self.assertEqual([], commands(linkage_route["cases"]["ambiguous"]))
-
-        gate = find_step(steps, "review-spec-dir-patch")
-        self.assertEqual(["approve-exact-patch", "amend", "defer"], gate["options"])
-        patch_route = find_step(steps, "route-spec-dir-patch-decision")
-        self.assertEqual("apply-approved-spec-dir-patch", patch_route["cases"]["approve-exact-patch"][0]["id"])
-        self.assertEqual("stop-for-linkage-amendment", patch_route["cases"]["amend"][0]["id"])
-        self.assertEqual("stop-with-deferred-linkage", patch_route["cases"]["defer"][0]["id"])
-        self.assertEqual([], commands(patch_route["cases"]["amend"]))
-        self.assertEqual([], commands(patch_route["cases"]["defer"]))
-        approved_steps = patch_route["cases"]["approve-exact-patch"]
-        self.assertEqual([
-            "apply-approved-spec-dir-patch",
-            "verify-repaired-spec-linkage",
-            "route-rechecked-spec-linkage",
-        ], [step["id"] for step in approved_steps])
-        self.assertIn("proposed_patch", gate["message"])
-        self.assertIn("proposed_patch", approved_steps[0]["input"]["args"])
-        self.assertIn("Do not infer", approved_steps[0]["input"]["args"])
-        verified = find_step(steps, "route-rechecked-spec-linkage")
-        self.assertEqual("brief-after-linkage-repair", verified["cases"]["linked"][0]["id"])
-        self.assertEqual("stop-after-linkage-recheck-repairable", verified["cases"]["repairable"][0]["id"])
-        self.assertEqual("stop-after-linkage-recheck-conflict", verified["cases"]["conflict"][0]["id"])
-        assessor_prompt = find_step(steps, "assess-created-spec-linkage")["prompt"]
-        self.assertIn("structured result", assessor_prompt)
-        self.assertIn("no trailing punctuation inside the backticks", assessor_prompt)
-        self.assertIn("SPEC_TARGET={{ steps.assess-created-spec-linkage.output.actual_spec_dir }}",
-                      linkage_route["cases"]["linked"][0]["input"]["args"])
-        self.assertIn("ROADMAP_ENTRY={{ steps.assess-created-spec-linkage.output.selected_entry_id }}",
-                      linkage_route["cases"]["linked"][0]["input"]["args"])
-
-        fixture = json.loads((ROOT / "tests/consumer-fixtures/start-feature-linkage.json").read_text(encoding="utf-8"))
-        self.assertEqual({
-            "unique-existing-mapping", "missing-spec-dir", "stale-spec-dir",
-            "conflicting-spec-dir-ownership", "ambiguous-roadmap-target",
-            "patch-amended-before-approval", "patch-deferred-before-approval",
-            "mapping-still-invalid-after-approved-patch",
-        }, {scenario["id"] for scenario in fixture["scenarios"]})
-        expected_terminal = {
-            "unique-existing-mapping": "brief-against-roadmap",
-            "missing-spec-dir": "brief-after-linkage-repair",
-            "stale-spec-dir": "brief-after-linkage-repair",
-            "conflicting-spec-dir-ownership": "stop-on-linkage-conflict",
-            "ambiguous-roadmap-target": "stop-on-ambiguous-linkage",
-            "patch-amended-before-approval": "stop-for-linkage-amendment",
-            "patch-deferred-before-approval": "stop-with-deferred-linkage",
-            "mapping-still-invalid-after-approved-patch": "stop-after-linkage-recheck-conflict",
+        self.assertEqual(["list-roadmap-options", "select-roadmap-feature", "route-feature-selection",
+                          "prepare-start-outcome", "route-start-outcome", "report-start-feature-outcome"],
+                         [n["id"] for n in steps])
+        self.assertNotIn("final_review_decision", workflow["inputs"])
+        ready = find_step(steps, "route-start-readiness")
+        self.assertEqual([], ready["cases"]["needs-human"])
+        self.assertEqual([], ready["cases"]["blocked"])
+        initial = find_step(steps, "route-roadmap-decision")
+        for choice in ("amend-roadmap", "resolve-context", "defer"):
+            self.assertEqual([], initial["cases"][choice])
+        linkage = find_step(steps, "route-created-spec-linkage")
+        self.assertEqual([], linkage["cases"]["linked"])
+        self.assertEqual([], linkage["cases"]["conflict"])
+        self.assertEqual([], linkage["cases"]["ambiguous"])
+        patch = find_step(steps, "route-spec-dir-patch-decision")
+        self.assertEqual(["apply-approved-spec-dir-patch", "verify-repaired-spec-linkage"],
+                         [n["id"] for n in patch["cases"]["approve-exact-patch"]])
+        for choice in ("amend", "defer"):
+            self.assertEqual([], patch["cases"][choice])
+        outputs = {
+            "retrieve-governing-context": {"report": "CITED-CONTEXT"},
+            "select-roadmap-feature": {"choice": "F014: Exact selected entry"},
+            "assess-eligibility": {"selected_entry_id": "F014: Exact selected entry",
+                                  "proposed_status_patch": "EXACT-STATUS-PATCH", "feature_brief": "APPROVED-SCOPE"},
         }
-        expected_state = {
-            "unique-existing-mapping": "linked",
-            "missing-spec-dir": "repairable",
-            "stale-spec-dir": "repairable",
-            "conflicting-spec-dir-ownership": "conflict",
-            "ambiguous-roadmap-target": "ambiguous",
-            "patch-amended-before-approval": "repairable",
-            "patch-deferred-before-approval": "repairable",
-            "mapping-still-invalid-after-approved-patch": "repairable",
-        }
-        for scenario in fixture["scenarios"]:
-            with self.subTest(scenario=scenario["id"]):
-                self.assertEqual(expected_terminal[scenario["id"]], scenario["expected_terminal"])
-                self.assertEqual(expected_state[scenario["id"]], scenario["observed_state"])
-                if scenario["gate_choice"] != "approve-exact-patch":
-                    self.assertFalse(scenario["roadmap_write_allowed"])
-                if scenario["observed_state"] == "linked":
-                    self.assertEqual("brief-against-roadmap", scenario["expected_terminal"])
-                elif scenario["observed_state"] == "repairable" and scenario["gate_choice"] in {"amend", "defer"}:
-                    self.assertFalse(scenario["roadmap_write_allowed"])
+        gate = self.controller.render_template(find_step(steps, "approve-roadmap-patch")["message"], {}, outputs)
+        write = self.controller.render_template(find_step(steps, "apply-approved-roadmap-patch")["input"]["args"], {}, outputs)
+        draft = self.controller.render_template(find_step(steps, "draft-specification")["input"]["args"], {}, outputs)
+        for text in (gate, write):
+            self.assertIn("EXACT-STATUS-PATCH", text)
+            self.assertIn("F014: Exact selected entry", text)
+        for text in (gate, draft):
+            self.assertIn("CITED-CONTEXT", text)
+            self.assertIn("APPROVED-SCOPE", text)
+        with self.assertRaisesRegex(ValueError, "unresolved step output reference"):
+            self.controller.render_template(find_step(steps, "assess-eligibility")["prompt"], {"feature_request": "014"}, {})
+        assessor = find_step(steps, "assess-created-spec-linkage")["prompt"]
+        self.assertIn("{{ steps.draft-specification.output.actual_spec_dir }}", assessor)
+        self.assertIn("{{ steps.assess-eligibility.output.selected_entry_id }}", assessor)
+        self.assertIn("no trailing punctuation inside the backticks", assessor)
+        prepare = find_step(steps, "prepare-start-outcome")["prompt"]
+        self.assertIn("fresh verify-repaired-spec-linkage state linked", prepare)
+        self.assertIn("cannot authorize the brief", prepare)
+        outcome_route = find_step(steps, "route-start-outcome")
+        self.assertEqual(["brief-against-roadmap"], [n["id"] for n in outcome_route["cases"]["ready-for-brief"]])
+        for state in ("needs-human", "blocked", "deferred"):
+            self.assertEqual([], outcome_route["cases"][state])
+        fixtures = json.loads((ROOT / "tests/consumer-fixtures/start-feature-linkage.json").read_text())
+        for case in fixtures["scenarios"]:
+            with self.subTest(case=case["id"]):
+                writes = commands(self.controller.select_switch_branch(linkage, case["observed_state"]))
+                if case["observed_state"] == "repairable":
+                    writes = commands(self.controller.select_switch_branch(patch, case["gate_choice"]))
+                else:
+                    writes = []
+                self.assertEqual(case["roadmap_write_allowed"], "speckit.flow-roadmap.write" in writes)
+                verified = case.get("post_patch_state", "linked") if case["roadmap_write_allowed"] else case["observed_state"]
+                brief_allowed = verified == "linked"
+                self.assertEqual(case["brief_allowed"], brief_allowed)
+                selected = self.controller.select_switch_branch(outcome_route, "ready-for-brief" if brief_allowed else "blocked")
+                self.assertEqual(["speckit.flow-roadmap.brief"] if brief_allowed else [], commands(selected))
+                self.assertEqual("report-start-feature-outcome", case["expected_terminal"])
+        for state in ("invalid", "missing"):
+            with self.assertRaises(ValueError):
+                self.controller.select_switch_branch(linkage, state)
+
+    def testStartFeatureListsCandidatesAndWaitsForExactHumanSelection(self) -> None:
+        workflow = load_workflow("speckit-flow-start-feature")
+        self.assertEqual("", self.controller.validate_required_inputs(workflow, {})["feature_request"])
+        listing, gate, route = workflow["steps"][:3]
+        outputs = {"list-roadmap-options": {
+            "report": "Feature 29 -> Feature 28 -> Feature 26 (depends on). Feature 26 is ready.",
+            "selection_options": ["026 — Foundation", "030 — Independent feature", "defer"]}}
+        rendered = self.controller.render_template(gate, {}, outputs)
+        self.assertEqual(outputs["list-roadmap-options"]["selection_options"], rendered["options"])
+        self.assertIsInstance(rendered["options"], list)
+        self.assertEqual("026 — Foundation", self.controller.validate_gate_choice(rendered, "1"))
+        self.assertEqual("030 — Independent feature", self.controller.validate_gate_choice(rendered, "030 — Independent feature"))
+        with self.assertRaises(ValueError):
+            self.controller.validate_gate_choice(rendered, "029 — Blocked feature")
+        with self.assertRaises(ValueError):
+            self.controller.validate_gate_choice(rendered, "")
+        self.assertEqual([], self.controller.select_switch_branch(route, "defer"))
+        chosen = self.controller.validate_gate_choice(rendered, "2")
+        selected = self.controller.select_switch_branch(route, chosen)
+        self.assertEqual("retrieve-governing-context", selected[0]["id"])
+        rendered_args = self.controller.render_template(selected[0]["input"]["args"], {},
+            {"select-roadmap-feature": {"choice": chosen}})
+        self.assertIn(chosen, rendered_args)
+        self.assertNotIn("{{ inputs.feature_request }}", selected[1]["prompt"])
+        self.assertIn("instead of substituting another entry", selected[1]["prompt"])
+        for required in ("direct_unlock_count", "downstream_dependent_count", "Deduplicate", "Missing references, cycles", "do not pick a candidate"):
+            self.assertIn(required, listing["prompt"])
+        no_candidates = self.controller.render_template(gate, {},
+            {"list-roadmap-options": {"report": "No eligible candidates.", "selection_options": ["defer"]}})
+        self.assertEqual("defer", self.controller.validate_gate_choice(no_candidates, "1"))
+        for options in ([], ["duplicate", "duplicate"], [1], "not-an-array"):
+            with self.subTest(options=options), self.assertRaises(ValueError):
+                invalid = self.controller.render_template(gate, {},
+                    {"list-roadmap-options": {"report": "Inventory", "selection_options": options}})
+                self.controller.validate_gate_choice(invalid, "1")
+        with self.assertRaisesRegex(ValueError, "unresolved step output reference"):
+            self.controller.render_template(gate, {}, {})
+        for malformed in ("invented-options", "{{ inputs.feature_request }}"):
+            with self.assertRaises(ValueError):
+                self.controller.validate_workflow_graph([{**gate, "options": malformed}])
 
     def testRoadmapBriefResolverRequiresTheExplicitExactPairInDisposableFixtures(self) -> None:
         archive = ROOT / "catalog/packages/flow-roadmap-0.2.1.zip"

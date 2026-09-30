@@ -67,9 +67,9 @@ class CatalogReleaseTests(unittest.TestCase):
     def test_namedAgentAssignments_matchReviewedWorkflowPackage(self) -> None:
         expectations = {
             "speckit-flow-start-feature": {
-                "assess-eligibility": "Architect", "draft-specification": "Architect",
+                "list-roadmap-options": "Architect", "assess-eligibility": "Architect", "draft-specification": "Architect",
                 "assess-created-spec-linkage": "Verifier", "verify-repaired-spec-linkage": "Verifier",
-                "brief-against-roadmap": "Verifier", "brief-after-linkage-repair": "Verifier",
+                "brief-against-roadmap": "Verifier",
             },
             "speckit-flow-clarify": {
                 "clarify-session": "Architect", "assess-clarification-after-session": "Verifier",
@@ -112,7 +112,7 @@ class CatalogReleaseTests(unittest.TestCase):
             },
         }
         expected_versions = {
-            "speckit-flow-start-feature": "0.5.0", "speckit-flow-clarify": "0.4.1",
+            "speckit-flow-start-feature": "0.5.1", "speckit-flow-clarify": "0.4.1",
             "speckit-flow-plan": "0.4.1", "speckit-flow-tasks": "0.4.1",
             "speckit-flow-analyze-remediate": "0.4.1", "speckit-flow-implement": "0.4.1",
             "speckit-flow-converge": "0.4.1", "speckit-flow-closeout": "0.5.0",

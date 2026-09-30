@@ -219,7 +219,7 @@ class GraphPreflightTests(unittest.TestCase):
             "inputs": {"feature_context": {"required": True}},
             "steps": [
                 {"id": "delegated-prompt", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Coder"}},
-                {"id": "review-verdict", "type": "gate"},
+                {"id": "review-verdict", "type": "gate", "options": ["approve", "defer"]},
                 {"id": "route-result", "type": "switch", "cases": {"primary": [
                     {"id": "nested-delegated-command", "command": "speckit.fixture", "flow_kit": {"delegated": True, "agent": "Verifier"}}
                 ]}, "default": [

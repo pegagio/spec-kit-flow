@@ -37,7 +37,7 @@ A maintainer can trace each of the eight FlowKit workflows from invocation to ev
 
 ### User Story 2 - Start with Reliable Roadmap Linkage (Priority: P1)
 
-An operator starts an eligible feature and receives a specification linked to the intended roadmap entry. Missing, stale, or conflicting linkage produces an exact correction for review or a specific stop.
+Start Feature first lists dependency-ready roadmap candidates and blocked unfinished entries, with text prerequisite chains, immediate unlock counts, and distinct downstream dependents. The operator selects one exact entry before context retrieval or mutation; an optional feature request does not authorize automatic selection. Start then retrieves cited governing context before roadmap approval. The exact approved patch, entry identity, feature scope, dependencies, and cited context are explicitly passed to roadmap mutation and specification creation. Unique existing linkage or an exactly approved, verified repair reaches one shared brief and one final report. Missing, stale, or conflicting linkage produces an exact correction for review or a specific stop; final next-phase selection is a separate invocation rather than a terminal choice gate.
 
 **Independent Test**: Start a feature in a disposable project with a unique eligible entry, then repeat with absent, stale, and conflicting specification-directory mappings.
 
@@ -46,6 +46,7 @@ An operator starts an eligible feature and receives a specification linked to th
 1. **Given** an eligible entry and approved start patch, **when** the specification directory is known, **then** the brief resolves that specification to the intended entry.
 2. **Given** a missing mapping, **when** linkage is proposed, **then** the operator sees an exact roadmap patch and no mapping changes before approval.
 3. **Given** stale or conflicting mappings, **when** a unique link cannot be established, **then** the workflow stops with the evidence and a recoverable next action.
+4. **Given** several candidates or no eligible candidate, **when** Start begins, **then** it shows dependency readiness and downstream impact and waits for an exact human selection or deferral without choosing or changing roadmap state.
 
 ### User Story 3 - Assess Clarification and Planning Readiness (Priority: P1)
 
