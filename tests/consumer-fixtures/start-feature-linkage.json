@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "description": "Roadmap linkage outcomes for Start Feature branch tests.",
+  "scenarios": [
+    {
+      "id": "unique-existing-mapping",
+      "observed_state": "linked",
+      "gate_choice": null,
+      "expected_terminal": "brief-against-roadmap",
+      "roadmap_write_allowed": false
+    },
+    {
+      "id": "missing-spec-dir",
+      "observed_state": "repairable",
+      "gate_choice": "approve-exact-patch",
+      "expected_terminal": "brief-after-linkage-repair",
+      "roadmap_write_allowed": true
+    },
+    {
+      "id": "stale-spec-dir",
+      "observed_state": "repairable",
+      "gate_choice": "approve-exact-patch",
+      "expected_terminal": "brief-after-linkage-repair",
+      "roadmap_write_allowed": true
+    },
+    {
+      "id": "conflicting-spec-dir-ownership",
+      "observed_state": "conflict",
+      "gate_choice": null,
+      "expected_terminal": "stop-on-linkage-conflict",
+      "roadmap_write_allowed": false
+    },
+    {
+      "id": "ambiguous-roadmap-target",
+      "observed_state": "ambiguous",
+      "gate_choice": null,
+      "expected_terminal": "stop-on-ambiguous-linkage",
+      "roadmap_write_allowed": false
+    },
+    {
+      "id": "patch-amended-before-approval",
+      "observed_state": "repairable",
+      "gate_choice": "amend",
+      "expected_terminal": "stop-for-linkage-amendment",
+      "roadmap_write_allowed": false
+    },
+    {
+      "id": "patch-deferred-before-approval",
+      "observed_state": "repairable",
+      "gate_choice": "defer",
+      "expected_terminal": "stop-with-deferred-linkage",
+      "roadmap_write_allowed": false
+    },
+    {
+      "id": "mapping-still-invalid-after-approved-patch",
+      "observed_state": "repairable",
+      "gate_choice": "approve-exact-patch",
+      "post_patch_state": "conflict",
+      "expected_terminal": "stop-after-linkage-recheck-conflict",
+      "roadmap_write_allowed": true
+    }
+  ]
+}

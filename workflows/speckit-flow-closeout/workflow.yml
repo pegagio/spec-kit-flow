@@ -3,12 +3,12 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-closeout"
   name: "Close Out Feature"
-  version: "0.4.0"
+  version: "0.5.0"
   author: "pegagio"
-  description: "Perform governed closeout after convergence while keeping feature completion, roadmap verification, wiki maintenance, Git integration, and project acceptance distinct."
+  description: "Assess completion evidence, reconcile bounded debrief findings, and retain separate roadmap, Git, and acceptance gates."
 
 requires:
-  speckit_version: ">=1.0.10.dev0"
+  speckit_version: ">=1.0.10.dev0+pegagio.2"
   integrations:
     any: ["codex"]
 
@@ -16,12 +16,12 @@ inputs:
   feature_context:
     type: string
     required: true
-    prompt: "Identify the converged feature to close out"
+    prompt: "Enter the exact repository-relative spec directory for the converged feature to close out (for example specs/014-flowkit-workflow-improvements)"
   integration:
     type: string
     default: "codex"
     enum: ["codex"]
-  completion_operation_status:
+  closeout_decision:
     type: string
     default: ""
   roadmap_transition_decision:
@@ -32,89 +32,419 @@ inputs:
     default: ""
 
 steps:
-  - id: verify-feature-completion-operation
-    type: gate
-    message: "Confirm that a separately approved feature-completion operation exists before proceeding; otherwise stop without implying a lifecycle transition."
-    options: ["operation-available", "operation-missing"]
-    verdict_input: "completion_operation_status"
-    on_reject: "skip"
-  - id: route-completion-operation-status
+  - id: assess-closeout-readiness
+    type: prompt
+    flow_kit:
+      delegated: true
+      agent: Verifier
+    prompt: >-
+      Assess current convergence, completion authority, specification lifecycle state, and any current debrief evidence for {{ inputs.feature_context }}. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids and resolved_ids; and exactly one state-appropriate route. Continue when a current roadmap debrief must run, a clearly clean Draft specification must be changed to Complete, or a reviewed routine debrief finding can be corrected within feature scope; set next_step_id to assess-closeout-before-pass. For an existing Complete specification, continue directly to a fresh debrief without a completion-availability question. Use needs-human and gate_step_id closeout-initial-consequential-gate for ambiguous authority, material scope, or a substantive product decision. Use blocked with a stable resume_action for untrusted evidence, non-clean convergence, missing prerequisites, or an unsafe correction. Do not use speckit.specify to create a feature, infer completion from command success, mutate the roadmap, integrate Git, or claim acceptance.
+  - id: route-initial-closeout
     type: switch
-    expression: "{{ steps.verify-feature-completion-operation.output.choice }}"
+    expression: "{{ steps.assess-closeout-readiness.output.state }}"
     cases:
-      operation-available:
-        - id: run-approved-completion-operation
-          type: prompt
-          integration: "{{ inputs.integration }}"
-          prompt: "Use the separately approved feature-completion operation for {{ inputs.feature_context }}. Do not infer completion from convergence."
-        - id: debrief-roadmap
-          flow_kit:
-            delegated: true
-            agent: Verifier
-          command: "speckit.flow-roadmap.debrief"
-          integration: "{{ inputs.integration }}"
-          input:
-            args: "Review converged {{ inputs.feature_context }} against its roadmap entry and propose verification only when the evidence supports it."
-        - id: approve-roadmap-transition
-          type: gate
-          message: "Review the roadmap debrief and exact proposed verification patch. Approve only the exact patch; otherwise return to the relevant workflow or stop."
-          options: ["approve-patch", "return-to-workflow", "defer"]
-          verdict_input: "roadmap_transition_decision"
-          on_reject: "skip"
-        - id: route-roadmap-transition
+      complete:
+        - id: route-initial-roadmap-result
           type: switch
-          expression: "{{ steps.approve-roadmap-transition.output.choice }}"
+          expression: "{{ steps.assess-closeout-readiness.output.reason_code }}"
           cases:
-            approve-patch:
-              - id: apply-approved-roadmap-verification
-                command: "speckit.flow-roadmap.write"
-                integration: "{{ inputs.integration }}"
-                input:
-                  args: "Apply only the exact roadmap verification patch the operator approved for {{ inputs.feature_context }}."
-              - id: ingest-curated-context
-                flow_kit:
-                  delegated: true
-                  agent: Builder
-                command: "speckit.flow-wiki.ingest"
-                integration: "{{ inputs.integration }}"
-                input:
-                  args: "Ingest the operator-selected durable closeout sources for {{ inputs.feature_context }}. Include roadmap, constitution, ADRs, workflow or architecture documents, public guides, and relevant feature artifacts; exclude ordinary code unless it is an agent-facing contract."
-              - id: lint-wiki
-                flow_kit:
-                  delegated: true
-                  agent: Verifier
-                command: "speckit.flow-wiki.lint"
-                integration: "{{ inputs.integration }}"
-                input:
-                  args: "Lint the project wiki after closeout ingestion and stop for unresolved findings."
-              - id: confirm-commit-readiness
-                type: gate
-                message: "Review clean wiki-lint evidence and Git changes. This is commit readiness only; it does not commit, integrate, verify a roadmap without the approved patch, or accept project work."
-                options: ["ready-for-explicit-commit", "return-to-workflow", "blocked"]
-                verdict_input: "commit_readiness_decision"
-                on_reject: "skip"
-            return-to-workflow:
-              - id: stop-for-closeout-flowback
+            already-verified:
+              - id: closeout-already-verified-stop
                 type: prompt
-                integration: "{{ inputs.integration }}"
-                prompt: "Stop closeout and return to the workflow named by the debrief or lint finding. Do not create an implicit roadmap, Git, or project transition."
-            defer:
-              - id: stop-with-deferred-closeout
-                type: prompt
-                integration: "{{ inputs.integration }}"
-                prompt: "Stop closeout without applying a roadmap patch, committing changes, or implying acceptance."
+                prompt: "Stop successfully. Current evidence shows {{ inputs.feature_context }} is already verified; do not write the roadmap, commit, or claim project acceptance."
           default:
-            - id: stop-invalid-roadmap-transition
+            - id: closeout-initial-complete-stop
               type: prompt
-              integration: "{{ inputs.integration }}"
-              prompt: "Stop. The roadmap transition decision was not recognized."
-      operation-missing:
-        - id: stop-missing-completion-operation
+              prompt: "Stop because the initial completion result has no recognized closeout route. Preserve evidence and request operator resolution."
+      needs-human:
+        - id: closeout-initial-consequential-gate
+          type: gate
+          message: "Review the exact completion authority, material-scope, recovery, or substantive product decision reported by the initial Close Out evidence. No roadmap mutation or downstream action is authorized here."
+          options: ["defer", "abort"]
+          verdict_input: "closeout_decision"
+          on_reject: "skip"
+        - id: route-initial-closeout-decision
+          type: switch
+          expression: "{{ steps.closeout-initial-consequential-gate.output.choice }}"
+          cases:
+            defer:
+              - id: stop-initial-deferred-closeout-decision
+                type: prompt
+                prompt: "Stop Close Out and retain the reported evidence for explicit operator resolution."
+            abort:
+              - id: stop-initial-aborted-closeout-decision
+                type: prompt
+                prompt: "Stop Close Out at the operator's direction. Preserve all work and do not mutate the roadmap."
+          default:
+            - id: stop-invalid-initial-closeout-decision
+              type: prompt
+              prompt: "Stop because the initial Close Out decision was not recognized. Preserve evidence and do not mutate the roadmap."
+      blocked:
+        - id: closeout-initial-blocked-stop
           type: prompt
-          integration: "{{ inputs.integration }}"
-          prompt: "Stop. A dedicated feature-completion operation is required before closeout can proceed. Do not use speckit.specify as a substitute."
-    default:
-      - id: stop-invalid-completion-operation-status
-        type: prompt
-        integration: "{{ inputs.integration }}"
-        prompt: "Stop. The completion-operation status was not recognized; retain the manual closeout prompt as fallback."
+          prompt: "Stop Close Out with the exact blocker and smallest safe resume action from the assessment. Preserve completed work; do not edit the roadmap or claim acceptance."
+      continue:
+        - id: closeout-debrief-loop
+          type: do-while
+          condition: "{{ steps.assess-closeout-after-pass.output.state == 'continue' }}"
+          max_iterations: 5
+          steps:
+            - id: assess-closeout-before-pass
+              type: prompt
+              flow_kit:
+                delegated: true
+                agent: Verifier
+              prompt: >-
+                Refresh current convergence, specification status, prior debrief findings, and roadmap evidence for {{ inputs.feature_context }} immediately before this pass. Return the required outcome envelope. Continue only with one declared action: set next_step_id to route-closeout-pass and reason_code to mark-spec-complete, debrief-current-spec, reconcile-specification, reconcile-plan, reconcile-tasks, or implement-eligible. Mark a Draft specification Complete only when convergence and completion evidence are already clean, using mark-spec-complete; otherwise identify the smallest affected artifact route. For needs-human, set gate_step_id to closeout-consequential-gate. Complete, needs-human, and blocked skip correction commands. A stale report, repeated finding without material resolution, or untrusted delta is blocked, not success.
+            - id: route-closeout-pass
+              type: switch
+              expression: "{{ steps.assess-closeout-before-pass.output.state }}"
+              cases:
+                complete: []
+                needs-human: []
+                blocked: []
+                continue:
+                  - id: select-closeout-action
+                    type: switch
+                    expression: "{{ steps.assess-closeout-before-pass.output.reason_code }}"
+                    cases:
+                      mark-spec-complete:
+                        - id: mark-converged-specification-complete
+                          command: "speckit.specify"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Architect
+                          input:
+                            args: "Update only the existing specification for {{ inputs.feature_context }} in place from Status: Draft to Status: Complete. F014 explicitly authorizes this transition when the current implementation is cleanly converged and completion evidence is clear. Do not create a feature, change requirements or scope, edit the roadmap, or imply verification or acceptance."
+                        - id: debrief-after-status-completion
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          command: "speckit.flow-roadmap.debrief"
+                          integration: "{{ inputs.integration }}"
+                          input:
+                            args: "SPEC_TARGET={{ inputs.feature_context }} Review the refreshed Complete specification and current implementation delta. Propose roadmap verification only when current evidence supports the exact patch; do not edit the roadmap."
+                      debrief-current-spec:
+                        - id: debrief-roadmap
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          command: "speckit.flow-roadmap.debrief"
+                          integration: "{{ inputs.integration }}"
+                          input:
+                            args: "SPEC_TARGET={{ inputs.feature_context }} Review current converged feature evidence against its roadmap entry and propose verification only when the current implementation delta supports it. Do not edit the roadmap."
+                      reconcile-specification:
+                        - id: reconcile-closeout-specification
+                          command: "speckit.specify"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Architect
+                          input:
+                            args: "Reconcile only the routine, in-scope specification discrepancy identified in the current Close Out assessment for {{ inputs.feature_context }}. Preserve accepted intent and stop for authority, product, or material scope decisions."
+                        - id: replan-after-closeout-specification
+                          command: "speckit.plan"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Architect
+                          input:
+                            args: "Reconcile the plan and dependent design artifacts for {{ inputs.feature_context }} after the approved in-scope specification correction."
+                        - id: retask-after-closeout-specification
+                          command: "speckit.tasks"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Architect
+                          input:
+                            args: "Reconcile implementation tasks for {{ inputs.feature_context }} after the ordered specification and plan correction."
+                        - id: analyze-after-closeout-specification
+                          command: "speckit.analyze"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          input:
+                            args: "Analyze current specification, plan, and task consistency for {{ inputs.feature_context }} after the routine correction."
+                        - id: assess-closeout-specification-eligibility
+                          type: prompt
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          prompt: >-
+                            Inspect fresh analysis and current tasks for {{ inputs.feature_context }}. Return an outcome envelope. Continue only if analysis is clean and exact in-scope tasks remain eligible; set next_step_id to implement-after-closeout-specification. Use complete if there is no eligible work, needs-human with gate_step_id closeout-final-consequential-gate for a consequential decision, and blocked with the smallest safe resume_action for findings, failed prerequisites, or uncertain eligibility.
+                        - id: route-closeout-specification-eligibility
+                          type: switch
+                          expression: "{{ steps.assess-closeout-specification-eligibility.output.state }}"
+                          cases:
+                            complete: []
+                            continue:
+                              - id: implement-after-closeout-specification
+                                command: "speckit.implement"
+                                integration: "{{ inputs.integration }}"
+                                flow_kit:
+                                  delegated: true
+                                  agent: Builder
+                                input:
+                                  args: "Implement only the fresh analyzed eligible tasks for {{ inputs.feature_context }} that resolve the reviewed in-scope debrief discrepancy."
+                            needs-human: []
+                            blocked: []
+                          default:
+                            - id: stop-invalid-closeout-specification-eligibility
+                              type: prompt
+                              prompt: "Stop because the post-analysis eligibility result is invalid. Preserve the artifacts and evidence; do not implement."
+                        - id: debrief-after-closeout-specification
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          command: "speckit.flow-roadmap.debrief"
+                          integration: "{{ inputs.integration }}"
+                          input:
+                            args: "SPEC_TARGET={{ inputs.feature_context }} Reassess the refreshed implementation delta after the ordered specification, plan, task, and eligible implementation steps. Propose verification only if supported; do not edit the roadmap."
+                      reconcile-plan:
+                        - id: reconcile-closeout-plan
+                          command: "speckit.plan"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Architect
+                          input:
+                            args: "Reconcile only the routine, in-scope plan discrepancy identified in the current Close Out assessment for {{ inputs.feature_context }}."
+                        - id: retask-after-closeout-plan
+                          command: "speckit.tasks"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Architect
+                          input:
+                            args: "Reconcile tasks for {{ inputs.feature_context }} after the plan correction."
+                        - id: analyze-after-closeout-plan
+                          command: "speckit.analyze"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          input:
+                            args: "Analyze the refreshed specification, plan, and tasks for {{ inputs.feature_context }} after the routine plan correction."
+                        - id: assess-closeout-plan-eligibility
+                          type: prompt
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          prompt: >-
+                            Inspect fresh analysis and tasks for {{ inputs.feature_context }}. Continue only if analysis is clean and exact in-scope tasks remain eligible; set next_step_id to implement-after-closeout-plan. Use complete if none remain, needs-human with gate_step_id closeout-final-consequential-gate for a consequential decision, and blocked with the smallest safe resume_action for findings or uncertain eligibility.
+                        - id: route-closeout-plan-eligibility
+                          type: switch
+                          expression: "{{ steps.assess-closeout-plan-eligibility.output.state }}"
+                          cases:
+                            complete: []
+                            continue:
+                              - id: implement-after-closeout-plan
+                                command: "speckit.implement"
+                                integration: "{{ inputs.integration }}"
+                                flow_kit:
+                                  delegated: true
+                                  agent: Builder
+                                input:
+                                  args: "Implement only fresh analyzed tasks for {{ inputs.feature_context }} that resolve the reviewed in-scope debrief discrepancy."
+                            needs-human: []
+                            blocked: []
+                          default:
+                            - id: stop-invalid-closeout-plan-eligibility
+                              type: prompt
+                              prompt: "Stop because the post-analysis eligibility result is invalid. Preserve the artifacts and evidence; do not implement."
+                        - id: debrief-after-closeout-plan
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          command: "speckit.flow-roadmap.debrief"
+                          integration: "{{ inputs.integration }}"
+                          input:
+                            args: "SPEC_TARGET={{ inputs.feature_context }} Reassess the refreshed implementation delta after plan and task reconciliation, analysis, and eligible implementation. Do not edit the roadmap."
+                      reconcile-tasks:
+                        - id: reconcile-closeout-tasks
+                          command: "speckit.tasks"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Architect
+                          input:
+                            args: "Reconcile only the routine, in-scope task discrepancy identified in the current Close Out assessment for {{ inputs.feature_context }}. Do not change reviewed design intent."
+                        - id: analyze-after-closeout-tasks
+                          command: "speckit.analyze"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          input:
+                            args: "Analyze the refreshed tasks for {{ inputs.feature_context }} against the current reviewed specification and plan."
+                        - id: assess-closeout-task-eligibility
+                          type: prompt
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          prompt: >-
+                            Inspect fresh analysis and task status for {{ inputs.feature_context }}. Continue only if analysis is clean and exact in-scope tasks remain eligible; set next_step_id to implement-after-closeout-tasks. Use complete if none remain, needs-human with gate_step_id closeout-final-consequential-gate for a consequential decision, and blocked with the smallest safe resume_action for findings or uncertain eligibility.
+                        - id: route-closeout-task-eligibility
+                          type: switch
+                          expression: "{{ steps.assess-closeout-task-eligibility.output.state }}"
+                          cases:
+                            complete: []
+                            continue:
+                              - id: implement-after-closeout-tasks
+                                command: "speckit.implement"
+                                integration: "{{ inputs.integration }}"
+                                flow_kit:
+                                  delegated: true
+                                  agent: Builder
+                                input:
+                                  args: "Implement only fresh analyzed tasks for {{ inputs.feature_context }} that resolve the reviewed in-scope debrief discrepancy."
+                            needs-human: []
+                            blocked: []
+                          default:
+                            - id: stop-invalid-closeout-task-eligibility
+                              type: prompt
+                              prompt: "Stop because the post-analysis eligibility result is invalid. Preserve the artifacts and evidence; do not implement."
+                        - id: debrief-after-closeout-tasks
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          command: "speckit.flow-roadmap.debrief"
+                          integration: "{{ inputs.integration }}"
+                          input:
+                            args: "SPEC_TARGET={{ inputs.feature_context }} Reassess the refreshed implementation delta after task reconciliation, analysis, and eligible implementation. Do not edit the roadmap."
+                      implement-eligible:
+                        - id: implement-closeout-eligible-tasks
+                          command: "speckit.implement"
+                          integration: "{{ inputs.integration }}"
+                          flow_kit:
+                            delegated: true
+                            agent: Builder
+                          input:
+                            args: "Implement only tasks already analyzed as eligible to resolve the reviewed in-scope Close Out findings for {{ inputs.feature_context }}."
+                        - id: debrief-after-closeout-implementation
+                          flow_kit:
+                            delegated: true
+                            agent: Verifier
+                          command: "speckit.flow-roadmap.debrief"
+                          integration: "{{ inputs.integration }}"
+                          input:
+                            args: "SPEC_TARGET={{ inputs.feature_context }} Reassess the refreshed implementation delta after eligible implementation. Do not edit the roadmap."
+                    default:
+                      - id: stop-unsupported-closeout-action
+                        type: prompt
+                        prompt: "Stop because the assessed Close Out correction route is not declared. Preserve all work and request operator resolution."
+            - id: assess-closeout-after-pass
+              type: prompt
+              flow_kit:
+                delegated: true
+                agent: Verifier
+              prompt: >-
+                Reassess current convergence, specification status, latest debrief report, and all correction evidence for {{ inputs.feature_context }} after this pass. Return the outcome envelope. Complete only when the current trusted debrief supports either an exact verification patch or confirms the roadmap entry is already verified; use reason_code patch-ready or already-verified. Continue only when at least one prior finding was resolved and another specific routine in-scope correction or fresh debrief remains; set next_step_id to assess-closeout-before-pass. Use needs-human with gate_step_id closeout-final-consequential-gate for authority, material scope, or substantive decisions. Use blocked with the smallest safe resume_action for repeated findings, stale or untrustworthy delta, failed prerequisites, or uncertain completion. Never infer progress or completion from command success.
+  - id: route-final-closeout
+    type: switch
+    expression: "{{ steps.assess-closeout-after-pass.output.state }}"
+    cases:
+      complete:
+        - id: route-supported-roadmap-result
+          type: switch
+          expression: "{{ steps.assess-closeout-after-pass.output.reason_code }}"
+          cases:
+            patch-ready:
+              - id: approve-roadmap-transition
+                type: gate
+                message: "Review the current debrief evidence and exact proposed roadmap verification patch. Only approve this exact patch; defer or return without a roadmap write."
+                options: ["approve-patch", "return-to-workflow", "defer"]
+                verdict_input: "roadmap_transition_decision"
+                on_reject: "skip"
+              - id: route-roadmap-transition
+                type: switch
+                expression: "{{ steps.approve-roadmap-transition.output.choice }}"
+                cases:
+                  approve-patch:
+                    - id: apply-approved-roadmap-verification
+                      command: "speckit.flow-roadmap.write"
+                      integration: "{{ inputs.integration }}"
+                      input:
+                        args: "SPEC_TARGET={{ inputs.feature_context }} Apply only the exact roadmap verification patch the operator approved."
+                    - id: ingest-curated-context
+                      flow_kit:
+                        delegated: true
+                        agent: Builder
+                      command: "speckit.flow-wiki.ingest"
+                      integration: "{{ inputs.integration }}"
+                      input:
+                        args: "Ingest the operator-selected durable closeout sources for {{ inputs.feature_context }}. Include roadmap, constitution, ADRs, workflow or architecture documents, public guides, and relevant feature artifacts; exclude ordinary code unless it is an agent-facing contract."
+                    - id: lint-wiki
+                      flow_kit:
+                        delegated: true
+                        agent: Verifier
+                      command: "speckit.flow-wiki.lint"
+                      integration: "{{ inputs.integration }}"
+                      input:
+                        args: "Lint the project wiki after closeout ingestion and stop for unresolved findings."
+                    - id: confirm-commit-readiness
+                      type: gate
+                      message: "Review clean wiki-lint evidence and Git changes. This is commit readiness only; it does not commit, integrate Git, verify a roadmap without the approved patch, or accept project work."
+                      options: ["ready-for-explicit-commit", "return-to-workflow", "blocked"]
+                      verdict_input: "commit_readiness_decision"
+                      on_reject: "skip"
+                  return-to-workflow:
+                    - id: stop-for-closeout-flowback
+                      type: prompt
+                      integration: "{{ inputs.integration }}"
+                      prompt: "Stop closeout and return to the workflow named by the debrief finding. Do not create an implicit roadmap, Git, or project transition."
+                  defer:
+                    - id: stop-with-deferred-closeout
+                      type: prompt
+                      integration: "{{ inputs.integration }}"
+                      prompt: "Stop closeout without applying a roadmap patch, committing changes, or implying acceptance."
+                default:
+                  - id: stop-invalid-roadmap-transition
+                    type: prompt
+                    integration: "{{ inputs.integration }}"
+                    prompt: "Stop. The roadmap transition decision was not recognized; the roadmap remains unchanged."
+            already-verified:
+              - id: closeout-already-verified-after-loop
+                type: prompt
+                prompt: "Stop successfully. Fresh debrief evidence confirms {{ inputs.feature_context }} is already verified; do not write the roadmap, commit, or claim project acceptance."
+          default:
+            - id: stop-invalid-supported-roadmap-result
+              type: prompt
+              prompt: "Stop because the final debrief result has no recognized roadmap route. Preserve reports and request operator resolution."
+      needs-human:
+        - id: closeout-final-consequential-gate
+          type: gate
+          message: "Review the exact completion authority, material-scope, recovery, or substantive product decision reported by current Close Out evidence. No roadmap mutation or downstream action is authorized here."
+          options: ["defer", "abort"]
+          verdict_input: "closeout_decision"
+          on_reject: "skip"
+        - id: route-closeout-consequential-decision
+          type: switch
+          expression: "{{ steps.closeout-final-consequential-gate.output.choice }}"
+          cases:
+            defer:
+              - id: stop-deferred-closeout-decision
+                type: prompt
+                prompt: "Stop Close Out and retain the reported evidence for explicit operator resolution."
+            abort:
+              - id: stop-aborted-closeout-decision
+                type: prompt
+                prompt: "Stop Close Out at the operator's direction. Preserve all work and do not mutate the roadmap."
+          default:
+            - id: stop-invalid-closeout-decision
+              type: prompt
+              prompt: "Stop because the Close Out decision was not recognized. Preserve evidence and do not mutate the roadmap."
+      blocked:
+        - id: closeout-final-blocked-stop
+          type: prompt
+          prompt: "Stop Close Out with the exact blocker and smallest safe resume action from the refreshed assessment. Preserve completed work; do not edit the roadmap or claim acceptance."
+      continue:
+        - id: closeout-loop-bounded-stop
+          type: prompt
+          prompt: "Stop because the bounded debrief loop exhausted its reviewed cap while routine findings remain. Preserve reports and corrections; do not write the roadmap."
+      default:
+        - id: closeout-invalid-final-state-stop
+          type: prompt
+          prompt: "Stop because the final Close Out outcome is invalid. Preserve the current state and request operator resolution."

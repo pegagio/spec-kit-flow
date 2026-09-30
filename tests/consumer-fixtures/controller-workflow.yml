@@ -3,9 +3,9 @@ schema_version: "1.0"
 workflow:
   id: "flow-kit-controller-fixture"
   name: "FlowKit Controller Fixture"
-  version: "0.1.0"
+  version: "0.2.0"
   author: "pegagio"
-  description: "Exercise controller graph traversal and preflight in disposable tests."
+  description: "Exercise clean-before-loop, bounded continuation, gates, and manual fallback."
 
 requires:
   speckit_version: ">=1.0.10.dev0+pegagio.2"
@@ -18,41 +18,73 @@ inputs:
     required: true
 
 steps:
-  - id: modeled-prompt
+  - id: assess-initial
     type: prompt
-    model: "gpt-6-sol"
-    input:
-      prompt: "Review {{ inputs.feature_context }}."
-  - id: main-task-command
-    command: "speckit.fixture"
-    integration: "codex"
-    input:
-      args: "Inspect {{ steps.modeled-prompt.output.summary }}."
-  - id: review-verdict
-    type: gate
-    message: "Choose a fixture route."
-    options: ["primary", "fallback"]
-    verdict_input: "review_decision"
-  - id: route-result
+    flow_kit:
+      delegated: true
+      agent: Verifier
+    prompt: "Assess current evidence for {{ inputs.feature_context }} and return a validated outcome envelope."
+  - id: route-initial
     type: switch
-    expression: "{{ steps.review-verdict.output.choice }}"
+    expression: "{{ steps.assess-initial.output.state }}"
     cases:
-      primary:
-        - id: nested-modeled-command
-          command: "speckit.fixture"
-          integration: "codex"
-          model: "gpt-6-luna"
-          reasoning_effort: high
-          input:
-            args: "Continue {{ inputs.feature_context }}."
-      fallback:
-        - id: nested-unmodeled-prompt
+      complete:
+        - id: initial-success
           type: prompt
-          input:
-            prompt: "Use the fallback for {{ inputs.feature_context }}."
-    default:
-      - id: unavailable-model-branch
-        type: prompt
-        model: "flowkit-test-unavailable-model"
-        input:
-          prompt: "This untaken branch still participates in preflight."
+          prompt: "Stop at clean success."
+      continue:
+        - id: corrective-loop
+          type: do-while
+          condition: "{{ steps.assess-loop.output.state == 'continue' }}"
+          max_iterations: 2
+          steps:
+            - id: corrective-command
+              command: "speckit.fixture"
+              integration: "codex"
+              flow_kit:
+                delegated: true
+                agent: Architect
+              input:
+                args: "Correct {{ inputs.feature_context }} using the current evidence."
+            - id: assess-loop
+              type: prompt
+              flow_kit:
+                delegated: true
+                agent: Verifier
+              prompt: "Reassess after this pass and return the outcome envelope."
+        - id: route-after-loop
+          type: switch
+          expression: "{{ steps.assess-loop.output.state }}"
+          cases:
+            complete:
+              - id: loop-success
+                type: prompt
+                prompt: "Stop at clean success after reassessment."
+            needs-human:
+              - id: post-loop-decision
+                type: gate
+                message: "Review the consequential decision after the loop."
+                options: ["approve", "defer"]
+            blocked:
+              - id: loop-blocker
+                type: prompt
+                prompt: "Stop with the refreshed blocker evidence."
+            continue:
+              - id: loop-cap-stop
+                type: prompt
+                prompt: "Stop when progress ends or the loop cap is exhausted."
+          default: []
+      needs-human:
+        - id: consequential-decision
+          type: gate
+          message: "Review the consequential decision."
+          options: ["approve", "defer"]
+      blocked:
+        - id: initial-blocker
+          type: prompt
+          prompt: "Stop with a bounded blocker and resume action."
+      manual-fallback:
+        - id: manual-review
+          type: prompt
+          prompt: "Stop at the manual-prompt fallback and continue the selected work in the main task."
+    default: []

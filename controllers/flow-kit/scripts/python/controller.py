@@ -25,6 +25,12 @@ except ImportError:  # The controller is executed with the selected Specify runt
 REVIEWED_AGENT_NAMES = {"Architect", "Builder", "Coder", "Verifier"}
 INPUT_REFERENCE = re.compile(r"\{\{\s*inputs\.([A-Za-z0-9_-]+)\s*\}\}")
 STEP_REFERENCE = re.compile(r"\{\{\s*steps\.([A-Za-z0-9_-]+)\.output\.([A-Za-z0-9_.-]+)\s*\}\}")
+LOOP_CONDITION = re.compile(
+    r"^\{\{\s*steps\.([A-Za-z0-9_-]+)\.output\.state\s*==\s*(['\"])continue\2\s*\}\}$"
+)
+REASON_CODE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
+SHA256 = re.compile(r"^[0-9a-f]{64}$")
+OUTCOME_STATES = {"complete", "continue", "needs-human", "blocked"}
 
 
 @dataclass(frozen=True)
@@ -112,7 +118,9 @@ def validate_template_forms(steps: list[dict[str, Any]], input_names: set[str]) 
     """Reject unsupported expressions anywhere in the installed step graph."""
     def visit(value: Any) -> None:
         if isinstance(value, dict):
-            for child in value.values():
+            for key, child in value.items():
+                if key == "condition" and value.get("type") == "do-while":
+                    continue
                 visit(child)
         elif isinstance(value, list):
             for child in value:
@@ -211,10 +219,10 @@ def _node_kind(step: dict[str, Any]) -> str:
 
 
 def validate_workflow_graph(steps: list[dict[str, Any]]) -> None:
-    """Reject unsupported nodes, duplicate IDs, and invalid model placement."""
+    """Reject unsupported nodes, malformed loops, duplicate IDs, and model placement."""
     seen: set[str] = set()
 
-    def visit(nodes: list[dict[str, Any]]) -> None:
+    def visit(nodes: list[dict[str, Any]], *, inside_loop: bool = False) -> None:
         for node in nodes:
             if not isinstance(node, dict):
                 raise ValueError("workflow step must be a mapping")
@@ -225,7 +233,7 @@ def validate_workflow_graph(steps: list[dict[str, Any]]) -> None:
                 raise ValueError(f"duplicate step id: {step_id}")
             seen.add(step_id)
             kind = _node_kind(node)
-            if kind not in {"prompt", "command", "gate", "switch"}:
+            if kind not in {"prompt", "command", "gate", "switch", "do-while"}:
                 raise ValueError(f"unsupported workflow step type {kind}: {step_id}")
             if kind == "command" and node.get("integration") not in (None, "codex", "{{ inputs.integration }}"):
                 raise ValueError(f"unsupported command integration on step {step_id}")
@@ -249,15 +257,199 @@ def validate_workflow_graph(steps: list[dict[str, Any]]) -> None:
                 for branch in cases.values():
                     if not isinstance(branch, list):
                         raise ValueError(f"switch case must contain a step list: {step_id}")
-                    visit(branch)
+                    visit(branch, inside_loop=inside_loop)
                 default = node.get("default", [])
                 if not isinstance(default, list):
                     raise ValueError(f"switch default must contain a step list: {step_id}")
-                visit(default)
+                visit(default, inside_loop=inside_loop)
+            if kind == "do-while":
+                if inside_loop:
+                    raise ValueError(f"nested do-while loops are unsupported: {step_id}")
+                condition = node.get("condition")
+                body = node.get("steps")
+                maximum = node.get("max_iterations")
+                if not isinstance(condition, bool):
+                    if not isinstance(condition, str) or LOOP_CONDITION.fullmatch(condition.strip()) is None:
+                        raise ValueError(f"do-while condition is unsupported or incomplete: {step_id}")
+                if isinstance(maximum, bool) or not isinstance(maximum, int) or maximum < 1:
+                    raise ValueError(f"do-while max_iterations must be a positive integer: {step_id}")
+                if not isinstance(body, list) or not body:
+                    raise ValueError(f"do-while steps must be a nonempty list: {step_id}")
+                if isinstance(condition, str):
+                    match = LOOP_CONDITION.fullmatch(condition.strip())
+                    assessment_id = match.group(1) if match is not None else None
+                    body_ids = {item.get("id") for item in body if isinstance(item, dict)}
+                    if assessment_id not in body_ids:
+                        raise ValueError(f"do-while condition must reference an in-body assessment step: {step_id}")
+                    assessor = next(item for item in body if isinstance(item, dict) and item.get("id") == assessment_id)
+                    if assessor is not body[-1] or _node_kind(assessor) not in {"prompt", "command"}:
+                        raise ValueError(f"do-while condition must reference the final fresh assessment step: {step_id}")
+                visit(body, inside_loop=True)
 
     if not isinstance(steps, list):
         raise ValueError("workflow steps must be a list")
     visit(steps)
+
+
+def evaluate_loop_condition(condition: str | bool, outputs: dict[str, dict[str, Any]]) -> bool:
+    """Evaluate only the reviewed boolean literal or assessment-state comparison."""
+    if isinstance(condition, bool):
+        return condition
+    if not isinstance(condition, str):
+        raise ValueError("do-while condition must be a boolean or supported expression")
+    match = LOOP_CONDITION.fullmatch(condition.strip())
+    if match is None:
+        raise ValueError("do-while condition is not a complete supported expression")
+    step_id = match.group(1)
+    if step_id not in outputs or not isinstance(outputs[step_id], dict) or "state" not in outputs[step_id]:
+        raise ValueError(f"unresolved do-while assessment output: {step_id}.state")
+    return outputs[step_id]["state"] == "continue"
+
+
+def route_assessment(
+    assessment: dict[str, Any],
+    *,
+    loop_body_step_ids: set[str],
+    human_gate_step_ids: set[str] | None = None,
+) -> dict[str, Any]:
+    """Route a validated assessment state without performing workflow work."""
+    state = assessment.get("state") if isinstance(assessment, dict) else None
+    if state == "complete":
+        return {"action": "complete"}
+    if state == "continue":
+        next_step_id = assessment.get("next_step_id")
+        if not isinstance(next_step_id, str) or next_step_id not in loop_body_step_ids:
+            raise ValueError("continue assessment must name a next step inside its loop body")
+        return {"action": "continue", "next_step_id": next_step_id}
+    if state == "needs-human":
+        gate_step_id = assessment.get("gate_step_id")
+        gates = human_gate_step_ids or set()
+        if not isinstance(gate_step_id, str) or gate_step_id not in gates:
+            raise ValueError("needs-human assessment must name a declared main-task gate")
+        return {"action": "needs-human", "gate_step_id": gate_step_id}
+    if state == "blocked":
+        resume_action = assessment.get("resume_action")
+        if not isinstance(resume_action, str) or REASON_CODE.fullmatch(resume_action) is None:
+            raise ValueError("blocked assessment must name a stable resume action")
+        return {"action": "blocked", "resume_action": resume_action}
+    raise ValueError("assessment state is unsupported")
+
+
+def validate_outcome_envelope(
+    envelope: dict[str, Any],
+    project_root: Path,
+    loop_body_step_ids: set[str],
+    human_gate_step_ids: set[str] | None = None,
+) -> dict[str, Any]:
+    """Validate a machine-readable assessment against current project evidence."""
+    if not isinstance(envelope, dict):
+        raise ValueError("assessment envelope must be a mapping")
+    allowed = {"state", "reason_code", "evidence", "remaining_ids", "resolved_ids", "next_step_id", "gate_step_id", "resume_action"}
+    if set(envelope) - allowed:
+        raise ValueError("assessment envelope contains unsupported fields")
+    if envelope.get("state") not in OUTCOME_STATES:
+        raise ValueError("assessment state is unsupported")
+    reason = envelope.get("reason_code")
+    if not isinstance(reason, str) or REASON_CODE.fullmatch(reason) is None:
+        raise ValueError("assessment reason_code must be a stable identifier")
+    evidence = envelope.get("evidence")
+    if not isinstance(evidence, list) or not evidence:
+        raise ValueError("assessment requires current evidence")
+    project = Path(project_root).resolve()
+    seen_paths: set[str] = set()
+    normalized_evidence: list[dict[str, str]] = []
+    for item in evidence:
+        if not isinstance(item, dict) or set(item) != {"path", "sha256"}:
+            raise ValueError("assessment evidence must contain only path and sha256")
+        relative = item.get("path")
+        digest = item.get("sha256")
+        if not isinstance(relative, str) or not relative or Path(relative).is_absolute() or ".." in Path(relative).parts:
+            raise ValueError("assessment evidence path must stay inside the project")
+        if not isinstance(digest, str) or SHA256.fullmatch(digest) is None:
+            raise ValueError("assessment evidence SHA-256 is malformed")
+        try:
+            candidate = (project / relative).resolve(strict=True)
+        except OSError as error:
+            raise ValueError("assessment evidence file does not exist or cannot be resolved") from error
+        try:
+            normalized = candidate.relative_to(project).as_posix()
+        except ValueError as error:
+            raise ValueError("assessment evidence path resolves outside the project") from error
+        if not candidate.is_file():
+            raise ValueError("assessment evidence must name an existing file")
+        observed = hashlib.sha256(candidate.read_bytes()).hexdigest()
+        if observed != digest:
+            raise ValueError("assessment evidence digest does not match current bytes")
+        if normalized in seen_paths:
+            raise ValueError("assessment evidence paths must be distinct")
+        seen_paths.add(normalized)
+        normalized_evidence.append({"path": normalized, "sha256": observed})
+
+    id_values: dict[str, list[str]] = {}
+    for key in ("remaining_ids", "resolved_ids"):
+        values = envelope.get(key, [])
+        if not isinstance(values, list) or any(not isinstance(value, str) or not value for value in values):
+            raise ValueError(f"assessment {key} must be a list of nonempty identifiers")
+        if len(values) != len(set(values)):
+            raise ValueError(f"assessment {key} identifiers must be distinct")
+        id_values[key] = values
+    if set(id_values["remaining_ids"]) & set(id_values["resolved_ids"]):
+        raise ValueError("assessment remaining and resolved identifiers contradict")
+    state = envelope["state"]
+    expected_route_key = {
+        "complete": None,
+        "continue": "next_step_id",
+        "needs-human": "gate_step_id",
+        "blocked": "resume_action",
+    }[state]
+    route_keys = {"next_step_id", "gate_step_id", "resume_action"} & set(envelope)
+    expected_route_keys = {expected_route_key} if expected_route_key else set()
+    if route_keys != expected_route_keys:
+        raise ValueError("assessment must provide exactly the route field required by its state")
+    if state == "complete" and id_values["remaining_ids"]:
+        raise ValueError("complete assessment has unresolved in-scope work")
+    if state == "continue" and not id_values["remaining_ids"]:
+        raise ValueError("continue assessment has no unresolved in-scope work")
+    normalized = dict(envelope)
+    normalized["evidence"] = normalized_evidence
+    normalized["remaining_ids"] = id_values["remaining_ids"]
+    normalized["resolved_ids"] = id_values["resolved_ids"]
+    route_assessment(normalized, loop_body_step_ids=loop_body_step_ids, human_gate_step_ids=human_gate_step_ids)
+    return normalized
+
+
+def assessment_made_progress(previous: dict[str, Any], current: dict[str, Any]) -> bool:
+    """Require explicit resolution of a prior finding; byte changes are insufficient."""
+    previous_remaining = set(previous.get("remaining_ids", []))
+    current_resolved = set(current.get("resolved_ids", []))
+    return bool(previous_remaining & current_resolved)
+
+
+def route_loop_assessment(
+    assessment: dict[str, Any],
+    *,
+    iteration: int,
+    max_iterations: int,
+    loop_body_step_ids: set[str],
+    human_gate_step_ids: set[str] | None = None,
+    previous_assessment: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Route pre-loop or refreshed loop evidence, stopping on no progress or cap."""
+    if isinstance(iteration, bool) or not isinstance(iteration, int) or iteration < 0:
+        raise ValueError("loop iteration must be a nonnegative integer")
+    if isinstance(max_iterations, bool) or not isinstance(max_iterations, int) or max_iterations < 1:
+        raise ValueError("loop max_iterations must be a positive integer")
+    route = route_assessment(assessment, loop_body_step_ids=loop_body_step_ids,
+                             human_gate_step_ids=human_gate_step_ids)
+    if route["action"] != "continue":
+        return route
+    if iteration == 0:
+        return route
+    if previous_assessment is None or not assessment_made_progress(previous_assessment, assessment):
+        return {"action": "blocked", "blocker": "no-progress"}
+    if iteration >= max_iterations:
+        return {"action": "blocked", "blocker": "loop-cap-exhausted"}
+    return route
 
 
 def validate_required_inputs(workflow: dict[str, Any], supplied: dict[str, Any]) -> dict[str, Any]:
@@ -315,6 +507,8 @@ def collect_agent_assignments(steps: list[dict[str, Any]]) -> list[StepAssignmen
                 for branch in step.get("cases", {}).values():
                     assignments.extend(collect(branch))
                 assignments.extend(collect(step.get("default", [])))
+            elif kind == "do-while":
+                assignments.extend(collect(step.get("steps", [])))
         return assignments
 
     return collect(steps)
@@ -501,6 +695,18 @@ def main(argv: list[str] | None = None) -> int:
     answer_parser.add_argument("--target-child-id", required=True)
     gate_parser = subparsers.add_parser("gate", help="validate an explicit gate verdict from JSON on stdin")
     branch_parser = subparsers.add_parser("branch", help="select only the chosen switch branch from JSON on stdin")
+    assessment_parser = subparsers.add_parser("assessment", help="validate and route an assessment envelope from JSON on stdin")
+    assessment_parser.add_argument("--project", type=Path, required=True)
+    assessment_parser.add_argument("--loop-body-step", action="append", default=[])
+    assessment_parser.add_argument("--human-gate-step", action="append", default=[])
+    loop_route_parser = subparsers.add_parser("route-loop", help="route refreshed loop evidence from JSON on stdin")
+    loop_route_parser.add_argument("--iteration", type=int, required=True)
+    loop_route_parser.add_argument("--max-iterations", type=int, required=True)
+    loop_route_parser.add_argument("--project", type=Path, required=True)
+    loop_route_parser.add_argument("--loop-body-step", action="append", default=[])
+    loop_route_parser.add_argument("--human-gate-step", action="append", default=[])
+    condition_parser = subparsers.add_parser("loop-condition", help="evaluate the reviewed loop condition from JSON on stdin")
+    condition_parser.add_argument("--condition", required=True)
     args = parser.parse_args(argv)
     if args.command == "inspect":
         verify_controller_install(args.project, args.skill_id, args.workflow_id)
@@ -524,6 +730,24 @@ def main(argv: list[str] | None = None) -> int:
         result = {"choice": validate_gate_choice(payload["gate"], payload["answer"])}
     elif args.command == "branch":
         result = {"steps": select_switch_branch(payload["switch"], payload["choice"])}
+    elif args.command == "assessment":
+        body_ids = set(args.loop_body_step)
+        gate_ids = set(args.human_gate_step)
+        outcome = validate_outcome_envelope(payload, args.project, body_ids, gate_ids)
+        route = route_assessment(outcome, loop_body_step_ids=body_ids, human_gate_step_ids=gate_ids)
+        result = {"outcome": outcome, "route": route}
+    elif args.command == "route-loop":
+        body_ids = set(args.loop_body_step)
+        gate_ids = set(args.human_gate_step)
+        outcome = validate_outcome_envelope(payload["assessment"], args.project, body_ids, gate_ids)
+        previous = payload.get("previous_assessment")
+        result = route_loop_assessment(
+            outcome, iteration=args.iteration, max_iterations=args.max_iterations,
+            loop_body_step_ids=body_ids, human_gate_step_ids=gate_ids,
+            previous_assessment=previous,
+        )
+    elif args.command == "loop-condition":
+        result = {"continue": evaluate_loop_condition(args.condition, payload.get("outputs", {}))}
     else:
         return 2
     print(json.dumps(result, sort_keys=True))

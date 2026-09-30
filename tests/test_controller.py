@@ -31,6 +31,21 @@ def load_module(name: str, path: Path):
     return module
 
 
+def find_workflow_step(steps: list[dict], step_id: str) -> dict:
+    for step in steps:
+        if step.get("id") == step_id:
+            return step
+        nested = list(step.get("steps", []))
+        for branch in step.get("cases", {}).values():
+            nested.extend(branch)
+        nested.extend(step.get("default", []))
+        try:
+            return find_workflow_step(nested, step_id)
+        except StopIteration:
+            pass
+    raise StopIteration(step_id)
+
+
 class RuntimeDiscoveryTests(unittest.TestCase):
     """Runtime discovery must fail closed before loading a workflow."""
 
@@ -320,6 +335,162 @@ class GraphPreflightTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "workflow-level agent"):
             self.controller.validate_workflow_definition(definition)
 
+    def test_doWhilePreflightAcceptsOneCompleteSupportedConditionAndPositiveCap(self) -> None:
+        graph = [{
+            "id": "corrective-loop",
+            "type": "do-while",
+            "condition": "{{ steps.assess.output.state == 'continue' }}",
+            "max_iterations": 5,
+            "steps": [
+                {"id": "correct", "type": "command", "command": "speckit.tasks",
+                 "flow_kit": {"delegated": True, "agent": "Architect"}},
+                {"id": "assess", "type": "prompt",
+                 "flow_kit": {"delegated": True, "agent": "Verifier"}},
+            ],
+        }]
+        self.controller.validate_workflow_graph(graph)
+        self.assertEqual(
+            [("correct", "Architect"), ("assess", "Verifier")],
+            [(item.step_id, item.agent_name) for item in self.controller.collect_agent_assignments(graph)],
+        )
+
+    def test_doWhilePreflightRejectsNestedLoopsAndDuplicateIDsAcrossBody(self) -> None:
+        nested = [{"id": "outer", "type": "do-while", "condition": False, "max_iterations": 2,
+                   "steps": [{"id": "inner", "type": "do-while", "condition": False,
+                              "max_iterations": 2, "steps": [{"id": "inner-step", "type": "prompt"}]}]}]
+        with self.assertRaisesRegex(ValueError, "nested do-while"):
+            self.controller.validate_workflow_graph(nested)
+        duplicate = [{"id": "loop", "type": "do-while", "condition": False, "max_iterations": 2,
+                      "steps": [{"id": "same", "type": "prompt"}, {"id": "same", "type": "prompt"}]}]
+        with self.assertRaisesRegex(ValueError, "duplicate step id"):
+            self.controller.validate_workflow_graph(duplicate)
+        outer_duplicate = [{"id": "loop", "type": "do-while", "condition": False, "max_iterations": 2,
+                            "steps": [{"id": "loop", "type": "prompt"}]}]
+        with self.assertRaisesRegex(ValueError, "duplicate step id"):
+            self.controller.validate_workflow_graph(outer_duplicate)
+        stale_assessment = [{"id": "loop", "type": "do-while",
+                             "condition": "{{ steps.assess.output.state == 'continue' }}", "max_iterations": 2,
+                             "steps": [{"id": "assess", "type": "prompt"}, {"id": "mutate-later", "type": "command"}]}]
+        with self.assertRaisesRegex(ValueError, "final fresh assessment"):
+            self.controller.validate_workflow_graph(stale_assessment)
+
+    def test_doWhilePreflightRejectsUnsupportedConditionOrNonpositiveIterationCap(self) -> None:
+        invalid_conditions = (
+            "steps.assess.output.state == 'continue'",
+            "{{ steps.assess.output.state }} == 'continue'",
+            "{{ steps.assess.output.state == 'continue' }} trailing",
+            "{{ steps.assess.output.state == 'continue' or true }}",
+        )
+        for condition in invalid_conditions:
+            with self.subTest(condition=condition), self.assertRaisesRegex(ValueError, "condition"):
+                self.controller.validate_workflow_graph([{
+                    "id": "loop", "type": "do-while", "condition": condition,
+                    "max_iterations": 5, "steps": [{"id": "assess", "type": "prompt"}],
+                }])
+        for limit in (0, -1, True, 1.5, "5", None):
+            with self.subTest(limit=limit), self.assertRaisesRegex(ValueError, "max_iterations"):
+                self.controller.validate_workflow_graph([{
+                    "id": "loop", "type": "do-while", "condition": False,
+                    "max_iterations": limit, "steps": [{"id": "assess", "type": "prompt"}],
+                }])
+
+    def test_assessmentRoutesCompleteNeedsHumanAndBlockedBeforeCorrectiveWork(self) -> None:
+        cases = (
+            ({"state": "complete", "reason_code": "analysis-clean"}, {"action": "complete"}),
+            ({"state": "needs-human", "reason_code": "scope-decision", "gate_step_id": "scope-gate"},
+             {"action": "needs-human", "gate_step_id": "scope-gate"}),
+            ({"state": "blocked", "reason_code": "missing-prerequisite", "resume_action": "restore-plan"},
+             {"action": "blocked", "resume_action": "restore-plan"}),
+        )
+        for assessment, expected in cases:
+            with self.subTest(state=assessment["state"]):
+                self.assertEqual(expected, self.controller.route_assessment(
+                    assessment, loop_body_step_ids={"correct"}, human_gate_step_ids={"scope-gate"}
+                ))
+
+    def test_assessmentOutcomeRequiresValidEvidenceAndAnInBodyNextStepForContinue(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            evidence = project / "tasks.md"
+            evidence.write_text("T001", encoding="utf-8")
+            digest = __import__("hashlib").sha256(evidence.read_bytes()).hexdigest()
+            valid = {
+                "state": "continue", "reason_code": "routine-gap",
+                "evidence": [{"path": "tasks.md", "sha256": digest}],
+                "remaining_ids": ["T001"], "resolved_ids": [], "next_step_id": "correct",
+            }
+            self.assertEqual(valid, self.controller.validate_outcome_envelope(valid, project, {"correct", "assess"}))
+            complete = {
+                "state": "complete", "reason_code": "analysis-clean",
+                "evidence": [{"path": "tasks.md", "sha256": digest}], "remaining_ids": [], "resolved_ids": ["T001"],
+            }
+            needs_human = {
+                "state": "needs-human", "reason_code": "scope-decision",
+                "evidence": [{"path": "tasks.md", "sha256": digest}], "remaining_ids": ["T002"],
+                "resolved_ids": [], "gate_step_id": "review",
+            }
+            blocked = {
+                "state": "blocked", "reason_code": "missing-prerequisite",
+                "evidence": [{"path": "tasks.md", "sha256": digest}], "remaining_ids": ["T002"],
+                "resolved_ids": [], "resume_action": "restore-plan",
+            }
+            self.assertEqual(complete, self.controller.validate_outcome_envelope(complete, project, {"correct", "assess"}))
+            self.assertEqual(needs_human, self.controller.validate_outcome_envelope(
+                needs_human, project, {"correct", "assess"}, {"review"}
+            ))
+            self.assertEqual(blocked, self.controller.validate_outcome_envelope(blocked, project, {"correct", "assess"}))
+            invalid = (
+                {**valid, "state": "unknown"},
+                {**valid, "next_step_id": "outside"},
+                {**valid, "remaining_ids": ["T001"], "resolved_ids": ["T001"]},
+                {**valid, "evidence": [{"path": "../outside", "sha256": digest}]},
+                {**valid, "evidence": [{"path": "tasks.md", "sha256": "0" * 64}]},
+                {**valid, "reason_code": "free text with private details"},
+                {**valid, "state": "blocked", "resume_action": "restore-plan", "next_step_id": "correct"},
+            )
+            for outcome in invalid:
+                with self.subTest(outcome=outcome), self.assertRaises(ValueError):
+                    self.controller.validate_outcome_envelope(outcome, project, {"correct", "assess"})
+            complete_with_remaining = {key: value for key, value in valid.items() if key != "next_step_id"}
+            complete_with_remaining.update({"state": "complete", "remaining_ids": ["T001"]})
+            with self.assertRaisesRegex(ValueError, "unresolved"):
+                self.controller.validate_outcome_envelope(complete_with_remaining, project, {"correct", "assess"})
+
+    def test_assessmentProgressNeedsResolvedPriorWorkNotOnlyChangedDigest(self) -> None:
+        previous = {"state": "continue", "remaining_ids": ["T001", "T002"], "resolved_ids": [],
+                    "evidence": [{"path": "tasks.md", "sha256": "a" * 64}]}
+        resolved = {"state": "continue", "remaining_ids": ["T002"], "resolved_ids": ["T001"],
+                    "evidence": [{"path": "tasks.md", "sha256": "b" * 64}]}
+        digest_only = {**previous, "evidence": [{"path": "tasks.md", "sha256": "b" * 64}]}
+        self.assertTrue(self.controller.assessment_made_progress(previous, resolved))
+        self.assertFalse(self.controller.assessment_made_progress(previous, digest_only))
+
+    def test_loopConditionEvaluatesOnlyReviewedStateEquality(self) -> None:
+        condition = "{{ steps.assess.output.state == 'continue' }}"
+        self.assertTrue(self.controller.evaluate_loop_condition(condition, {"assess": {"state": "continue"}}))
+        self.assertFalse(self.controller.evaluate_loop_condition(condition, {"assess": {"state": "complete"}}))
+        with self.assertRaisesRegex(ValueError, "unresolved"):
+            self.controller.evaluate_loop_condition(condition, {})
+
+    def test_loopFixtureCoversCleanBeforeLoopPostPassGateRejectedLoopAndManualFallback(self) -> None:
+        fixture = yaml.safe_load((ROOT / "tests/consumer-fixtures/controller-workflow.yml").read_text(encoding="utf-8"))
+        self.controller.validate_workflow_definition(fixture)
+        steps = fixture["steps"]
+        self.assertEqual("assess-initial", steps[0]["id"])
+        route = steps[1]
+        self.assertEqual({"complete", "continue", "needs-human", "blocked", "manual-fallback"}, set(route["cases"]))
+        continue_nodes = route["cases"]["continue"]
+        self.assertEqual("do-while", continue_nodes[0]["type"])
+        after_loop = continue_nodes[1]
+        self.assertIn("needs-human", after_loop["cases"])
+        manual = route["cases"]["manual-fallback"][0]
+        self.assertNotIn("flow_kit", manual)
+        rejected = [{"id": "outer", "type": "do-while", "condition": False, "max_iterations": 2,
+                     "steps": [{"id": "inner", "type": "do-while", "condition": False,
+                                "max_iterations": 2, "steps": [{"id": "inside", "type": "prompt"}]}]}]
+        with self.assertRaisesRegex(ValueError, "nested do-while"):
+            self.controller.validate_workflow_graph(rejected)
+
     def test_renderTemplate_resolvesInputsAndPriorOutputsAndRejectsUnknownForms(self) -> None:
         value = "Implement {{ inputs.feature }} after {{ steps.plan.output.summary }}"
         rendered = self.controller.render_template(value, {"feature": "013"}, {"plan": {"summary": "review"}})
@@ -405,14 +576,16 @@ class HumanInteractionTests(unittest.TestCase):
 
     def test_clarifyGateBranches_stopWithoutLaunchingPlanning(self) -> None:
         workflow = yaml.safe_load((ROOT / "workflows/speckit-flow-clarify/workflow.yml").read_text(encoding="utf-8"))
-        gate = next(step for step in workflow["steps"] if step["id"] == "choose-clarification-result")
-        switch = next(step for step in workflow["steps"] if step["id"] == "route-clarification-result")
-        for option in gate["options"]:
-            with self.subTest(option=option):
-                choice = self.controller.validate_gate_choice(gate, option)
-                branch = self.controller.select_switch_branch(switch, choice)
-                self.assertEqual(1, len(branch))
-                self.assertEqual("prompt", branch[0]["type"])
+        gates = [
+            find_workflow_step(workflow["steps"], "clarification-consequential-gate"),
+            find_workflow_step(workflow["steps"], "clarification-final-consequential-gate"),
+        ]
+        self.assertFalse(any("speckit-flow-plan" in str(step) for step in workflow["steps"]))
+        for gate in gates:
+            with self.subTest(gate=gate["id"]):
+                self.assertEqual(["defer", "abort"], gate["options"])
+                for option in gate["options"]:
+                    self.assertEqual(option, self.controller.validate_gate_choice(gate, option))
 
 
 class RecoveryTests(unittest.TestCase):
@@ -513,6 +686,71 @@ class RecoveryTests(unittest.TestCase):
             summary_path = Path(result["summary_path"])
             self.assertTrue(summary_path.is_file())
             self.assertEqual("running", json.loads(summary_path.read_text(encoding="utf-8"))["status"])
+
+    def test_recoveryCli_appendsLoopPassWithoutOverwritingPriorIteration(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            summary = self.recovery.create_summary(project, {"workflow": {"id": "x", "version": "1"}, "sha256": "d" * 64}, {}, [], preflight_passed=True)
+            path = project / ".specify/flow-controllers/runs" / summary["run_id"] / "summary.json"
+            payload = {"loop_id": "loop", "iteration": 1,
+                       "steps": [{"step_id": "repeated", "status": "completed"}],
+                       "outcome": {"state": "complete", "reason_code": "resolved"}, "evidence": []}
+            output = io.StringIO()
+            with patch.object(sys, "stdin", io.StringIO(json.dumps(payload))), redirect_stdout(output):
+                self.assertEqual(0, self.recovery.main(["loop-pass", "--summary", str(path)]))
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual([("loop", 1, "repeated")], [
+                (item["loop_id"], item["iteration"], item["steps"][0]["step_id"]) for item in saved["loop_passes"]
+            ])
+
+    def test_recoveryLoopPassesAreAppendOnlyOrderedAndPreserveRepeatedStepIDs(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            summary = self.recovery.create_summary(project, {"workflow": {"id": "x", "version": "1"}, "sha256": "d" * 64}, {}, [], preflight_passed=True)
+            path = project / ".specify/flow-controllers/runs" / summary["run_id"] / "summary.json"
+            task_file = project / "tasks.md"
+            task_file.write_text("T001", encoding="utf-8")
+            evidence = [{"path": "tasks.md", "sha256": __import__("hashlib").sha256(task_file.read_bytes()).hexdigest()}]
+            for iteration in (1, 2):
+                self.recovery.record_loop_pass(
+                    path, loop_id="corrective-loop", iteration=iteration,
+                    steps=[{"step_id": "correct", "status": "completed"}, {"step_id": "assess", "status": "completed"}],
+                    outcome={"state": "continue", "reason_code": "routine-gap"}, evidence=evidence,
+                )
+            saved = self.recovery.read_summary(path)
+            self.assertEqual([("corrective-loop", 1), ("corrective-loop", 2)],
+                             [(item["loop_id"], item["iteration"]) for item in saved["loop_passes"]])
+            self.assertEqual(["correct", "assess"], [item["step_id"] for item in saved["loop_passes"][0]["steps"]])
+            with self.assertRaisesRegex(ValueError, "order"):
+                self.recovery.record_loop_pass(path, loop_id="corrective-loop", iteration=2,
+                                               steps=[], outcome={"state": "complete"}, evidence=evidence)
+            with self.assertRaisesRegex(ValueError, "repository-relative"):
+                self.recovery.record_loop_pass(path, loop_id="bad", iteration=1, steps=[],
+                                               outcome={"state": "complete"},
+                                               evidence=[{"path": "/private/t.md", "sha256": "0" * 64}])
+
+    def test_recoveryInterruptionAndChangedInstallationProduceSafeResumeStops(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            workflow = {"workflow": {"id": "x", "version": "1"}, "sha256": "d" * 64}
+            fingerprints = {"bundle_record": {"sha256": "b", "device": 1, "inode": 2},
+                            "skill_record": {"sha256": "c", "device": 1, "inode": 3}}
+            summary = self.recovery.create_summary(project, workflow, fingerprints, [], preflight_passed=True)
+            path = project / ".specify/flow-controllers/runs" / summary["run_id"] / "summary.json"
+            self.recovery.record_loop_pass(
+                path, loop_id="corrective-loop", iteration=1,
+                steps=[{"step_id": "correct", "status": "running"}],
+                outcome={"state": "continue", "reason_code": "routine-gap"}, evidence=[],
+            )
+            interrupted = self.recovery.mark_interrupted_steps_incomplete(path)
+            self.assertEqual("incomplete", interrupted["loop_passes"][0]["steps"][0]["status"])
+            safe = self.recovery.resume_decision(interrupted, workflow["sha256"], fingerprints)
+            self.assertEqual("resume", safe["action"])
+            changed = {**fingerprints, "skill_record": {"sha256": "new", "device": 1, "inode": 4}}
+            stopped = self.recovery.resume_decision(interrupted, workflow["sha256"], changed)
+            self.assertEqual({"action": "stop", "blocker": "installation-changed"}, stopped)
+            stopped_workflow = self.recovery.resume_decision(interrupted, "changed", fingerprints)
+            self.assertEqual({"action": "stop", "blocker": "workflow-changed"}, stopped_workflow)
 
 
 if __name__ == "__main__":

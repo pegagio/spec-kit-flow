@@ -3,12 +3,12 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-tasks"
   name: "Generate Implementation Tasks"
-  version: "0.3.0"
+  version: "0.4.0"
   author: "pegagio"
-  description: "Generate tasks from reviewed design artifacts, surface surprising human work, and route readiness to analysis rather than implicit edits."
+  description: "Generate tasks from reviewed design, assess coverage, and stop on a material gap without routine review gates."
 
 requires:
-  speckit_version: ">=1.0.1"
+  speckit_version: ">=1.0.10.dev0+pegagio.2"
   integrations:
     any: ["codex"]
 
@@ -21,55 +21,120 @@ inputs:
     type: string
     default: "codex"
     enum: ["codex"]
-  task_review_decision:
+  task_decision:
     type: string
     default: ""
 
 steps:
-  - id: generate-tasks
+  - id: assess-task-readiness
+    type: prompt
     flow_kit:
       delegated: true
-      agent: Architect
-    command: "speckit.tasks"
-    integration: "{{ inputs.integration }}"
-    input:
-      args: "Generate dependency-ordered implementation tasks for {{ inputs.feature_context }} from its reviewed design artifacts. Surface any surprising human-operator work rather than silently revising the plan."
-  - id: review-task-proposal
-    type: gate
-    message: "Review task coverage and any surprising human-operator actions. Send an acceptable proposal to analysis, return design gaps to planning, or defer."
-    options: ["analyze", "return-to-plan", "amend-tasks", "defer"]
-    verdict_input: "task_review_decision"
-    on_reject: "skip"
-  - id: route-task-review
+      agent: Verifier
+    prompt: >-
+      Assess current reviewed specification, plan, required design artifacts, dependencies, and task coverage for {{ inputs.feature_context }}. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids and resolved_ids; and exactly one route field required by the state. Use complete only when current tasks already cover all current reviewed design requirements. Use continue when reviewed design is ready but tasks are missing, stale, or have concrete coverage gaps; set next_step_id to assess-task-coverage-before-pass and identify those gaps. Use needs-human for an unresolved substantive product question and gate_step_id task-material-decision-gate. Use blocked for missing prerequisites, an incomplete or materially inconsistent design, or an untrustworthy task-to-design comparison, with a specific resume_action. Do not ask for routine confirmation or infer product answers.
+  - id: route-initial-task-readiness
     type: switch
-    expression: "{{ steps.review-task-proposal.output.choice }}"
+    expression: "{{ steps.assess-task-readiness.output.state }}"
     cases:
-      analyze:
-        - id: stop-for-analysis
+      complete:
+        - id: tasks-already-complete-stop
           type: prompt
-          integration: "{{ inputs.integration }}"
-          prompt: "Stop at Tasks Proposed. Invoke speckit-flow-analyze-remediate next; do not begin implementation directly."
-      return-to-plan:
-        - id: return-to-plan
-          flow_kit:
-            delegated: true
-            agent: Architect
-          command: "speckit.plan"
-          integration: "{{ inputs.integration }}"
-          input:
-            args: "Re-plan {{ inputs.feature_context }} for the material design gap surfaced during task review."
-      amend-tasks:
-        - id: stop-for-task-amendment
+          prompt: "Stop successfully: current task evidence already covers the reviewed design. Report the task artifact and leave review and Analyze as separate operator actions."
+      continue:
+        - id: task-generation-loop
+          type: do-while
+          condition: "{{ steps.assess-task-coverage-after-pass.output.state == 'continue' }}"
+          max_iterations: 5
+          steps:
+            - id: assess-task-coverage-before-pass
+              type: prompt
+              flow_kit:
+                delegated: true
+                agent: Verifier
+              prompt: >-
+                Reassess current plan prerequisites, material design questions, and task coverage for {{ inputs.feature_context }} immediately before this pass. Return the same outcome envelope and stable coverage IDs. Continue only when reviewed design is ready and task generation or correction is needed; set next_step_id to route-task-generation-pass and reason_code to generate-tasks. For needs-human, set gate_step_id to task-final-material-decision-gate. Complete, needs-human, and blocked skip the command.
+            - id: route-task-generation-pass
+              type: switch
+              expression: "{{ steps.assess-task-coverage-before-pass.output.state }}"
+              cases:
+                complete: []
+                needs-human: []
+                blocked: []
+                continue:
+                  - id: select-task-action
+                    type: switch
+                    expression: "{{ steps.assess-task-coverage-before-pass.output.reason_code }}"
+                    cases:
+                      generate-tasks:
+                        - id: generate-tasks
+                          flow_kit:
+                            delegated: true
+                            agent: Architect
+                          command: "speckit.tasks"
+                          integration: "{{ inputs.integration }}"
+                          input:
+                            args: "Generate or correct dependency-ordered tasks for {{ inputs.feature_context }} from its current reviewed specification and design. Preserve existing approved decisions. Do not answer substantive product questions, change design authority, implement work, run analysis, or invoke another workflow. Report exact artifact coverage and any material design gap."
+                    default:
+                      - id: invalid-task-action-stop
+                        type: prompt
+                        prompt: "Stop because the task assessment selected an unsupported action. Preserve current artifacts and report the invalid next_step_id."
+              default:
+                - id: invalid-task-prepass-stop
+                  type: prompt
+                  prompt: "Stop because the fresh task readiness assessment returned an unrecognized state. Preserve evidence and report the validation error."
+            - id: assess-task-coverage-after-pass
+              type: prompt
+              flow_kit:
+                delegated: true
+                agent: Verifier
+              prompt: >-
+                Reassess generated tasks against current reviewed design for {{ inputs.feature_context }}. Return the same structured outcome envelope, identify prior remaining coverage IDs resolved, and cite the current spec, plan, tasks, and relevant design artifacts. Complete only when every reviewed requirement and necessary dependency has covered task work. Continue only when at least one prior coverage gap was resolved and other specific in-scope coverage gaps remain; set next_step_id to assess-task-coverage-before-pass. Use needs-human and the declared gate for a newly surfaced substantive product question. Use blocked with a stable resume_action for a material design gap, missing prerequisite, inconsistent task/design authority, stale evidence, or an untrustworthy comparison. Command success or a changed digest alone is not progress.
+        - id: route-final-task-coverage
+          type: switch
+          expression: "{{ steps.assess-task-coverage-after-pass.output.state }}"
+          cases:
+            complete:
+              - id: tasks-coverage-complete-stop
+                type: prompt
+                prompt: "Stop successfully at Tasks Proposed after fresh evidence confirms complete coverage of current reviewed design. Present the tasks artifact; task review and Analyze remain separate operator actions."
+            needs-human:
+              - id: task-final-material-decision-gate
+                type: gate
+                message: "Review the exact substantive product question from the latest task assessment. Choose whether to defer or abort; Tasks will not choose an answer or invoke another workflow."
+                options: ["defer", "abort"]
+                verdict_input: "task_decision"
+                on_reject: "abort"
+              - id: task-final-decision-stop
+                type: prompt
+                prompt: "Stop after recording the substantive decision. Preserve generated tasks and report the separately authorized next action."
+            blocked:
+              - id: task-final-design-gap-stop
+                type: prompt
+                prompt: "Stop with the exact material design or prerequisite gap and stable resume_action. Preserve the generated proposal; do not begin implementation or analysis."
+            continue:
+              - id: task-coverage-bounded-stop
+                type: prompt
+                prompt: "Stop because the controller found no measurable coverage progress or exhausted the five-pass cap. Preserve the task proposal and report remaining coverage IDs and the smallest safe resumption action."
+            default:
+              - id: invalid-final-task-state-stop
+                type: prompt
+                prompt: "Stop because the refreshed task coverage assessment state is invalid. Preserve evidence and report the validation error."
+      needs-human:
+        - id: task-material-decision-gate
+          type: gate
+          message: "Review the exact unresolved substantive product question identified by task readiness evidence. Choose whether to defer or abort; the workflow will not choose an answer."
+          options: ["defer", "abort"]
+          verdict_input: "task_decision"
+          on_reject: "abort"
+        - id: task-initial-decision-stop
           type: prompt
-          integration: "{{ inputs.integration }}"
-          prompt: "Stop for an explicit task amendment. Do not silently change the plan or bypass the normal analysis path."
-      defer:
-        - id: stop-with-deferred-tasks
+          prompt: "Stop with the substantive question preserved. Resolve it through the appropriate operator-directed path before Tasks resumes."
+      blocked:
+        - id: task-design-gap-stop
           type: prompt
-          integration: "{{ inputs.integration }}"
-          prompt: "Stop without treating the task proposal as analysis-ready."
+          prompt: "Stop with the exact missing prerequisite or material design gap and stable resume_action. Tasks does not invoke Plan or silently amend reviewed design."
     default:
-      - id: stop-invalid-task-review
+      - id: invalid-initial-task-state-stop
         type: prompt
-        integration: "{{ inputs.integration }}"
-        prompt: "Stop. The task-review decision was not recognized."
+        prompt: "Stop because the initial task readiness assessment state is invalid or unrecognized. Preserve evidence and report the validation error."
