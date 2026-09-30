@@ -91,15 +91,8 @@ class CatalogReleaseTests(unittest.TestCase):
                 "reassess-analysis": "Verifier",
             },
             "speckit-flow-implement": {
-                "assess-implementation": "Verifier", "remediate-implementation-specification": "Architect",
-                "replan-after-implementation-specification": "Architect", "retask-after-implementation-specification": "Architect",
-                "analyze-after-implementation-specification": "Verifier", "implement-after-implementation-specification": "Builder",
-                "remediate-implementation-plan": "Architect", "retask-after-implementation-plan": "Architect",
-                "analyze-after-implementation-plan": "Verifier", "implement-after-implementation-plan": "Builder",
-                "remediate-implementation-tasks": "Architect", "analyze-after-implementation-tasks": "Verifier",
-                "implement-after-implementation-tasks": "Builder", "analyze-before-implementation-resumes": "Verifier",
-                "implement-after-analysis": "Builder", "continue-eligible-implementation": "Builder",
-                "reassess-implementation": "Verifier",
+                "assess-implementation-state": "Verifier", "implement-eligible-work": "Builder",
+                "assess-implementation-after-pass": "Verifier",
             },
             "speckit-flow-converge": {
                 "assess-convergence": "Verifier", "assess-convergence-before-pass": "Verifier",
@@ -136,7 +129,7 @@ class CatalogReleaseTests(unittest.TestCase):
         expected_versions = {
             "speckit-flow-start-feature": "0.5.0", "speckit-flow-clarify": "0.4.1",
             "speckit-flow-plan": "0.4.0", "speckit-flow-tasks": "0.4.0",
-            "speckit-flow-analyze-remediate": "0.4.0", "speckit-flow-implement": "0.4.0",
+            "speckit-flow-analyze-remediate": "0.4.0", "speckit-flow-implement": "0.4.1",
             "speckit-flow-converge": "0.4.0", "speckit-flow-closeout": "0.5.0",
         }
         step_pattern = __import__("re").compile(r"^(\s*)- id: ([A-Za-z0-9_-]+)$")

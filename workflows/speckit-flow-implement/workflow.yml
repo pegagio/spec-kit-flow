@@ -3,9 +3,9 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-implement"
   name: "Implement Eligible Work"
-  version: "0.4.0"
+  version: "0.4.1"
   author: "pegagio"
-  description: "Assess eligible work, reconcile in-scope discoveries through ordered artifacts, and implement until complete or safely stopped."
+  description: "Repeat the existing implementation skill while eligible tasks remain and progress is evidenced, stopping on completion or a specific bounded blocker."
 
 requires:
   speckit_version: ">=1.0.10.dev0+pegagio.2"
@@ -16,237 +16,42 @@ inputs:
   feature_context:
     type: string
     required: true
-    prompt: "Identify the feature and its analyzed eligible tasks"
+    prompt: "Identify the feature and its existing task plan"
   integration:
     type: string
     default: "codex"
     enum: ["codex"]
-  implementation_decision:
-    type: string
-    default: ""
-    enum: ["", "defer", "escalate"]
 
 steps:
-  - id: assess-implementation
+  - id: assess-implementation-state
     type: prompt
     flow_kit:
       delegated: true
       agent: Verifier
     prompt: >-
-        Assess current implementation prerequisites, analyzed eligible task IDs, prior execution results, acceptance evidence, and any newly discovered spec/plan/task divergence for {{ inputs.feature_context }} before implementation. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; evidence paths and observed SHA-256 digests; remaining_ids; resolved_ids; and exactly one of next_step_id, gate_step_id, or resume_action as required by state. Mark complete only when no eligible task remains and its acceptance evidence is inspectable. Use continue only for routine in-scope work and set next_step_id to the in-body step ID remediate-implementation-specification, remediate-implementation-plan, remediate-implementation-tasks, analyze-before-implementation-resumes, or continue-eligible-implementation. When behavior changes, start at specification; design-only changes start at plan; task-only changes start at tasks. Require changed tasks to pass fresh Analyze before implementation resumes. Use needs-human for consequential decisions and gate_step_id implementation-consequential-gate. Use blocked only for a concrete prerequisite or operational issue and name a stable resume_action. Command success or changed digests alone are not progress.
-  - id: route-initial-implementation
-    type: switch
-    expression: "{{ steps.assess-implementation.output.state }}"
-    cases:
-      complete:
-        - id: implementation-complete-stop
-          type: prompt
-          prompt: "Stop at Implementation Executed with the assessment's acceptance evidence. The operator may separately invoke FlowKit Converge; do not invoke it here."
-      continue:
-        - id: implementation-correction-loop
-          type: do-while
-          condition: "{{ steps.reassess-implementation.output.state == 'continue' }}"
-          max_iterations: 5
-          steps:
-            - id: reassess-implementation-before-pass
-              type: prompt
-              flow_kit:
-                delegated: true
-                agent: Verifier
-              prompt: >-
-                  Reassess eligible tasks, dependencies, and artifact divergence immediately before this corrective pass. Return the validated outcome envelope. Complete, needs-human, and blocked outcomes skip correction; continue must select the smallest affected route.
-            - id: route-implementation-pass
-              type: switch
-              expression: "{{ steps.reassess-implementation-before-pass.output.state }}"
-              cases:
-                complete: []
-                needs-human: []
-                blocked: []
-                continue:
-                  - id: select-implementation-flowback
-                    type: switch
-                    expression: "{{ steps.reassess-implementation-before-pass.output.next_step_id }}"
-                    cases:
-                      remediate-implementation-specification:
-                        - id: remediate-implementation-specification
-                          command: "speckit.specify"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Apply only the routine, in-scope behavior correction for {{ inputs.feature_context }}. Stop for product, constitutional, authority, or material-scope decisions."
-                        - id: replan-after-implementation-specification
-                          command: "speckit.plan"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Reconcile the plan and dependent design artifacts for {{ inputs.feature_context }} after the specification correction."
-                        - id: retask-after-implementation-specification
-                          command: "speckit.tasks"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Reconcile tasks for {{ inputs.feature_context }} after specification and plan updates."
-                        - id: analyze-after-implementation-specification
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          input:
-                            args: "Run fresh analysis for {{ inputs.feature_context }} after ordered specification, plan, and task reconciliation."
-                        - id: implement-after-implementation-specification
-                          command: "speckit.implement"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Builder
-                          input:
-                            args: "Implement only the remaining eligible tasks for {{ inputs.feature_context }} after fresh analysis. Preserve the existing changes and report acceptance evidence or a blocker."
-                      remediate-implementation-plan:
-                        - id: remediate-implementation-plan
-                          command: "speckit.plan"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Apply only the routine, in-scope design correction for {{ inputs.feature_context }}."
-                        - id: retask-after-implementation-plan
-                          command: "speckit.tasks"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Reconcile tasks for {{ inputs.feature_context }} after its plan correction."
-                        - id: analyze-after-implementation-plan
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          input:
-                            args: "Run fresh analysis for {{ inputs.feature_context }} after ordered plan and task reconciliation."
-                        - id: implement-after-implementation-plan
-                          command: "speckit.implement"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Builder
-                          input:
-                            args: "Implement only the remaining eligible tasks for {{ inputs.feature_context }} after fresh analysis. Preserve the existing changes and report acceptance evidence or a blocker."
-                      remediate-implementation-tasks:
-                        - id: remediate-implementation-tasks
-                          command: "speckit.tasks"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Apply only the routine, in-scope task correction for {{ inputs.feature_context }}."
-                        - id: analyze-after-implementation-tasks
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          input:
-                            args: "Run fresh analysis for {{ inputs.feature_context }} after task correction. Do not resume implementation unless the analyzed tasks are eligible."
-                        - id: implement-after-implementation-tasks
-                          command: "speckit.implement"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Builder
-                          input:
-                            args: "Implement only the remaining eligible tasks for {{ inputs.feature_context }} after fresh analysis. Preserve existing changes and report acceptance evidence or a blocker."
-                      analyze-before-implementation-resumes:
-                        - id: analyze-before-implementation-resumes
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          input:
-                            args: "Run fresh analysis for {{ inputs.feature_context }} and confirm the eligible task set before resuming implementation."
-                        - id: implement-after-analysis
-                          command: "speckit.implement"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Builder
-                          input:
-                            args: "Implement only tasks confirmed eligible by the immediately preceding analysis for {{ inputs.feature_context }}."
-                      continue-eligible-implementation:
-                        - id: continue-eligible-implementation
-                          command: "speckit.implement"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Builder
-                          input:
-                            args: "Continue only the remaining eligible tasks for {{ inputs.feature_context }} and report current acceptance evidence."
-                    default:
-                      - id: implementation-unknown-flowback-stop
-                        type: prompt
-                        prompt: "Stop because the assessment named an unsupported flow-back route. Preserve changes and report the route value."
-              default: []
-            - id: reassess-implementation
-              type: prompt
-              flow_kit:
-                delegated: true
-                agent: Verifier
-              prompt: >-
-                  Reassess {{ inputs.feature_context }} from fresh task, analysis, execution, and acceptance evidence after this correction pass. Return the same structured outcome envelope. Mark resolved_ids only for prior eligible tasks whose acceptance conditions are evidenced; new findings do not erase unresolved earlier IDs. Route routine remaining work to the smallest affected next_step_id, consequential decisions to implementation-final-consequential-gate, and blockers to a stable resume_action.
-        - id: route-final-implementation
-          type: switch
-          expression: "{{ steps.reassess-implementation.output.state }}"
-          cases:
-            complete:
-              - id: implementation-executed-stop
-                type: prompt
-                prompt: "Stop at Implementation Executed with the refreshed acceptance evidence. The operator may separately invoke FlowKit Converge; do not invoke it here."
-            needs-human:
-              - id: implementation-final-consequential-gate
-                type: gate
-                message: "Review the exact consequential decision from the latest implementation assessment. Defer or escalate it; this workflow cannot resolve it automatically."
-                options: ["defer", "escalate", "abort"]
-                verdict_input: "implementation_decision"
-              - id: stop-after-final-implementation-decision
-                type: prompt
-                prompt: "Stop after recording the operator's consequential decision. Do not change authority or start another FlowKit workflow."
-            blocked:
-              - id: implementation-final-blocked-stop
-                type: prompt
-                prompt: "Stop with the blocker and resume_action from the latest assessment. Preserve all partial implementation changes."
-            continue:
-              - id: implementation-loop-bounded-stop
-                type: prompt
-                prompt: "Stop because the controller found no progress or exhausted the five-pass safety cap. Report the stable blocker and latest evidence; do not report completion."
-            default:
-              - id: implementation-final-invalid-state-stop
-                type: prompt
-                prompt: "Stop because the refreshed assessment state is invalid or unrecognized. Preserve evidence and report the validation error."
-      needs-human:
-        - id: implementation-consequential-gate
-          type: gate
-          message: "Review the exact consequential decision from the initial implementation assessment. Defer or escalate it; this workflow cannot resolve it automatically."
-          options: ["defer", "escalate", "abort"]
-          verdict_input: "implementation_decision"
-        - id: stop-after-initial-implementation-decision
-          type: prompt
-          prompt: "Stop after recording the operator's consequential decision. Do not change authority or start another FlowKit workflow."
-      blocked:
-        - id: implementation-initial-blocked-stop
-          type: prompt
-          prompt: "Stop with the blocker and resume_action from the initial assessment. Preserve all partial implementation changes."
-    default:
-      - id: implementation-initial-invalid-state-stop
+      Inspect the existing task plan and current validation evidence for {{ inputs.feature_context }} before implementation. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids for unfinished eligible tasks; resolved_ids; and exactly one of next_step_id or resume_action as required. Mark complete only when no required task remains and relevant validation has passed. Use continue only for specific eligible unfinished tasks and set next_step_id to implement-eligible-work. Use needs-human for a specific required operator answer and blocked for a concrete prerequisite, failed validation, or unsafe continuation; provide a stable resume_action. This snapshot is the progress baseline; do not invoke implementation or other workflow phases.
+  - id: implementation-continuation-loop
+    type: do-while
+    condition: "{{ steps.assess-implementation-after-pass.output.state == 'continue' }}"
+    max_iterations: 5
+    steps:
+      - id: implement-eligible-work
+        command: "speckit.implement"
+        integration: "{{ inputs.integration }}"
+        flow_kit:
+          delegated: true
+          agent: Builder
+        input:
+          args: >-
+            Implement all remaining eligible tasks for {{ inputs.feature_context }} from its existing task plan. Continue until those tasks are complete, a concrete blocker prevents further eligible work, or operator input is required. Preserve completed work and return completed and remaining task IDs, validation results, changed paths, and the exact blocker or question if stopped. Do not re-specify, re-plan, re-task, re-analyze, expand scope, or invoke another FlowKit workflow.
+      - id: assess-implementation-after-pass
         type: prompt
-        prompt: "Stop because the assessment state is invalid or unrecognized. Preserve evidence and report the validation error."
+        flow_kit:
+          delegated: true
+          agent: Verifier
+        prompt: >-
+          Inspect the current task checklist, implementation changes, and validation evidence for {{ inputs.feature_context }} after this implementation session. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids for unfinished eligible tasks; resolved_ids for previously unfinished tasks now completed with inspectable evidence; and exactly one of next_step_id or resume_action as required. Mark complete only when the existing task plan is finished and relevant validation passed. Use continue only when specific eligible tasks remain, the session completed at least one previously unfinished task, and another speckit.implement session can safely proceed; set next_step_id to implement-eligible-work. A checkbox change, a child saying it is done, or a successful command alone is not completion evidence. Use needs-human when a specific operator answer is required, and blocked for a concrete prerequisite, failed validation, unavailable command, or unsafe continuation; provide a stable resume_action. Do not re-specify, re-plan, re-task, re-analyze, or invoke another FlowKit workflow.
+  - id: report-implementation-outcome
+    type: prompt
+    prompt: >-
+      Report the latest evidenced assessment for {{ inputs.feature_context }}. Name completed and remaining task IDs, validation results, changed paths, and the exact blocker or operator question and safe resumption point when work remains. A no-progress or five-pass safety stop is not completion. Stop this workflow here. Converge, roadmap verification, Git integration, and feature acceptance require separate operator action.

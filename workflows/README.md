@@ -13,7 +13,7 @@ Use the selected consumer project in the Codex task and invoke one skill at a ti
 | `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`: Architect; readiness assessments: Verifier |
 | `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`, `return-to-plan`: Architect |
 | `speckit-flow-analyze-remediate` | `$flow-kit-analyze-remediate` — FlowKit Analyze | `feature_context` | `analyze-artifacts`, `reanalyze-*`: Verifier; remediation and replanning steps: Architect |
-| `speckit-flow-implement` | `$flow-kit-implement` — FlowKit Implement | `feature_context` | `implement-eligible-work`: Builder; `return-to-*`: Architect |
+| `speckit-flow-implement` | `$flow-kit-implement` — FlowKit Implement | `feature_context` | task assessments: Verifier; `implement-eligible-work`: Builder |
 | `speckit-flow-converge` | `$flow-kit-converge` — FlowKit Converge | `feature_context` | `assess-convergence`: Verifier; `return-remediation-to-analysis`: Architect |
 | `speckit-flow-closeout` | `$flow-kit-closeout` — FlowKit Close Out | `feature_context` (exact repository-relative spec directory) | assessment, analysis, debrief, and lint: Verifier; spec/plan/tasks correction: Architect; eligible implementation and wiki ingest: Builder |
 
@@ -47,7 +47,7 @@ Codex owns optional `model` and `model_reasoning_effort` fields and their inheri
 | `speckit-flow-plan` | `speckit.plan`, `speckit.clarify` |
 | `speckit-flow-tasks` | `speckit.tasks` |
 | `speckit-flow-analyze-remediate` | `speckit.analyze`, `speckit.specify`, `speckit.plan`, `speckit.tasks` |
-| `speckit-flow-implement` | `speckit.implement`, `speckit.analyze`, `speckit.specify`, `speckit.plan`, `speckit.tasks` |
+| `speckit-flow-implement` | `speckit.implement` |
 | `speckit-flow-converge` | `speckit.converge`, `speckit.specify`, `speckit.plan`, `speckit.tasks`, `speckit.analyze`, `speckit.implement` |
 | `speckit-flow-closeout` | `speckit.specify`, `speckit.plan`, `speckit.tasks`, `speckit.analyze`, `speckit.implement`, `speckit.flow-roadmap.debrief`, `speckit.flow-roadmap.write`, `speckit.flow-wiki.ingest`, `speckit.flow-wiki.lint` |
 
@@ -88,9 +88,9 @@ For routine findings within the issued scope, update the smallest affected artif
 
 ## Manual implementation path
 
-When native implementation dispatch is unavailable, use `speckit.implement` only for the operator-selected feature, current agent, and eligible tasks after clean analysis. Assess task eligibility and discoveries from current artifacts; execute within scope without asking the operator to classify routine results.
+When native implementation dispatch is unavailable, first record unfinished eligible task IDs from the operator-selected feature's existing task plan. If none remain, verify completion and stop. Otherwise invoke `speckit.implement` for all remaining eligible tasks. After each session, inspect current task and validation evidence against the prior task list. If eligible tasks remain and the session completed a previously unfinished task, run another implementation session. Continue until complete, a concrete blocker or required operator input, no progress, or the five-pass safety cap. The FlowKit wrapper does not invoke Specify, Plan, Tasks, Analyze, or another FlowKit workflow.
 
-If implementation is complete, stop successfully and leave Converge as a separate operator invocation. For an in-scope discovery, return to the smallest affected artifact: use `speckit.specify` for specification changes, `speckit.plan` for plan changes, `speckit.tasks` for task changes, and `speckit.analyze` to recheck reconciled artifacts before resuming eligible implementation. Continue while each pass resolves tracked findings. Stop on repeated findings, no measurable progress, stale evidence, an exhausted five-pass safety cap, or a blocker, and report preserved work with the smallest safe resumption action. Stop for consequential decisions requiring the operator; never infer roadmap verification, Git integration, or acceptance from execution.
+Report completed and remaining task IDs, validation results, changed paths, and the exact blocker or operator question when work stops. Confirm completion from the task checklist and validation evidence, not merely command success. Treat no progress or cap exhaustion as a bounded stop, preserve completed work, and identify a safe resumption point. Leave Converge, roadmap verification, Git integration, and acceptance for separate operator action.
 
 ## Manual convergence path
 

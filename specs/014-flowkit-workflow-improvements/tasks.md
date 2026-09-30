@@ -50,9 +50,9 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 
 ## Phase 3: User Story 1 — Review Every Workflow End to End (P1) 🎯 MVP
 
-**Goal**: Give all eight workflows a machine-checked branch-and-gate inventory and make the common Analyze and Implement return paths reach a defined conclusion or bounded stop.
+**Goal**: Give all eight workflows a machine-checked branch-and-gate inventory. Analyze completes its corrective routes; Implement repeats the core skill while eligible task progress is verified.
 
-**Independent Test**: Run the inventory checker against all eight definitions and focused Analyze/Implement fixtures for clean, remediable, blocked, consequential, no-progress, and cap-exhausted paths. Verify that no branch launches a later FlowKit workflow.
+**Independent Test**: Run the inventory checker against all eight definitions, Analyze's corrective fixtures, and Implement's core-skill continuation contract. Verify that no branch launches a later FlowKit workflow.
 
 ### Tests
 
@@ -65,7 +65,7 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 - [X] T016 [US1] Replace routine operator classification and one-pass fall-through with initial assessment and evidence-based bounded reassessment in `workflows/speckit-flow-analyze-remediate/workflow.yml`, preserving affected spec→plan→tasks order and consequential gates; increment its workflow version.
 - [X] T017 [P] [US1] Complete Implement's in-scope return-to-analysis/specification/plan/tasks paths through initial assessment, dependent reconciliation, analysis, and eligible work or a specific stop in `workflows/speckit-flow-implement/workflow.yml`; keep Converge separately invoked and increment its workflow version.
 
-**Checkpoint**: Analyze and Implement complete their own routine corrective paths, and every workflow has a checkable inventory. This increment does not claim that the other six packages have been updated yet.
+**Checkpoint**: Analyze completes its corrective paths, Implement delegates each eligible-work session to the core skill and reassesses progress, and every workflow has a checkable inventory. This increment does not claim that the other six packages have been updated yet.
 
 ## Phase 4: User Story 2 — Reliable Roadmap Linkage (P1)
 
@@ -186,6 +186,7 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 - [ ] T046 Run the automated scenarios in `specs/014-flowkit-workflow-improvements/quickstart.md` and write their machine-generated branch coverage, observed stops, skipped paths, component provenance, and limitations to `specs/014-flowkit-workflow-improvements/validation/report.json`.
 - [ ] T047 Prepare at most two optional final Codex desktop checks—one visible continuation and one named-agent/gate presentation—with exact actions and expected results in `specs/014-flowkit-workflow-improvements/validation/desktop-checks.md`; record any operator observations separately from automated results.
 - [ ] T048 Reconcile accepted implementation discoveries across `specs/014-flowkit-workflow-improvements/spec.md`, `specs/014-flowkit-workflow-improvements/plan.md`, and `specs/014-flowkit-workflow-improvements/tasks.md`, then run relevant tests and `git diff --check` before presenting the changed source and residual limits for review.
+- [X] T049 [US1] Simplify `workflows/speckit-flow-implement/workflow.yml` to a bounded `speckit.implement` continuation loop with evidence-based task assessment and outcome report; align its diagram, manual path, versions, and focused tests. This supersedes T017's artifact flowback design for Implement without changing the separate Converge workflow.
 
 **Checkpoint**: Automated evidence and documentation cover the delivered source; optional desktop observations are separate. Release, roadmap verification, Git integration, and feature acceptance retain their own explicit decisions.
 
@@ -202,7 +203,7 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 
 | Story | Depends on | Independently testable result |
 |---|---|---|
-| US1 | Foundation and pre-change inventory | Checked eight-workflow inventory and Analyze/Implement loops validated with deterministic named-agent fixtures. |
+| US1 | Foundation and pre-change inventory | Checked eight-workflow inventory, Analyze's corrective loop, and Implement's core-skill continuation loop. |
 | US2 | Foundation | Start Feature uniquely linked or specifically stopped. |
 | US3 | Foundation and approved Clarify policy | Clarify and Plan each reach an evidenced conclusion. |
 | US4 | Foundation | Tasks generation and coverage assessment conclude without routine gates. |
@@ -224,4 +225,4 @@ Shared files `tests/test_workflow_paths.py`, `tests/test_workflow_graph.py`, and
 
 ## Implementation Strategy
 
-Start with Phase 1 decisions, source provenance, and the complete eight-workflow inventory before source changes, then build the Phase 2 shared contract. Deliver US1 as the first fixture-tested increment: its checked branch inventory and Analyze/Implement continuation demonstrate that the loop, evidence, and recovery machinery works. Complete the remaining story phases against their own deterministic fixture sets, complete US7's native agent configuration and assignment review, then run the full direct-Codex and disposable-consumer checks. Automated results carry routine verification; at most two final operator checks may confirm the visible Codex desktop experience. Do not treat those observations as approval of a roadmap patch, release, Git integration, or feature acceptance.
+Start with Phase 1 decisions, source provenance, and the complete eight-workflow inventory before source changes, then build the Phase 2 shared contract. Deliver US1 as the first fixture-tested increment: its checked branch inventory, Analyze correction loop, and Implement core-skill continuation demonstrate the loop, evidence, and recovery machinery. Complete the remaining story phases against their own deterministic fixture sets, complete US7's native agent configuration and assignment review, then run the full direct-Codex and disposable-consumer checks. Automated results carry routine verification; at most two final operator checks may confirm the visible Codex desktop experience. Do not treat those observations as approval of a roadmap patch, release, Git integration, or feature acceptance.

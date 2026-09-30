@@ -107,28 +107,26 @@ class WorkflowPathTests(unittest.TestCase):
         self.assertTrue(find_step(steps, "analysis-final-blocked-stop"))
         self.assertFalse(any(command.startswith("speckit.flow-kit-") for command in commands(steps)))
 
-    def test_implementReconcilesDependenciesAnalyzesBeforeEligibleWork(self) -> None:
+    def test_implementRepeatsExistingTasksOnlyWhileProgressIsVerified(self) -> None:
         workflow = load_workflow("speckit-flow-implement")
         steps = workflow["steps"]
-        self.assertEqual("assess-implementation", steps[0]["id"])
-        loop = find_step(steps, "implementation-correction-loop")
-        self.assertIsNotNone(loop)
+        self.assertEqual(["assess-implementation-state", "implementation-continuation-loop", "report-implementation-outcome"], [step["id"] for step in steps])
+        self.assertEqual("Verifier", steps[0]["flow_kit"]["agent"])
+        self.assertIn("progress baseline", steps[0]["prompt"])
+        loop = steps[1]
+        self.assertEqual("do-while", loop["type"])
         self.assertEqual(5, loop["max_iterations"])
-        self.assertEqual("reassess-implementation-before-pass", loop["steps"][0]["id"])
-        self.assertEqual("reassess-implementation", loop["steps"][-1]["id"])
-        route = find_step(steps, "select-implementation-flowback")
-        expected = {
-            "remediate-implementation-specification": ["speckit.specify", "speckit.plan", "speckit.tasks", "speckit.analyze", "speckit.implement"],
-            "remediate-implementation-plan": ["speckit.plan", "speckit.tasks", "speckit.analyze", "speckit.implement"],
-            "remediate-implementation-tasks": ["speckit.tasks", "speckit.analyze", "speckit.implement"],
-            "analyze-before-implementation-resumes": ["speckit.analyze", "speckit.implement"],
-            "continue-eligible-implementation": ["speckit.implement"],
-        }
-        for route_name, expected_commands in expected.items():
-            self.assertEqual(expected_commands, commands(route["cases"][route_name]))
-        self.assertTrue(find_step(steps, "implementation-consequential-gate"))
-        self.assertTrue(find_step(steps, "implementation-final-blocked-stop"))
-        self.assertFalse(any(command.startswith("speckit.flow-kit-") for command in commands(steps)))
+        self.assertEqual(["implement-eligible-work", "assess-implementation-after-pass"], [step["id"] for step in loop["steps"]])
+        self.assertEqual("{{ steps.assess-implementation-after-pass.output.state == 'continue' }}", loop["condition"])
+        self.assertEqual(["speckit.implement"], commands(steps))
+        self.assertEqual("Builder", loop["steps"][0]["flow_kit"]["agent"])
+        self.assertEqual("Verifier", loop["steps"][1]["flow_kit"]["agent"])
+        self.assertNotIn("implementation_decision", workflow["inputs"])
+        self.assertIn("all remaining eligible tasks", loop["steps"][0]["input"]["args"])
+        self.assertIn("operator input is required", loop["steps"][0]["input"]["args"])
+        self.assertIn("another speckit.implement session can safely proceed", loop["steps"][1]["prompt"])
+        self.assertIn("successful command alone is not completion evidence", loop["steps"][1]["prompt"])
+        self.assertIn("no-progress or five-pass safety stop", steps[2]["prompt"])
 
     def testLoopRoutingStopsForNoProgressAndCapButAcceptsCleanBeforeCorrectivePass(self) -> None:
         complete = {"state": "complete"}
@@ -154,7 +152,6 @@ class WorkflowPathTests(unittest.TestCase):
     def testConsequentialGateIsMainTaskOnlyAndNoNestedWorkflowIsDeclared(self) -> None:
         for workflow_id, gate_id, expected_options in (
             ("speckit-flow-analyze-remediate", "analysis-consequential-gate", ["defer", "escalate", "abort"]),
-            ("speckit-flow-implement", "implementation-consequential-gate", ["defer", "escalate", "abort"]),
         ):
             workflow = load_workflow(workflow_id)
             gate = find_step(workflow["steps"], gate_id)
@@ -162,20 +159,18 @@ class WorkflowPathTests(unittest.TestCase):
             self.assertNotIn("flow_kit", gate)
             self.assertTrue(all(not command.startswith("speckit.flow-kit-") for command in commands(workflow["steps"])))
 
-    def testManualAnalyzeAndImplementPathsMatchBoundedContinuationContract(self) -> None:
+    def testManualAnalyzeAndImplementPathsMatchTheirContinuationContracts(self) -> None:
         readme = (ROOT / "workflows/README.md").read_text(encoding="utf-8")
         analyze = readme.split("## Manual analysis and remediation path", 1)[1].split("## Manual implementation path", 1)[0]
         implement = readme.split("## Manual implementation path", 1)[1].split("## Manual convergence path", 1)[0]
-        for section, classification_text in (
-            (analyze, "do not ask the operator to classify a routine result"),
-            (implement, "without asking the operator to classify routine results"),
-        ):
-            self.assertIn(classification_text, section)
-            self.assertIn("repeated findings", section)
-            self.assertIn("no measurable progress", section)
-            self.assertIn("five-pass safety cap", section)
-            self.assertIn("smallest safe resumption action", section)
-        self.assertIn("Converge as a separate operator invocation", implement)
+        for required in ("do not ask the operator to classify a routine result", "repeated findings", "no measurable progress", "five-pass safety cap", "smallest safe resumption action"):
+            self.assertIn(required, analyze)
+        self.assertIn("all remaining eligible tasks", implement)
+        self.assertIn("required operator input", implement)
+        self.assertIn("does not invoke Specify, Plan, Tasks, Analyze", implement)
+        self.assertIn("If eligible tasks remain", implement)
+        self.assertIn("five-pass safety cap", implement)
+        self.assertIn("Leave Converge", implement)
 
     def testStartFeatureLinkageCasesRequireExactApprovalAndRefreshBriefEvidence(self) -> None:
         workflow = load_workflow("speckit-flow-start-feature")
