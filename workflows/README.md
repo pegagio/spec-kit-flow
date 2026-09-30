@@ -10,7 +10,7 @@ Use the selected consumer project in the Codex task and invoke one skill at a ti
 | --- | --- | --- | --- |
 | `speckit-flow-start-feature` | `$flow-kit-start-feature` — FlowKit Start Feature | `feature_request` | `assess-eligibility`, `draft-specification`: Architect; `assess-created-spec-linkage`, `verify-repaired-spec-linkage`, both brief steps: Verifier |
 | `speckit-flow-clarify` | `$flow-kit-clarify` — FlowKit Clarify | `feature_context` | `clarify-session`: Architect; ambiguity assessments: Verifier |
-| `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`: Architect; readiness assessments: Verifier |
+| `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`: Architect; `verify-plan-output`: Verifier |
 | `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`, `return-to-plan`: Architect |
 | `speckit-flow-analyze-remediate` | `$flow-kit-analyze-remediate` — FlowKit Analyze | `feature_context` | `analyze-artifacts`, `reanalyze-*`: Verifier; remediation and replanning steps: Architect |
 | `speckit-flow-implement` | `$flow-kit-implement` — FlowKit Implement | `feature_context` | task assessments: Verifier; `implement-eligible-work`: Builder |
@@ -70,9 +70,9 @@ Stop as clarified when no significant unresolved ambiguity remains, without invo
 
 ## Manual planning path
 
-When native planning dispatch is unavailable, assess the operator-selected reviewed specification, its prerequisites, dependencies, and current design artifacts without asking for routine readiness confirmation. If a required input or dependency is missing, stop with its evidence and a specific resume action. If a material product decision remains, present the exact decision and stop without choosing an answer or invoking Clarify.
+When native planning dispatch is unavailable, record the missing required planning files or placeholder sections for the operator-selected reviewed specification, then invoke `speckit.plan`. Let the core skill perform research, constitutional gates, and design generation; keep technical work within the feature scope and ask the operator for substantive product decisions.
 
-When prerequisites are satisfied and design work remains, run `speckit.plan`, then reassess the current plan, research, data model, contracts, and quickstart. Repeat planning only when fresh evidence confirms measurable progress on a prior artifact gap and in-scope technical design work remains. Stop on a product decision, unmet prerequisite, no progress, stale evidence, a blocker, or the five-pass cap. When the reviewed design artifact set is complete, present it for review and stop; task generation requires a separate operator instruction.
+Check that required and applicable outputs exist and contain substantive content, accepting justified not-applicable sections. This checks deliverable production, not design quality. If gaps remain and a prior output gap was filled, feed the exact missing files or sections back into `speckit.plan`, preserving completed design. Stop when outputs are populated, an operator answer or blocker prevents continuation, no progress occurs, or the five-pass safety limit is reached. Present artifacts and the exact outcome for review; task generation requires a separate operator instruction.
 
 ## Manual task-generation path
 

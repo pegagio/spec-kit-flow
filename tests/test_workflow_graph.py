@@ -68,7 +68,7 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         for projection in projections:
             with self.subTest(workflow=projection["workflow_id"]):
                 self.assertTrue(projection["entry_step_id"])
-                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement"}:
+                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan"}:
                     self.assertFalse(projection["branches"])
                     self.assertFalse(projection["human_decisions"])
                 else:
@@ -146,22 +146,17 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         self.assertEqual({"linked", "repairable", "conflict", "ambiguous"},
                          {case["observed_state"] for case in fixture["scenarios"]})
 
-    def testPlanGraphRoutesReadyMissingAndMaterialProductInputsWithoutRoutineGate(self) -> None:
+    def testPlanGraphLoopsThroughCorePlanningAndOutputVerification(self) -> None:
         workflow = next(item for item in self.inventory.load_workflows()
                         if item["workflow"]["id"] == "speckit-flow-plan")
-        steps = workflow["steps"]
-        self.assertEqual("assess-plan-readiness", steps[0]["id"])
-        route = find_step(steps, "route-initial-plan-readiness")
-        self.assertEqual({"complete", "continue", "needs-human", "blocked"}, set(route["cases"]))
-        self.assertEqual("plan-correction-loop", route["cases"]["continue"][0]["id"])
-        self.assertEqual("plan-material-decision-gate", route["cases"]["needs-human"][0]["id"])
-        self.assertEqual("plan-prerequisite-stop", route["cases"]["blocked"][0]["id"])
-        self.assertEqual("select-plan-action", find_step(steps, "route-plan-pass")["cases"]["continue"][0]["id"])
-        self.assertEqual("create-plan", find_step(steps, "select-plan-action")["cases"]["create-plan"][0]["id"])
-        gate = find_step(steps, "plan-material-decision-gate")
-        self.assertEqual(["return-to-clarification", "defer", "abort"], gate["options"])
-        self.assertNotIn("flow_kit", gate)
-        self.assertNotEqual("gate", steps[0].get("type"))
+        self.assertEqual(["plan-output-loop", "report-plan-outcome"],
+                         [step["id"] for step in workflow["steps"]])
+        self.assertEqual(["speckit.plan"], commands(workflow["steps"]))
+        graph = self.inventory.project_workflow(workflow)
+        self.assertFalse(graph["branches"])
+        self.assertFalse(graph["human_decisions"])
+        self.assertTrue(graph["continuation_edges"])
+        self.assertFalse(graph["unexplained_terminal_paths"])
 
     def testClarifyGraphKeepsOperatorQuestionsAndNeverStartsPlan(self) -> None:
         workflow = next(item for item in self.inventory.load_workflows()

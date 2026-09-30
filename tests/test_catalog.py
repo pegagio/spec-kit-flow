@@ -75,8 +75,7 @@ class CatalogReleaseTests(unittest.TestCase):
                 "clarify-session": "Architect", "assess-clarification-after-session": "Verifier",
             },
             "speckit-flow-plan": {
-                "assess-plan-readiness": "Verifier", "assess-plan-before-pass": "Verifier",
-                "create-plan": "Architect", "assess-plan-after-pass": "Verifier",
+                "create-plan": "Architect", "verify-plan-output": "Verifier",
             },
             "speckit-flow-tasks": {
                 "assess-task-readiness": "Verifier", "assess-task-coverage-before-pass": "Verifier",
@@ -128,7 +127,7 @@ class CatalogReleaseTests(unittest.TestCase):
         }
         expected_versions = {
             "speckit-flow-start-feature": "0.5.0", "speckit-flow-clarify": "0.4.1",
-            "speckit-flow-plan": "0.4.0", "speckit-flow-tasks": "0.4.0",
+            "speckit-flow-plan": "0.4.1", "speckit-flow-tasks": "0.4.0",
             "speckit-flow-analyze-remediate": "0.4.0", "speckit-flow-implement": "0.4.1",
             "speckit-flow-converge": "0.4.0", "speckit-flow-closeout": "0.5.0",
         }

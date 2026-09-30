@@ -49,7 +49,7 @@ An operator starts an eligible feature and receives a specification linked to th
 
 ### User Story 3 - Assess Clarification and Planning Readiness (Priority: P1)
 
-After clarification, the operator receives an evidence-backed assessment of remaining significant ambiguity. A separate planning invocation assesses the specification and proceeds when prerequisites are met without an unconditional readiness question.
+After clarification, the operator receives an evidence-backed assessment of remaining significant ambiguity. A separate planning invocation delegates to the existing planning skill, which owns prerequisite checks, research, design generation, and constitutional gates.
 
 **Independent Test**: Exercise clarified, materially ambiguous, and missing-prerequisite specifications through separate Clarify and Plan runs.
 
@@ -57,7 +57,7 @@ After clarification, the operator receives an evidence-backed assessment of rema
 
 1. **Given** a clarification session reaches its five-question limit, **when** significant ambiguity remains, **then** the workflow assesses the remaining questions and starts another bounded session within the current invocation; each substantive answer still comes from the operator.
 2. **Given** a reviewed specification without material product ambiguity, **when** the operator invokes Plan, **then** planning proceeds without a routine readiness confirmation.
-3. **Given** a missing prerequisite or material product ambiguity, **when** Plan assesses readiness, **then** it stops with specific evidence without choosing a product answer.
+3. **Given** a missing prerequisite or material product ambiguity, **when** the core planning skill encounters it, **then** the workflow reports the exact blocker or operator question without choosing a product answer.
 
 ### User Story 4 - Generate and Assess Tasks (Priority: P1)
 
@@ -132,7 +132,7 @@ Constitution 6.0.0 prospectively permits declared, bounded correction and reasse
 - **FR-002**: Start Feature MUST establish a unique specification-to-roadmap link after the directory is known or stop with specific missing, stale, or conflicting mapping evidence. A mapping change MUST receive approval of an exact roadmap patch.
 - **FR-003**: Clarify MUST assess remaining significant ambiguity from current specification evidence after each bounded session, explain its findings, and continue with another bounded session in the same invocation when specific significant questions remain. The five-question command cap remains per session, substantive answers remain operator-provided, and the workflow MUST stop on a reviewed safety bound, lack of progress, or a consequential decision rather than equating the cap or an empty question set with readiness.
 - **FR-004**: Clarify MUST keep substantive operator questions and routing in the main task and MUST NOT launch Plan.
-- **FR-005**: Plan MUST assess reviewed-spec prerequisites and material product ambiguity after invocation, proceed without an unconditional readiness gate when ready, and otherwise stop with a specific prerequisite or product decision.
+- **FR-005**: Plan MUST invoke `speckit.plan` for the selected reviewed specification and present the resulting design artifacts or exact blocker. The core skill owns prerequisite checks, research, design generation, and constitutional gates. The wrapper MUST check that required and applicable output artifacts are present and populated, then feed exact missing files or placeholder sections back into the core skill while output gaps are being resolved. It MUST preserve completed design, accept justified not-applicable sections, and stop for operator input, blockers, no progress, or the reviewed safety bound. This is output verification, not design review. Substantive product decisions remain operator-provided and Tasks remains separately invoked.
 - **FR-006**: Tasks MUST treat invocation as authorization to generate from reviewed design without a routine pre-generation confirmation; a material design gap MUST cause a specific stop.
 - **FR-007**: Tasks MUST assess generated coverage against reviewed design, report material gaps, and exit successfully when complete without a routine post-generation human gate. Task review and Analyze invocation remain separate operator actions.
 - **FR-008**: Converge MUST classify clean, remediable, and blocked outcomes from inspectable current evidence without asking the operator to classify routine results.

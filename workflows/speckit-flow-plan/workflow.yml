@@ -3,9 +3,9 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-plan"
   name: "Plan Implementation"
-  version: "0.4.0"
+  version: "0.4.1"
   author: "pegagio"
-  description: "Assess planning prerequisites, then create or safely complete reviewed design artifacts without routine readiness confirmation."
+  description: "Run the planning skill and retry missing or placeholder outputs until populated or a bounded stop."
 
 requires:
   speckit_version: ">=1.0.10.dev0+pegagio.2"
@@ -21,118 +21,33 @@ inputs:
     type: string
     default: "codex"
     enum: ["codex"]
-  plan_decision:
-    type: string
-    default: ""
 
 steps:
-  - id: assess-plan-readiness
-    type: prompt
-    flow_kit:
-      delegated: true
-      agent: Verifier
-    prompt: >-
-      Assess current reviewed specification prerequisites, dependencies, existing design artifacts, and material product ambiguity for {{ inputs.feature_context }}. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths and current SHA-256 digests; remaining_ids; resolved_ids; and exactly one of next_step_id, gate_step_id, or resume_action as required. Use complete only when the existing plan, research, data model, required contracts, and quickstart are present and current. Use continue only when prerequisites are satisfied, no material product ambiguity remains, and in-scope design artifacts need creation or correction; set next_step_id to create-plan and identify concrete remaining artifact IDs. Use needs-human for a material product decision and set gate_step_id to plan-material-decision-gate. Use blocked for missing reviewed inputs, unmet dependencies, or an operational prerequisite and provide a stable resume_action. Never infer product answers or use a routine readiness confirmation.
-  - id: route-initial-plan-readiness
-    type: switch
-    expression: "{{ steps.assess-plan-readiness.output.state }}"
-    cases:
-      complete:
-        - id: plan-already-complete-stop
-          type: prompt
-          prompt: "Stop successfully: current evidence shows the reviewed design artifact set is already complete. Report the artifact paths and leave Tasks as a separate operator invocation."
-      continue:
-        - id: plan-correction-loop
-          type: do-while
-          condition: "{{ steps.assess-plan-after-pass.output.state == 'continue' }}"
-          max_iterations: 5
-          steps:
-            - id: assess-plan-before-pass
-              type: prompt
-              flow_kit:
-                delegated: true
-                agent: Verifier
-              prompt: >-
-                Reassess current prerequisite, product-ambiguity, and design-artifact evidence immediately before this Plan pass for {{ inputs.feature_context }}. Return the same structured outcome envelope with stable remaining_ids. Continue only for ready, in-scope design work and set next_step_id to create-plan; missing prerequisites, material product decisions, and complete artifact sets must skip plan generation.
-            - id: route-plan-pass
-              type: switch
-              expression: "{{ steps.assess-plan-before-pass.output.state }}"
-              cases:
-                complete: []
-                needs-human: []
-                blocked: []
-                continue:
-                  - id: select-plan-action
-                    type: switch
-                    expression: "{{ steps.assess-plan-before-pass.output.next_step_id }}"
-                    cases:
-                      create-plan:
-                        - id: create-plan
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.plan"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Create or reconcile only the in-scope technical design artifacts for {{ inputs.feature_context }} from its reviewed specification. Do not answer product questions, expand feature scope, generate tasks, or invoke another workflow. Preserve existing decisions and report any newly discovered material product ambiguity for the main-task stop."
-                    default:
-                      - id: invalid-plan-route-stop
-                        type: prompt
-                        prompt: "Stop because the readiness assessment selected an unsupported plan action. Preserve artifacts and report the invalid next_step_id."
-              default:
-                - id: invalid-plan-assessment-stop
-                  type: prompt
-                  prompt: "Stop because the pre-pass planning assessment returned an unrecognized state. Preserve evidence and report the validation error."
-            - id: assess-plan-after-pass
-              type: prompt
-              flow_kit:
-                delegated: true
-                agent: Verifier
-              prompt: >-
-                Reassess {{ inputs.feature_context }} after the Plan command using the current reviewed specification and all expected design artifacts. Return the same structured outcome envelope and identify which prior remaining_ids are now resolved. Complete only when the artifact set is present, internally consistent, and current. Continue only for remaining in-scope technical design work when at least one prior artifact gap was resolved; use next_step_id create-plan. Route a newly discovered material product decision to plan-final-material-decision-gate, or an unmet prerequisite/blocker to a stable resume_action. A changed digest or successful command is not progress by itself.
-        - id: route-final-plan-readiness
-          type: switch
-          expression: "{{ steps.assess-plan-after-pass.output.state }}"
-          cases:
-            complete:
-              - id: plan-created-stop
-                type: prompt
-                prompt: "Stop at Design Planned after refreshed evidence confirms the current design artifact set. Present plan, research, data model, contracts, and quickstart for operator review; Tasks remains a separate invocation."
-            needs-human:
-              - id: plan-final-material-decision-gate
-                type: gate
-                message: "Review the exact material product decision identified by the latest assessment. Choose whether to return to clarification or defer; Plan will not choose a product answer."
-                options: ["return-to-clarification", "defer", "abort"]
-                verdict_input: "plan_decision"
-              - id: plan-final-decision-stop
-                type: prompt
-                prompt: "Stop after recording the material product decision. Preserve current artifacts and leave Clarify as a separate operator invocation."
-            blocked:
-              - id: plan-final-prerequisite-stop
-                type: prompt
-                prompt: "Stop with the specific unmet prerequisite and stable resume_action from the latest assessment. Preserve completed design artifacts."
-            continue:
-              - id: plan-loop-bounded-stop
-                type: prompt
-                prompt: "Stop because the controller found no measurable design progress or exhausted the five-pass safety cap. Preserve completed artifacts and identify the remaining design IDs; do not claim planning success."
-            default:
-              - id: plan-final-invalid-state-stop
-                type: prompt
-                prompt: "Stop because the refreshed planning assessment state is invalid or unrecognized. Preserve evidence and report the validation error."
-      needs-human:
-        - id: plan-material-decision-gate
-          type: gate
-          message: "Review the exact material product decision identified by the initial assessment. Plan will not choose an answer. Choose whether to return to clarification or defer."
-          options: ["return-to-clarification", "defer", "abort"]
-          verdict_input: "plan_decision"
-        - id: plan-initial-decision-stop
-          type: prompt
-          prompt: "Stop after recording the material product decision. Preserve evidence; the operator may separately invoke Clarify."
-      blocked:
-        - id: plan-prerequisite-stop
-          type: prompt
-          prompt: "Stop with the specific unmet prerequisite and stable resume_action from the initial assessment. Do not invoke speckit.plan until the reviewed inputs are ready."
-    default:
-      - id: plan-initial-invalid-state-stop
+  - id: plan-output-loop
+    type: do-while
+    condition: "{{ steps.verify-plan-output.output.state == 'continue' }}"
+    max_iterations: 5
+    steps:
+      - id: prepare-plan-request
         type: prompt
-        prompt: "Stop because the initial planning assessment state is invalid or unrecognized. Preserve evidence and report the validation error."
+        prompt: >-
+          Prepare the speckit.plan argument string for {{ inputs.feature_context }}. On the first pass, inspect existing planning outputs and record stable IDs for missing required artifacts or unresolved template sections as the progress baseline. On later passes, use the latest verify-plan-output remaining_ids and their exact file/section details. Return remaining_ids containing those stable file/section gap IDs and args directing the planning skill to create or complete those outputs within the reviewed specification, preserve completed design and existing decisions, ask the operator for substantive product decisions, and report artifact paths, checks, and any blocker. Do not generate tasks or invoke another FlowKit workflow. Do not assess design quality.
+      - id: create-plan
+        command: "speckit.plan"
+        integration: "{{ inputs.integration }}"
+        flow_kit:
+          delegated: true
+          agent: Architect
+        input:
+          args: "{{ steps.prepare-plan-request.output.args }}"
+      - id: verify-plan-output
+        type: prompt
+        flow_kit:
+          delegated: true
+          agent: Verifier
+        prompt: >-
+          Use these pre-pass gap IDs as the progress baseline: {{ steps.prepare-plan-request.output.remaining_ids }}. Verify the planning outputs for {{ inputs.feature_context }} against the core planning skill's required and applicable deliverables. Inspect plan.md, research.md, data-model.md, quickstart.md, and contracts when required by the feature. Check that required files exist and contain substantive content rather than unfilled template placeholders or unresolved NEEDS CLARIFICATION markers. Accept explicit, justified not-applicable sections; do not review technical design quality or invent new deliverables. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids identifying each exact missing file or placeholder section; resolved_ids identifying gaps from the prepared baseline or prior verification now filled; and exactly one of next_step_id or resume_action as required. Include an existing specification as evidence when an output file is missing. Use complete only when required outputs are populated and no reported planning gate failure remains. Use continue when specific output gaps remain safely repairable by speckit.plan and set next_step_id to prepare-plan-request. Use needs-human for a required operator decision and blocked for a concrete prerequisite, failed constitutional gate, or unsafe retry, with a stable resume_action. Command success or changed bytes alone is not completion or progress.
+  - id: report-plan-outcome
+    type: prompt
+    prompt: >-
+      Report the latest verified planning outcome for {{ inputs.feature_context }} and present the generated design artifacts for operator review. Identify exact missing files or sections, any blocker or operator question, and the safe resumption action when incomplete. No progress or exhaustion of the five-pass safety limit is a bounded stop, not planning completion. Stop this workflow here. Task generation requires a separate operator invocation.

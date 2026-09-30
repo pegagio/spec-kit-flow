@@ -345,33 +345,35 @@ class WorkflowPathTests(unittest.TestCase):
             progress, iteration=5, max_iterations=5, loop_body_step_ids={"clarify-session"}, previous_assessment=initial
         ))
 
-    def testPlanProceedsWhenReadyAndStopsWithEvidenceForMissingOrMaterialProductInputs(self) -> None:
+    def testPlanRetriesOnlyMissingOutputsWithExplicitGapFeedback(self) -> None:
         workflow = load_workflow("speckit-flow-plan")
         steps = workflow["steps"]
-        self.assertEqual("assess-plan-readiness", steps[0]["id"])
-        initial_route = find_step(steps, "route-initial-plan-readiness")
-        self.assertEqual({"complete", "continue", "needs-human", "blocked"}, set(initial_route["cases"]))
-        self.assertEqual("plan-correction-loop", initial_route["cases"]["continue"][0]["id"])
-        self.assertEqual("plan-prerequisite-stop", initial_route["cases"]["blocked"][0]["id"])
-        self.assertEqual("plan-material-decision-gate", initial_route["cases"]["needs-human"][0]["id"])
-        loop = find_step(steps, "plan-correction-loop")
+        self.assertEqual(["plan-output-loop", "report-plan-outcome"], [step["id"] for step in steps])
+        loop = steps[0]
         self.assertEqual(5, loop["max_iterations"])
-        self.assertEqual("assess-plan-before-pass", loop["steps"][0]["id"])
-        self.assertEqual("assess-plan-after-pass", loop["steps"][-1]["id"])
-        before_route = find_step(steps, "route-plan-pass")
-        self.assertEqual("select-plan-action", before_route["cases"]["continue"][0]["id"])
-        self.assertEqual("create-plan", find_step(steps, "select-plan-action")["cases"]["create-plan"][0]["id"])
-        self.assertEqual("speckit.plan", find_step(steps, "create-plan")["command"])
-        self.assertEqual("Architect", find_step(steps, "create-plan")["flow_kit"]["agent"])
-        self.assertEqual([], commands(initial_route["cases"]["blocked"]))
-        self.assertEqual([], commands(initial_route["cases"]["needs-human"]))
-        final_route = find_step(steps, "route-final-plan-readiness")
-        self.assertEqual({"complete", "needs-human", "blocked", "continue", "default"}, set(final_route["cases"]))
-        self.assertEqual("plan-loop-bounded-stop", final_route["cases"]["continue"][0]["id"])
-        self.assertFalse(any(command.startswith("speckit.clarify") or command.startswith("speckit.flow-kit-")
-                             for command in commands(steps)))
-        self.assertFalse(any(step.get("type") == "gate" and "ready" in step.get("message", "").lower()
-                             for step in steps))
+        self.assertEqual("{{ steps.verify-plan-output.output.state == 'continue' }}", loop["condition"])
+        prepare, create, verify = loop["steps"]
+        self.assertEqual(["prepare-plan-request", "create-plan", "verify-plan-output"],
+                         [step["id"] for step in loop["steps"]])
+        self.assertEqual(["speckit.plan"], commands(steps))
+        self.assertEqual("Architect", create["flow_kit"]["agent"])
+        self.assertEqual("Verifier", verify["flow_kit"]["agent"])
+        self.assertEqual("{{ steps.prepare-plan-request.output.args }}", create["input"]["args"])
+        self.assertIn("latest verify-plan-output remaining_ids", prepare["prompt"])
+        self.assertIn("{{ steps.prepare-plan-request.output.remaining_ids }}", verify["prompt"])
+        self.assertIn("do not review technical design quality", verify["prompt"])
+        initial = {"state": "continue", "next_step_id": "prepare-plan-request",
+                   "remaining_ids": ["plan.md:technical-context", "research.md"], "resolved_ids": []}
+        repaired = {**initial, "remaining_ids": ["research.md"], "resolved_ids": ["plan.md:technical-context"]}
+        self.assertEqual("continue", self.controller.route_loop_assessment(
+            repaired, iteration=1, max_iterations=5,
+            loop_body_step_ids={"prepare-plan-request", "create-plan", "verify-plan-output"},
+            previous_assessment=initial)["action"])
+        self.assertEqual("no-progress", self.controller.route_loop_assessment(
+            initial, iteration=2, max_iterations=5,
+            loop_body_step_ids={"prepare-plan-request", "create-plan", "verify-plan-output"},
+            previous_assessment=initial)["blocker"])
+        self.assertIn("separate operator invocation", steps[1]["prompt"])
 
     def testTasksGeneratesWithoutRoutineGateAndAssessesCoverageBeforeSuccess(self) -> None:
         workflow = load_workflow("speckit-flow-tasks")

@@ -86,7 +86,7 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 
 ## Phase 5: User Story 3 — Clarification and Planning Readiness (P1)
 
-**Goal**: Clarify reassesses significant ambiguity across bounded sessions; separately invoked Plan starts when prerequisites are met without a routine readiness gate.
+**Goal**: Clarify reassesses significant ambiguity across bounded sessions; separately invoked Plan delegates to the existing core skill and presents its artifacts or blocker.
 
 **Independent Test**: Exercise clean, five-question-limit-with-remaining-ambiguity, no-progress, missing-prerequisite, and material-product-question fixtures. Assert that each substantive answer stays with the operator and Plan is never launched by Clarify.
 
@@ -187,6 +187,7 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 - [ ] T047 Prepare at most two optional final Codex desktop checks—one visible continuation and one named-agent/gate presentation—with exact actions and expected results in `specs/014-flowkit-workflow-improvements/validation/desktop-checks.md`; record any operator observations separately from automated results.
 - [ ] T048 Reconcile accepted implementation discoveries across `specs/014-flowkit-workflow-improvements/spec.md`, `specs/014-flowkit-workflow-improvements/plan.md`, and `specs/014-flowkit-workflow-improvements/tasks.md`, then run relevant tests and `git diff --check` before presenting the changed source and residual limits for review.
 - [X] T049 [US1] Simplify `workflows/speckit-flow-implement/workflow.yml` to a bounded `speckit.implement` continuation loop with evidence-based task assessment and outcome report; align its diagram, manual path, versions, and focused tests. This supersedes T017's artifact flowback design for Implement without changing the separate Converge workflow.
+- [X] T050 [US3] Simplify Plan to an Architect `speckit.plan` command with required-output verification and exact-gap retry feedback, followed by a main-task outcome report; update the diagram, manual path, feature requirements, version pins, and focused tests. This supersedes T022/T024's wrapper readiness routing and broad design reassessment.
 
 **Checkpoint**: Automated evidence and documentation cover the delivered source; optional desktop observations are separate. Release, roadmap verification, Git integration, and feature acceptance retain their own explicit decisions.
 
