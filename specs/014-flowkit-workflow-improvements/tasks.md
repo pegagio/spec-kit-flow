@@ -191,6 +191,8 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 - [X] T051 [US4] Simplify Tasks to the Plan-style core-skill output loop with exact-gap retry feedback and preserved task history; update source, diagram, manual path, requirements, versions, and focused tests. This supersedes T026's readiness routing and separate stop gates.
 - [X] T052 [US1] Simplify Analyze and Remediate to one shared specification → plan → tasks waterfall, one analyzer, and one assessment; support an explicit first read-only baseline pass followed by at most five progress-checked corrections, and update diagram, controller, docs, versions, and focused tests.
 
+- [X] T053 [US5] Simplify Converge to one shared task-recording and specification → plan → tasks waterfall, one task analyzer and eligibility check, one implementation command, and one convergence assessment; run speckit.converge on every pass with assessment before a guarded correction branch, allow five corrections plus final confirmation, preserve task history and stop propagation, and refresh diagram, manual path, versions, and focused tests.
+
 **Checkpoint**: Automated evidence and documentation cover the delivered source; optional desktop observations are separate. Release, roadmap verification, Git integration, and feature acceptance retain their own explicit decisions.
 
 ## Dependencies and Execution Order

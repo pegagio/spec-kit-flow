@@ -265,12 +265,19 @@ def validate_workflow_graph(steps: list[dict[str, Any]]) -> None:
             if "assessment_only_first_pass" in node:
                 if kind != "do-while" or not isinstance(node["assessment_only_first_pass"], bool):
                     raise ValueError("assessment_only_first_pass requires a boolean on a do-while node")
+            if "assessment_before_correction" in node:
+                if kind != "do-while" or not isinstance(node["assessment_before_correction"], bool):
+                    raise ValueError("assessment_before_correction requires a boolean on a do-while node")
+                if node["assessment_before_correction"] and node.get("assessment_only_first_pass"):
+                    raise ValueError("loop assessment modes are mutually exclusive")
             if kind == "do-while":
                 if inside_loop:
                     raise ValueError(f"nested do-while loops are unsupported: {step_id}")
                 condition = node.get("condition")
                 body = node.get("steps")
                 maximum = node.get("max_iterations")
+                if node.get("assessment_before_correction") and not isinstance(condition, str):
+                    raise ValueError("assessment_before_correction requires an assessment condition")
                 if not isinstance(condition, bool):
                     if not isinstance(condition, str) or LOOP_CONDITION.fullmatch(condition.strip()) is None:
                         raise ValueError(f"do-while condition is unsupported or incomplete: {step_id}")
@@ -285,7 +292,15 @@ def validate_workflow_graph(steps: list[dict[str, Any]]) -> None:
                     if assessment_id not in body_ids:
                         raise ValueError(f"do-while condition must reference an in-body assessment step: {step_id}")
                     assessor = next(item for item in body if isinstance(item, dict) and item.get("id") == assessment_id)
-                    if assessor is not body[-1] or _node_kind(assessor) not in {"prompt", "command"}:
+                    if node.get("assessment_before_correction"):
+                        if (len(body) != 3 or _node_kind(body[0]) != "command" or assessor is not body[1]
+                                or _node_kind(assessor) != "prompt" or _node_kind(body[2]) != "switch"
+                                or body[2].get("expression") != "{{ steps." + assessment_id + ".output.state }}"
+                                or set(body[2].get("cases", {})) != {"continue", "complete", "needs-human", "blocked"}
+                                or any(body[2]["cases"][state] for state in ("complete", "needs-human", "blocked"))
+                                or body[2].get("default")):
+                            raise ValueError(f"assessment_before_correction requires command, assessment, and guarded correction: {step_id}")
+                    elif assessor is not body[-1] or _node_kind(assessor) not in {"prompt", "command"}:
                         raise ValueError(f"do-while condition must reference the final fresh assessment step: {step_id}")
                 visit(body, inside_loop=True)
 
@@ -442,6 +457,7 @@ def route_loop_assessment(
     human_gate_step_ids: set[str] | None = None,
     previous_assessment: dict[str, Any] | None = None,
     assessment_only_first_pass: bool = False,
+    assessment_before_correction: bool = False,
 ) -> dict[str, Any]:
     """Route pre-loop or refreshed loop evidence, stopping on no progress or cap."""
     if isinstance(iteration, bool) or not isinstance(iteration, int) or iteration < 0:
@@ -450,13 +466,17 @@ def route_loop_assessment(
         raise ValueError("loop max_iterations must be a positive integer")
     if not isinstance(assessment_only_first_pass, bool):
         raise ValueError("assessment_only_first_pass must be a boolean")
+    if not isinstance(assessment_before_correction, bool):
+        raise ValueError("assessment_before_correction must be a boolean")
+    if assessment_before_correction and assessment_only_first_pass:
+        raise ValueError("loop assessment modes are mutually exclusive")
     route = route_assessment(assessment, loop_body_step_ids=loop_body_step_ids,
                              human_gate_step_ids=human_gate_step_ids)
     if route["action"] != "continue":
         return route
     if iteration == 0:
         return route
-    if assessment_only_first_pass and iteration == 1 and previous_assessment is None:
+    if (assessment_only_first_pass or assessment_before_correction) and iteration == 1 and previous_assessment is None:
         if iteration >= max_iterations:
             return {"action": "blocked", "blocker": "loop-cap-exhausted"}
         return route
@@ -720,6 +740,7 @@ def main(argv: list[str] | None = None) -> int:
     assessment_parser.add_argument("--human-gate-step", action="append", default=[])
     loop_route_parser = subparsers.add_parser("route-loop", help="route refreshed loop evidence from JSON on stdin")
     loop_route_parser.add_argument("--assessment-only-first-pass", action="store_true")
+    loop_route_parser.add_argument("--assessment-before-correction", action="store_true")
     loop_route_parser.add_argument("--iteration", type=int, required=True)
     loop_route_parser.add_argument("--max-iterations", type=int, required=True)
     loop_route_parser.add_argument("--project", type=Path, required=True)
@@ -766,6 +787,7 @@ def main(argv: list[str] | None = None) -> int:
             loop_body_step_ids=body_ids, human_gate_step_ids=gate_ids,
             previous_assessment=previous,
             assessment_only_first_pass=args.assessment_only_first_pass,
+            assessment_before_correction=args.assessment_before_correction,
         )
     elif args.command == "loop-condition":
         result = {"continue": evaluate_loop_condition(args.condition, payload.get("outputs", {}))}

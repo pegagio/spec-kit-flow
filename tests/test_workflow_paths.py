@@ -460,66 +460,97 @@ class WorkflowPathTests(unittest.TestCase):
             {"state": "complete", "remaining_ids": []}, iteration=5, max_iterations=5,
             loop_body_step_ids=body_ids)["action"])
 
-    def testConvergeRunsOrderedRemediationAndReassessesUntilCleanOrBoundedStop(self) -> None:
+    def testConvergeAlwaysChecksBeforeSharedCorrectionAndReturnsAfterImplementation(self) -> None:
         workflow = load_workflow("speckit-flow-converge")
-        steps = workflow["steps"]
-        self.assertEqual("assess-convergence", steps[0]["id"])
-        self.assertIn("next_step_id to assess-convergence-before-pass", steps[0]["prompt"])
-        initial_route = find_step(steps, "route-initial-convergence")
-        self.assertEqual({"complete", "continue", "needs-human", "blocked"}, set(initial_route["cases"]))
-        self.assertEqual("convergence-remediation-loop", initial_route["cases"]["continue"][0]["id"])
-        self.assertEqual("convergence-consequential-gate", initial_route["cases"]["needs-human"][0]["id"])
-        self.assertEqual("convergence-initial-blocked-stop", initial_route["cases"]["blocked"][0]["id"])
-        loop = find_step(steps, "convergence-remediation-loop")
-        self.assertEqual(5, loop["max_iterations"])
-        self.assertEqual("assess-convergence-before-pass", loop["steps"][0]["id"])
-        self.assertEqual("assess-convergence-after-pass", loop["steps"][-1]["id"])
-        self.assertIn("next_step_id to route-convergence-pass", loop["steps"][0]["prompt"])
-        self.assertIn("convergence-final-consequential-gate", loop["steps"][0]["prompt"])
-        self.assertEqual("{{ steps.assess-convergence-before-pass.output.reason_code }}",
-                         find_step(steps, "select-convergence-remediation")["expression"])
-        for branch_id, expected in {
-            "append-task-remediation": ["speckit.converge", "speckit.analyze", "speckit.implement"],
-            "reconcile-specification": ["speckit.converge", "speckit.specify", "speckit.plan", "speckit.tasks",
-                                        "speckit.analyze", "speckit.implement"],
-            "reconcile-plan": ["speckit.converge", "speckit.plan", "speckit.tasks", "speckit.analyze",
-                               "speckit.implement"],
-            "reconcile-tasks": ["speckit.converge", "speckit.tasks", "speckit.analyze", "speckit.implement"],
-            "implement-eligible": ["speckit.implement"],
-        }.items():
-            branch = find_step(steps, "select-convergence-remediation")["cases"][branch_id]
-            self.assertEqual(expected, commands(branch))
-            if "speckit.analyze" in expected:
-                self.assertLess(expected.index("speckit.analyze"), expected.index("speckit.implement"))
-        final_route = find_step(steps, "route-final-convergence")
-        self.assertEqual({"complete", "needs-human", "blocked", "continue", "default"}, set(final_route["cases"]))
-        self.assertEqual("convergence-remediation-complete-stop", final_route["cases"]["complete"][0]["id"])
-        self.assertEqual("convergence-loop-bounded-stop", final_route["cases"]["continue"][0]["id"])
-        self.assertFalse(any(command.startswith("speckit.flow-") for command in commands(steps)))
-        self.assertFalse(any("speckit-flow-closeout" in str(node) for node in steps))
-        for gate_id in ("convergence-consequential-gate", "convergence-final-consequential-gate"):
-            gate = find_step(steps, gate_id)
-            self.assertEqual(["defer", "abort"], gate["options"])
-            self.assertNotIn("flow_kit", gate)
+        loop, report = workflow["steps"]
+        self.assertTrue(loop["assessment_before_correction"])
+        self.assertNotIn("assessment_only_first_pass", loop)
+        self.assertEqual(6, loop["max_iterations"])
+        self.assertEqual(["append-task-remediation", "assess-convergence", "route-convergence-correction"],
+                         [n["id"] for n in loop["steps"]])
+        self.assertNotIn("convergence_decision", workflow["inputs"])
+        flags = ("spec_action", "plan_action", "task_action")
+        paths = {
+            "clean": (["skip"] * 3, "complete", "complete", ["speckit.converge"]),
+            "convergence-blocked": (["skip"] * 3, "blocked", "complete", ["speckit.converge"]),
+            "convergence-question": (["skip"] * 3, "needs-human", "complete", ["speckit.converge"]),
+            "specification": (["run"] * 3, "continue", "continue", ["speckit.converge", "speckit.specify", "speckit.plan", "speckit.tasks", "speckit.analyze", "speckit.implement"]),
+            "plan": (["skip", "run", "run"], "continue", "continue", ["speckit.converge", "speckit.plan", "speckit.tasks", "speckit.analyze", "speckit.implement"]),
+            "tasks": (["skip", "skip", "run"], "continue", "continue", ["speckit.converge", "speckit.tasks", "speckit.analyze", "speckit.implement"]),
+            "implementation-only": (["skip"] * 3, "continue", "continue", ["speckit.converge", "speckit.analyze", "speckit.implement"]),
+            "no-eligible-work": (["skip"] * 3, "continue", "complete", ["speckit.converge", "speckit.analyze"]),
+            "analysis-blocked": (["skip"] * 3, "continue", "blocked", ["speckit.converge", "speckit.analyze"]),
+            "analysis-question": (["skip"] * 3, "continue", "needs-human", ["speckit.converge", "speckit.analyze"]),
+        }
+        for name, (actions, convergence, eligibility, expected) in paths.items():
+            with self.subTest(path=name):
+                outputs = {"prepare-convergence-flowback": dict(zip(flags, actions)),
+                           "assess-convergence": {"state": convergence},
+                           "assess-remediation-eligibility": {"state": eligibility}}
+                def selected_commands(nodes):
+                    observed = []
+                    for node in nodes:
+                        if node.get("type") == "switch":
+                            choice = self.controller.render_template(node["expression"], {}, outputs)
+                            observed.extend(selected_commands(self.controller.select_switch_branch(node, choice)))
+                        elif "command" in node:
+                            observed.append(node["command"])
+                    return observed
+                self.assertEqual(expected, selected_commands(loop["steps"]))
+        assessor = loop["steps"][1]
+        with self.assertRaisesRegex(ValueError, "unresolved step output reference"):
+            self.controller.render_template(assessor["prompt"], {"feature_context": "014"}, {})
+        self.assertIn("fresh report", self.controller.render_template(assessor["prompt"], {"feature_context": "014"},
+            {"append-task-remediation": {"report": "fresh report"}}))
+        self.assertIn("Propagate any unresolved needs-human or blocked", report["prompt"])
+        self.assertIn("current-pass outcomes", report["prompt"])
+        before = {"state": "continue", "next_step_id": "implement-remediation", "remaining_ids": ["G1", "G2"], "resolved_ids": []}
+        after = {**before, "remaining_ids": ["G2"], "resolved_ids": ["G1"]}
+        common = {"max_iterations": 6, "loop_body_step_ids": {"implement-remediation"}, "assessment_before_correction": True}
+        self.assertEqual("continue", self.controller.route_loop_assessment(before, iteration=1, **common)["action"])
+        self.assertEqual("continue", self.controller.route_loop_assessment(after, iteration=2, previous_assessment=before, **common)["action"])
+        self.assertEqual("no-progress", self.controller.route_loop_assessment(before, iteration=2, previous_assessment=before, **common)["blocker"])
+        self.assertEqual("loop-cap-exhausted", self.controller.route_loop_assessment(after, iteration=6, previous_assessment=before, **common)["blocker"])
+        self.assertEqual("complete", self.controller.route_loop_assessment({"state": "complete"}, iteration=6, previous_assessment=before, **common)["action"])
+        for state in ("blocked", "needs-human"):
+            self.assertEqual(state, self.controller.route_loop_assessment(
+                {"state": state, "resume_action": "resolve-finding"}, iteration=1, **common)["action"])
+        with self.assertRaisesRegex(ValueError, "mutually exclusive"):
+            self.controller.route_loop_assessment(before, iteration=1, assessment_only_first_pass=True, **common)
 
-        before = {"state": "continue", "next_step_id": "implement-eligible", "remaining_ids": ["GAP-1", "GAP-2"]}
-        after = {"state": "continue", "next_step_id": "implement-eligible", "remaining_ids": ["GAP-2"],
-                 "resolved_ids": ["GAP-1"]}
-        self.assertEqual({"action": "continue", "next_step_id": "implement-eligible"},
-                         self.controller.route_loop_assessment(
-                             after, iteration=1, max_iterations=5,
-                             loop_body_step_ids={"implement-eligible"}, previous_assessment=before,
-                         ))
-        self.assertEqual({"action": "blocked", "blocker": "no-progress"},
-                         self.controller.route_loop_assessment(
-                             {**before, "resolved_ids": []}, iteration=1, max_iterations=5,
-                             loop_body_step_ids={"implement-eligible"}, previous_assessment=before,
-                         ))
-        self.assertEqual({"action": "blocked", "blocker": "loop-cap-exhausted"},
-                         self.controller.route_loop_assessment(
-                             after, iteration=5, max_iterations=5,
-                             loop_body_step_ids={"implement-eligible"}, previous_assessment=before,
-                         ))
+    def testHeadAssessmentRequiresGuardedCorrectionAndCliFlag(self) -> None:
+        import copy
+        workflow = load_workflow("speckit-flow-converge")
+        self.controller.validate_workflow_graph(workflow["steps"])
+        for mutation in ("nonempty-clean", "wrong-expression", "baseline-mode", "wrong-position", "wrong-type", "boolean-condition"):
+            changed = copy.deepcopy(workflow)
+            loop = changed["steps"][0]
+            if mutation == "nonempty-clean":
+                loop["steps"][2]["cases"]["complete"] = [{"id": "unsafe", "command": "speckit.implement"}]
+            elif mutation == "wrong-expression":
+                loop["steps"][2]["expression"] = "{{ steps.assess-convergence.output.reason_code }}"
+            elif mutation == "baseline-mode":
+                loop["assessment_only_first_pass"] = True
+            elif mutation == "wrong-position":
+                loop["steps"].reverse()
+            elif mutation == "wrong-type":
+                loop["assessment_before_correction"] = "true"
+            else:
+                loop["condition"] = True
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                self.controller.validate_workflow_graph(changed["steps"])
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            (project / "tasks.md").write_text("Gap G1", encoding="utf-8")
+            assessment = {"state": "continue", "reason_code": "implementation-gap",
+                "evidence": [{"path": "tasks.md", "sha256": hashlib.sha256((project / "tasks.md").read_bytes()).hexdigest()}],
+                "remaining_ids": ["G1"], "resolved_ids": [], "next_step_id": "implement-remediation"}
+            argv = ["route-loop", "--project", str(project), "--iteration", "1", "--max-iterations", "6",
+                    "--loop-body-step", "implement-remediation", "--assessment-before-correction"]
+            output = io.StringIO()
+            with patch("sys.stdin", io.StringIO(json.dumps({"assessment": assessment}))), patch("sys.stdout", output):
+                self.assertEqual(0, self.controller.main(argv))
+            self.assertEqual("continue", json.loads(output.getvalue())["action"])
 
     def testCloseoutCompletesOnlyWithEvidenceAndRepeatsDebriefBeforeExactPatchGate(self) -> None:
         workflow = load_workflow("speckit-flow-closeout")

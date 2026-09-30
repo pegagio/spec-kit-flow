@@ -2,7 +2,7 @@ schema_version: "1.0"
 
 package:
   id: "flow-kit-controllers"
-  version: "0.3.2"
+  version: "0.3.3"
   compatible_codex: true
 
 requires:

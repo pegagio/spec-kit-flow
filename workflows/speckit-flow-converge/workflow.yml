@@ -1,364 +1,137 @@
-schema_version: "1.0"
-
+schema_version: '1.0'
 workflow:
-  id: "speckit-flow-converge"
-  name: "Converge Feature"
-  version: "0.4.0"
-  author: "pegagio"
-  description: "Reconcile implementation gaps within bounded in-scope passes and reassess until clean or stopped safely."
-
+  id: speckit-flow-converge
+  name: Converge Feature
+  version: "0.4.1"
+  author: pegagio
+  description: Assess convergence and repeat a shared correction waterfall, task analysis, and eligible implementation until clean or safely stopped.
 requires:
-  speckit_version: ">=1.0.10.dev0+pegagio.2"
+  speckit_version: '>=1.0.10.dev0+pegagio.2'
   integrations:
-    any: ["codex"]
-
+    any:
+      - codex
 inputs:
   feature_context:
     type: string
     required: true
-    prompt: "Identify the implemented feature to converge"
+    prompt: Identify the implemented feature to converge
   integration:
     type: string
-    default: "codex"
-    enum: ["codex"]
-  convergence_decision:
-    type: string
-    default: ""
-
+    default: codex
+    enum:
+      - codex
 steps:
-  - id: assess-convergence
-    type: prompt
-    flow_kit:
-      delegated: true
-      agent: Verifier
-    prompt: >-
-      Assess current implementation, specification, plan, tasks, and validation evidence for {{ inputs.feature_context }}. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; stable reason_code; repository-relative evidence paths with SHA-256 digests; remaining_ids and resolved_ids; and exactly one state-appropriate route. Use complete only when current implementation has no unresolved in-scope gap and required validation is satisfied. Use continue when inspectable, in-scope corrective work remains; set next_step_id to assess-convergence-before-pass and identify the tracked gap IDs. Use needs-human for a substantive product, material scope, authority, or ambiguous-recovery decision and set gate_step_id to convergence-consequential-gate. Use blocked for missing prerequisites, stale or contradictory evidence, an unsafe task, or another concrete blocker and provide a stable resume_action. Command success alone is not clean evidence.
-  - id: route-initial-convergence
-    type: switch
-    expression: "{{ steps.assess-convergence.output.state }}"
-    cases:
-      complete:
-        - id: convergence-clean-stop
-          type: prompt
-          prompt: "Stop successfully at Feature Converged. Report current evidence; the operator may invoke Close Out separately. Do not change roadmap status, integrate Git, or claim acceptance."
-      continue:
-        - id: convergence-remediation-loop
-          type: do-while
-          condition: "{{ steps.assess-convergence-after-pass.output.state == 'continue' }}"
-          max_iterations: 5
-          steps:
-            - id: assess-convergence-before-pass
+  - id: convergence-remediation-loop
+    type: do-while
+    condition: '{{ steps.assess-convergence.output.state == ''continue'' }}'
+    max_iterations: 6
+    steps:
+      - id: append-task-remediation
+        command: speckit.converge
+        integration: '{{ inputs.integration }}'
+        flow_kit:
+          delegated: true
+          agent: Architect
+        input:
+          args: >-
+            Run speckit.converge for {{ inputs.feature_context }} against current implementation and the reviewed specification, plan, and tasks on every pass, including the first and the pass after implementation. Honor the command prerequisites and append-only task contract. Preserve all existing task IDs, completion markers, and completed work; do not modify specification, plan, or code. Return the full current findings, stable gap IDs, evidence, appended task IDs, and prerequisite errors in a report field. Leave tasks unchanged when clean. Do not invoke another workflow or take consequential decisions.
+      - id: assess-convergence
+        type: prompt
+        flow_kit:
+          delegated: true
+          agent: Verifier
+        prompt: >-
+          Classify this fresh speckit.converge report for {{ inputs.feature_context }}: {{ steps.append-task-remediation.output.report }}. The command report is the authoritative finding source; do not substitute an independent convergence review. Return a validated outcome envelope with state complete, continue, needs-human, or blocked; stable reason_code; current repository-relative evidence paths with SHA-256 digests; remaining_ids; resolved_ids; and exactly one state-appropriate route. The first report establishes the gap baseline. Later reports must prove resolution of a prior gap against current implementation and required validation; new appended task IDs, completed checkboxes, changed bytes, and command success alone are not progress. Complete requires current convergence findings clean and required validation satisfied. Continue selects the highest affected in-scope entry as next_step_id: reconcile-convergence-specification, reconcile-convergence-plan, reconcile-convergence-tasks, or implement-remediation for implementation-only gaps. Product, constitutional, authority, material-scope, or ambiguous-recovery decisions require needs-human with a stable resume_action without taking the consequential action. Missing prerequisites, stale or unavailable reports, failed commands, and unsafe work require blocked with the smallest safe resume_action. Do not modify artifacts in this assessment. The controller validates this outcome and checks progress and the correction limit before entering any correction branch.
+      - id: route-convergence-correction
+        type: switch
+        expression: '{{ steps.assess-convergence.output.state }}'
+        cases:
+          continue:
+            - id: prepare-convergence-flowback
+              type: prompt
+              prompt: >-
+                Prepare the correction waterfall for {{ inputs.feature_context }} from the current validated assess-convergence outcome. For next_step_id reconcile-convergence-specification, set spec_action, plan_action, and task_action to run. For reconcile-convergence-plan, skip specification and run plan and tasks. For reconcile-convergence-tasks, run only tasks. For implement-remediation, skip all three artifact stages. Return those action fields plus specification_args, plan_args, and task_args containing exact current findings and required downstream reconciliation. Missing evidence, unsupported routes, or required operator decisions stop before mutation. Preserve the selected existing feature, reviewed intent, task IDs, completion markers, and convergence work already recorded by speckit.converge. Do not create another feature. Routine flowback remains within the operator-issued scope; consequential changes require operator input. Do not invoke another FlowKit workflow.
+            - id: route-specification-remediation
+              type: switch
+              expression: '{{ steps.prepare-convergence-flowback.output.spec_action }}'
+              cases:
+                run:
+                  - id: reconcile-convergence-specification
+                    command: speckit.specify
+                    integration: '{{ inputs.integration }}'
+                    flow_kit:
+                      delegated: true
+                      agent: Architect
+                    input:
+                      args: '{{ steps.prepare-convergence-flowback.output.specification_args }}'
+                skip: []
+            - id: route-plan-remediation
+              type: switch
+              expression: '{{ steps.prepare-convergence-flowback.output.plan_action }}'
+              cases:
+                run:
+                  - id: reconcile-convergence-plan
+                    command: speckit.plan
+                    integration: '{{ inputs.integration }}'
+                    flow_kit:
+                      delegated: true
+                      agent: Architect
+                    input:
+                      args: '{{ steps.prepare-convergence-flowback.output.plan_args }}'
+                skip: []
+            - id: route-task-remediation
+              type: switch
+              expression: '{{ steps.prepare-convergence-flowback.output.task_action }}'
+              cases:
+                run:
+                  - id: reconcile-convergence-tasks
+                    command: speckit.tasks
+                    integration: '{{ inputs.integration }}'
+                    flow_kit:
+                      delegated: true
+                      agent: Architect
+                    input:
+                      args: >-
+                        {{ steps.prepare-convergence-flowback.output.task_args }} Preserve all existing task IDs, completion markers, and appended convergence work; reconcile tasks without dropping or renumbering prior work.
+                skip: []
+            - id: analyze-remediation-tasks
+              command: speckit.analyze
+              integration: '{{ inputs.integration }}'
+              flow_kit:
+                delegated: true
+                agent: Verifier
+              input:
+                args: >-
+                  Run fresh read-only analysis of current specification, plan, and tasks for {{ inputs.feature_context }}. Return full findings, severities, locations, recommendations, and prerequisite errors in a report output field. Do not modify artifacts or implement work. Missing, failed, or stale analysis cannot authorize implementation.
+            - id: assess-remediation-eligibility
               type: prompt
               flow_kit:
                 delegated: true
                 agent: Verifier
               prompt: >-
-                Refresh current implementation, artifact, and validation evidence for {{ inputs.feature_context }} immediately before this remediation pass. Return the same outcome envelope and stable gap IDs. Continue only for a specific declared in-scope path; set next_step_id to route-convergence-pass and reason_code to append-task-remediation, reconcile-specification, reconcile-plan, reconcile-tasks, or implement-eligible. For needs-human, set gate_step_id to convergence-final-consequential-gate. Complete, needs-human, and blocked skip all corrections.
-            - id: route-convergence-pass
+                Assess this fresh analyzer report for {{ inputs.feature_context }}: {{ steps.analyze-remediation-tasks.output.report }}. Return a validated outcome envelope with state, stable reason_code, current repository-relative evidence paths and SHA-256 digests, remaining_ids, resolved_ids, and exactly one state-appropriate route. Return continue with next_step_id implement-remediation only when analysis is clean, dependent artifacts are reconciled, and exact in-scope unfinished tasks are eligible; include their IDs as remaining_ids. Complete here means no eligible task work, not Feature Converged. Needs-human reports the exact consequential decision with a stable resume_action; blocked reports unresolved analysis findings, stale or missing output, failed prerequisites, or uncertain task eligibility with a stable resume_action. Never infer eligibility from successful commands or checkbox claims.
+            - id: route-remediation-implementation
               type: switch
-              expression: "{{ steps.assess-convergence-before-pass.output.state }}"
+              expression: '{{ steps.assess-remediation-eligibility.output.state }}'
               cases:
+                continue:
+                  - id: implement-remediation
+                    command: speckit.implement
+                    integration: '{{ inputs.integration }}'
+                    flow_kit:
+                      delegated: true
+                      agent: Builder
+                    input:
+                      args: >-
+                        Implement only the exact analyzed, eligible tasks for {{ inputs.feature_context }} identified by {{ steps.assess-remediation-eligibility.output.remaining_ids }}. Complete all remaining eligible work within that set, preserving reviewed scope and completed work. Stop for a concrete blocker, unsafe discovery, or required operator input; do not re-specify, re-plan, re-task, invoke another workflow, integrate Git, or claim acceptance. Return completed task IDs, validation evidence, and any blocker or operator question in a report output field.
                 complete: []
                 needs-human: []
                 blocked: []
-                continue:
-                  - id: select-convergence-remediation
-                    type: switch
-                    expression: "{{ steps.assess-convergence-before-pass.output.reason_code }}"
-                    cases:
-                      append-task-remediation:
-                        - id: append-task-remediation
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.converge"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Reassess {{ inputs.feature_context }} and append only bounded remediation tasks for the current in-scope convergence gaps. Do not revise product intent or invoke another workflow."
-                        - id: analyze-appended-task-remediation
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Analyze the appended remediation tasks for {{ inputs.feature_context }} against the current reviewed specification, plan, and tasks. Do not implement unless the following assessment confirms eligible work."
-                        - id: assess-appended-task-eligibility
-                          type: prompt
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          prompt: >-
-                            Inspect the fresh Analyze result and current tasks for {{ inputs.feature_context }}. Return continue only when analysis is clean, its evidence is current, and exact in-scope tasks remain eligible for implementation; set next_step_id to implement-appended-task-remediation. Return complete only when analysis is clean and there is no eligible in-scope work. For needs-human, set gate_step_id to convergence-final-consequential-gate. Use blocked with the smallest safe resume_action for findings that require artifact reconciliation, analysis failure, or uncertain eligibility. Never infer eligibility from command success.
-                        - id: route-appended-task-eligibility
-                          type: switch
-                          expression: "{{ steps.assess-appended-task-eligibility.output.state }}"
-                          cases:
-                            complete: []
-                            continue:
-                              - id: implement-appended-task-remediation
-                                flow_kit:
-                                  delegated: true
-                                  agent: Builder
-                                command: "speckit.implement"
-                                integration: "{{ inputs.integration }}"
-                                input:
-                                  args: "Implement only the analyzed, eligible remediation tasks for {{ inputs.feature_context }}. Preserve scope and stop on new decisions or unsafe discoveries."
-                            needs-human: []
-                            blocked: []
-                          default:
-                            - id: stop-invalid-appended-task-eligibility
-                              type: prompt
-                              prompt: "Stop because the post-analysis eligibility state is invalid. Preserve tasks and analysis evidence; do not implement."
-                      reconcile-specification:
-                        - id: append-before-specification-reconciliation
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.converge"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Record bounded remediation tasks for the current implementation gap in {{ inputs.feature_context }} before reconciling affected feature artifacts. Do not expand scope or invoke another workflow."
-                        - id: reconcile-convergence-specification
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.specify"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Reconcile only the accepted, in-scope specification discovery for {{ inputs.feature_context }}. Ask substantive questions in the main task and stop for any unapproved product or scope decision."
-                        - id: replan-after-convergence-specification
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.plan"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Reconcile the plan and dependent design artifacts for the accepted specification change in {{ inputs.feature_context }}. Preserve scope and existing reviewed decisions."
-                        - id: retask-after-convergence-specification
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.tasks"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Regenerate dependency-ordered tasks for {{ inputs.feature_context }} from its reconciled specification and plan. Preserve the remediation work and do not implement."
-                        - id: analyze-after-convergence-specification
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Analyze reconciled specification, plan, and tasks for {{ inputs.feature_context }}. Identify exact eligible tasks only if analysis is clean."
-                        - id: assess-specification-analysis-eligibility
-                          type: prompt
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          prompt: >-
-                            Verify the fresh analysis and current artifact set for {{ inputs.feature_context }}. Return continue only when dependent artifacts are reconciled, analysis is clean, and exact eligible tasks remain; set next_step_id to implement-after-convergence-specification. Return complete only when analysis is clean and no eligible work remains. For needs-human, set gate_step_id to convergence-final-consequential-gate. Route any divergence, failed prerequisite, or untrusted analysis to blocked with a stable resume_action.
-                        - id: route-specification-analysis-eligibility
-                          type: switch
-                          expression: "{{ steps.assess-specification-analysis-eligibility.output.state }}"
-                          cases:
-                            complete: []
-                            continue:
-                              - id: implement-after-convergence-specification
-                                flow_kit:
-                                  delegated: true
-                                  agent: Builder
-                                command: "speckit.implement"
-                                integration: "{{ inputs.integration }}"
-                                input:
-                                  args: "Implement only the analyzed, eligible tasks for {{ inputs.feature_context }} after specification, plan, and task reconciliation."
-                            needs-human: []
-                            blocked: []
-                          default:
-                            - id: stop-invalid-specification-eligibility
-                              type: prompt
-                              prompt: "Stop because the post-analysis specification reconciliation state is invalid. Preserve artifacts and do not implement."
-                      reconcile-plan:
-                        - id: append-before-plan-reconciliation
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.converge"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Record bounded remediation tasks for the current plan-level implementation gap in {{ inputs.feature_context }}. Do not expand scope or invoke another workflow."
-                        - id: reconcile-convergence-plan
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.plan"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Reconcile the affected plan and design artifacts for the accepted in-scope discovery in {{ inputs.feature_context }}. Do not answer product questions."
-                        - id: retask-after-convergence-plan
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.tasks"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Regenerate dependency-ordered tasks for {{ inputs.feature_context }} from its current reviewed specification and reconciled plan. Preserve remediation work and do not implement."
-                        - id: analyze-after-convergence-plan
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Analyze current specification, plan, and tasks for {{ inputs.feature_context }}. Identify eligible tasks only when analysis is clean."
-                        - id: assess-plan-analysis-eligibility
-                          type: prompt
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          prompt: >-
-                            Verify refreshed analysis and artifacts for {{ inputs.feature_context }}. Return continue only when plan-dependent artifacts are reconciled, analysis is clean, and exact eligible tasks remain; set next_step_id to implement-after-convergence-plan. Return complete only when analysis is clean and no eligible work remains. For needs-human, set gate_step_id to convergence-final-consequential-gate. Use blocked with a stable resume_action for divergence, failed prerequisite, or uncertain eligibility.
-                        - id: route-plan-analysis-eligibility
-                          type: switch
-                          expression: "{{ steps.assess-plan-analysis-eligibility.output.state }}"
-                          cases:
-                            complete: []
-                            continue:
-                              - id: implement-after-convergence-plan
-                                flow_kit:
-                                  delegated: true
-                                  agent: Builder
-                                command: "speckit.implement"
-                                integration: "{{ inputs.integration }}"
-                                input:
-                                  args: "Implement only the analyzed, eligible tasks for {{ inputs.feature_context }} after plan and task reconciliation."
-                            needs-human: []
-                            blocked: []
-                          default:
-                            - id: stop-invalid-plan-eligibility
-                              type: prompt
-                              prompt: "Stop because the post-analysis plan reconciliation state is invalid. Preserve artifacts and do not implement."
-                      reconcile-tasks:
-                        - id: append-before-task-reconciliation
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.converge"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Record bounded remediation tasks for the current task-level implementation gap in {{ inputs.feature_context }}. Do not expand scope or invoke another workflow."
-                        - id: regenerate-convergence-tasks
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          command: "speckit.tasks"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Reconcile dependency-ordered tasks for {{ inputs.feature_context }} against the current reviewed specification and plan, preserving eligible remediation work."
-                        - id: analyze-after-convergence-tasks
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Analyze current task coverage and dependencies for {{ inputs.feature_context }}. Identify eligible tasks only when analysis is clean."
-                        - id: assess-task-analysis-eligibility
-                          type: prompt
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          prompt: >-
-                            Verify refreshed task analysis for {{ inputs.feature_context }}. Return continue only when the task change is within reviewed design, analysis is clean, and exact eligible tasks remain; set next_step_id to implement-after-convergence-tasks. Return complete only when analysis is clean and no eligible work remains. For needs-human, set gate_step_id to convergence-final-consequential-gate. Use blocked with a stable resume_action for any divergence or uncertain eligibility.
-                        - id: route-task-analysis-eligibility
-                          type: switch
-                          expression: "{{ steps.assess-task-analysis-eligibility.output.state }}"
-                          cases:
-                            complete: []
-                            continue:
-                              - id: implement-after-convergence-tasks
-                                flow_kit:
-                                  delegated: true
-                                  agent: Builder
-                                command: "speckit.implement"
-                                integration: "{{ inputs.integration }}"
-                                input:
-                                  args: "Implement only the analyzed, eligible remediation tasks for {{ inputs.feature_context }}."
-                            needs-human: []
-                            blocked: []
-                          default:
-                            - id: stop-invalid-task-eligibility
-                              type: prompt
-                              prompt: "Stop because the post-analysis task reconciliation state is invalid. Preserve task and analysis evidence; do not implement."
-                      implement-eligible:
-                        - id: implement-previously-analyzed-work
-                          flow_kit:
-                            delegated: true
-                            agent: Builder
-                          command: "speckit.implement"
-                          integration: "{{ inputs.integration }}"
-                          input:
-                            args: "Implement only tasks that current evidence confirms were already analyzed and are eligible for {{ inputs.feature_context }}. Stop on new decisions, missing authorization, or unsafe discoveries."
-                    default:
-                      - id: invalid-convergence-action-stop
-                        type: prompt
-                        prompt: "Stop because the convergence assessment selected an unsupported remediation path. Preserve work and report the invalid next_step_id."
-              default:
-                - id: invalid-convergence-prepass-stop
-                  type: prompt
-                  prompt: "Stop because the refreshed convergence assessment state is invalid. Preserve evidence and report the validation error."
-            - id: assess-convergence-after-pass
-              type: prompt
-              flow_kit:
-                delegated: true
-                agent: Verifier
-              prompt: >-
-                Reassess current implementation and feature artifacts after this complete remediation path for {{ inputs.feature_context }}. Return the same outcome envelope and stable gap IDs. Mark every prior finding resolved only when current evidence proves its acceptance condition, affected artifacts are reconciled, changed tasks pass analysis, and eligible implementation is complete. Continue only if at least one prior gap was resolved and another specific in-scope gap remains, set next_step_id to assess-convergence-before-pass. Use needs-human for consequential decisions and blocked with the smallest safe resume_action for failed prerequisites, stale evidence, repeated findings, or uncertain status. Never infer cleanliness from successful commands.
-        - id: route-final-convergence
-          type: switch
-          expression: "{{ steps.assess-convergence-after-pass.output.state }}"
-          cases:
-            complete:
-              - id: convergence-remediation-complete-stop
-                type: prompt
-                prompt: "Stop successfully at Feature Converged after refreshed evidence confirms all in-scope gaps are closed. The operator may invoke Close Out separately; do not change roadmap status, integrate Git, or claim acceptance."
-            needs-human:
-              - id: convergence-final-consequential-gate
-                type: gate
-                message: "Review the exact consequential decision or ambiguity identified by the latest convergence evidence. Choose whether to defer or abort; Converge will not infer a product or scope decision."
-                options: ["defer", "abort"]
-                verdict_input: "convergence_decision"
-                on_reject: "abort"
-              - id: convergence-final-decision-stop
-                type: prompt
-                prompt: "Stop after the consequential decision. Preserve completed work and report the smallest separately authorized resumption action."
-            blocked:
-              - id: convergence-final-blocked-stop
-                type: prompt
-                prompt: "Stop with the exact blocker, evidence, and stable resume_action. Preserve all completed corrections and analysis."
-            continue:
-              - id: convergence-loop-bounded-stop
-                type: prompt
-                prompt: "Stop because no tracked convergence gap was resolved or the five-pass cap was exhausted. Preserve work and report remaining gap IDs and the smallest safe resume action; do not claim clean convergence."
-            default:
-              - id: convergence-final-invalid-state-stop
-                type: prompt
-                prompt: "Stop because the refreshed convergence assessment state is invalid. Preserve evidence and report the validation error."
-      needs-human:
-        - id: convergence-consequential-gate
-          type: gate
-          message: "Review the exact substantive answer, scope, authority, or recovery decision identified in convergence evidence. Choose whether to defer or abort; no answer or approval is inferred."
-          options: ["defer", "abort"]
-          verdict_input: "convergence_decision"
-          on_reject: "abort"
-        - id: convergence-initial-decision-stop
-          type: prompt
-          prompt: "Stop with the consequential decision preserved. Resolve it through an explicitly authorized path before resuming convergence."
-      blocked:
-        - id: convergence-initial-blocked-stop
-          type: prompt
-          prompt: "Stop with the exact blocker, evidence, and stable resume_action. Preserve current artifacts and implementation."
-    default:
-      - id: convergence-invalid-initial-stop
-        type: prompt
-        prompt: "Stop because the initial convergence assessment state is invalid. Preserve evidence and report the validation error."
+          complete: []
+          needs-human: []
+          blocked: []
+    assessment_before_correction: true
+  - id: report-convergence-outcome
+    type: prompt
+    prompt: >-
+      Report the latest verified outcome for {{ inputs.feature_context }}, resolved and remaining gap IDs, completed task IDs, changed artifact paths, and validation evidence. Use only current-pass outcomes. Propagate any unresolved needs-human or blocked task eligibility result or implementation report; never replace it with an earlier convergence continue or complete outcome. Clean fresh convergence ends at Feature Converged; Close Out remains separately invoked. Otherwise report the exact blocker or required operator decision and safe resumption action, preserving completed work. No progress or exhaustion of five correction passes is a bounded stop, not clean convergence. Stop here; do not update the roadmap, integrate Git, or claim feature acceptance.

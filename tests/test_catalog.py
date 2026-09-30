@@ -89,19 +89,10 @@ class CatalogReleaseTests(unittest.TestCase):
                 "assess-implementation-after-pass": "Verifier",
             },
             "speckit-flow-converge": {
-                "assess-convergence": "Verifier", "assess-convergence-before-pass": "Verifier",
-                "append-task-remediation": "Architect", "analyze-appended-task-remediation": "Verifier",
-                "assess-appended-task-eligibility": "Verifier", "implement-appended-task-remediation": "Builder",
-                "append-before-specification-reconciliation": "Architect", "reconcile-convergence-specification": "Architect",
-                "replan-after-convergence-specification": "Architect", "retask-after-convergence-specification": "Architect",
-                "analyze-after-convergence-specification": "Verifier", "assess-specification-analysis-eligibility": "Verifier",
-                "implement-after-convergence-specification": "Builder", "append-before-plan-reconciliation": "Architect",
-                "reconcile-convergence-plan": "Architect", "retask-after-convergence-plan": "Architect",
-                "analyze-after-convergence-plan": "Verifier", "assess-plan-analysis-eligibility": "Verifier",
-                "implement-after-convergence-plan": "Builder", "append-before-task-reconciliation": "Architect",
-                "regenerate-convergence-tasks": "Architect", "analyze-after-convergence-tasks": "Verifier",
-                "assess-task-analysis-eligibility": "Verifier", "implement-after-convergence-tasks": "Builder",
-                "implement-previously-analyzed-work": "Builder", "assess-convergence-after-pass": "Verifier",
+                "append-task-remediation": "Architect", "reconcile-convergence-specification": "Architect",
+                "reconcile-convergence-plan": "Architect", "reconcile-convergence-tasks": "Architect",
+                "analyze-remediation-tasks": "Verifier", "assess-remediation-eligibility": "Verifier",
+                "implement-remediation": "Builder", "assess-convergence": "Verifier",
             },
             "speckit-flow-closeout": {
                 "assess-closeout-readiness": "Verifier", "assess-closeout-before-pass": "Verifier",
@@ -124,7 +115,7 @@ class CatalogReleaseTests(unittest.TestCase):
             "speckit-flow-start-feature": "0.5.0", "speckit-flow-clarify": "0.4.1",
             "speckit-flow-plan": "0.4.1", "speckit-flow-tasks": "0.4.1",
             "speckit-flow-analyze-remediate": "0.4.1", "speckit-flow-implement": "0.4.1",
-            "speckit-flow-converge": "0.4.0", "speckit-flow-closeout": "0.5.0",
+            "speckit-flow-converge": "0.4.1", "speckit-flow-closeout": "0.5.0",
         }
         step_pattern = __import__("re").compile(r"^(\s*)- id: ([A-Za-z0-9_-]+)$")
         for workflow_id, expected_steps in expectations.items():

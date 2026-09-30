@@ -68,8 +68,8 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         for projection in projections:
             with self.subTest(workflow=projection["workflow_id"]):
                 self.assertTrue(projection["entry_step_id"])
-                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan", "speckit-flow-tasks", "speckit-flow-analyze-remediate"}:
-                    if projection["workflow_id"] == "speckit-flow-analyze-remediate":
+                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan", "speckit-flow-tasks", "speckit-flow-analyze-remediate", "speckit-flow-converge"}:
+                    if projection["workflow_id"] in {"speckit-flow-analyze-remediate", "speckit-flow-converge"}:
                         self.assertTrue(projection["branches"])
                     else:
                         self.assertFalse(projection["branches"])
@@ -199,34 +199,20 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         workflow = next(item for item in self.inventory.load_workflows()
                         if item["workflow"]["id"] == "speckit-flow-converge")
         steps = workflow["steps"]
-        self.assertEqual("assess-convergence", steps[0]["id"])
-        route = find_step(steps, "route-initial-convergence")
-        self.assertEqual({"complete", "continue", "needs-human", "blocked"}, set(route["cases"]))
-        self.assertEqual("convergence-clean-stop", route["cases"]["complete"][0]["id"])
-        self.assertEqual("convergence-remediation-loop", route["cases"]["continue"][0]["id"])
-        loop = find_step(steps, "convergence-remediation-loop")
-        self.assertEqual(5, loop["max_iterations"])
-        self.assertEqual("assess-convergence-before-pass", loop["steps"][0]["id"])
-        self.assertEqual("assess-convergence-after-pass", loop["steps"][-1]["id"])
-        route = find_step(steps, "select-convergence-remediation")
-        expected = {
-            "append-task-remediation": ["speckit.converge", "speckit.analyze", "speckit.implement"],
-            "reconcile-specification": ["speckit.converge", "speckit.specify", "speckit.plan", "speckit.tasks",
-                                        "speckit.analyze", "speckit.implement"],
-            "reconcile-plan": ["speckit.converge", "speckit.plan", "speckit.tasks", "speckit.analyze",
-                               "speckit.implement"],
-            "reconcile-tasks": ["speckit.converge", "speckit.tasks", "speckit.analyze", "speckit.implement"],
-            "implement-eligible": ["speckit.implement"],
-        }
-        for branch, ordered_commands in expected.items():
-            actual = commands(route["cases"][branch])
-            self.assertEqual(ordered_commands, actual)
-            if "speckit.analyze" in actual:
-                self.assertLess(actual.index("speckit.analyze"), actual.index("speckit.implement"))
-        final = find_step(steps, "route-final-convergence")
-        self.assertEqual({"complete", "needs-human", "blocked", "continue", "default"}, set(final["cases"]))
+        loop, report = steps
+        self.assertEqual("convergence-remediation-loop", loop["id"])
+        self.assertTrue(loop["assessment_before_correction"])
+        self.assertEqual(6, loop["max_iterations"])
+        self.assertEqual("assess-convergence", loop["steps"][1]["id"])
+        self.assertEqual("report-convergence-outcome", report["id"])
+        self.assertEqual(["speckit.converge", "speckit.specify", "speckit.plan", "speckit.tasks",
+                          "speckit.analyze", "speckit.implement"], commands(steps))
+        eligibility = find_step(steps, "route-remediation-implementation")
+        self.assertEqual({"continue", "complete", "needs-human", "blocked"}, set(eligibility["cases"]))
+        for state in ("complete", "needs-human", "blocked"):
+            self.assertEqual([], eligibility["cases"][state])
         self.assertFalse(any(command.startswith("speckit.flow-") for command in commands(steps)))
-        self.assertFalse(any("speckit-flow-closeout" in str(node) for node, _, _ in self.inventory._walk(steps)))
+        self.assertFalse(any(node.get("type") == "gate" for node, _, _ in self.inventory._walk(steps)))
         manual = (ROOT / "workflows/README.md").read_text(encoding="utf-8").split(
             "## Manual convergence path", 1
         )[1].split("## Manual closeout path", 1)[0]
