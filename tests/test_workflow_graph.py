@@ -58,7 +58,7 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.inventory = load_module("flowkit_workflow_inventory", ROOT / "tools/validate_workflows.py")
 
-    def test_allEightWorkflowsExposeBranchesGatesStopsAndAssignments(self) -> None:
+    def test_allEightWorkflowsExposeStopsAndAssignmentsWithRequiredGates(self) -> None:
         projections = [self.inventory.project_workflow(item) for item in self.inventory.load_workflows()]
         expected = {
             "speckit-flow-start-feature", "speckit-flow-clarify", "speckit-flow-plan", "speckit-flow-tasks",
@@ -68,8 +68,12 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         for projection in projections:
             with self.subTest(workflow=projection["workflow_id"]):
                 self.assertTrue(projection["entry_step_id"])
-                self.assertTrue(projection["branches"])
-                self.assertTrue(projection["human_decisions"])
+                if projection["workflow_id"] == "speckit-flow-clarify":
+                    self.assertFalse(projection["branches"])
+                    self.assertFalse(projection["human_decisions"])
+                else:
+                    self.assertTrue(projection["branches"])
+                    self.assertTrue(projection["human_decisions"])
                 self.assertTrue(projection["assignments"])
                 self.assertIn("unexplained_terminal_paths", projection)
         analyze = next(item for item in projections if item["workflow_id"] == "speckit-flow-analyze-remediate")
@@ -167,8 +171,8 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         self.assertEqual(5, loop["max_iterations"])
         command_ids = {node.get("id") for node, _, _ in self.inventory._walk(steps) if "command" in node}
         self.assertEqual({"clarify-session"}, command_ids)
-        self.assertIn("assess-clarification-before-session", {node.get("id") for node, _, _ in self.inventory._walk(steps)})
-        self.assertIn("assess-clarification-after-session", {node.get("id") for node, _, _ in self.inventory._walk(steps)})
+        self.assertEqual(["clarify-session", "assess-clarification-after-session"],
+                         [node["id"] for node in loop["steps"]])
         readme = (ROOT / "workflows/README.md").read_text(encoding="utf-8")
         manual = readme.split("## Manual clarification path", 1)[1].split("## Manual planning path", 1)[0]
         self.assertIn("five-question cap applies per session", manual)

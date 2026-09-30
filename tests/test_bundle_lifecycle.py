@@ -346,7 +346,7 @@ class BundleLifecycleTests(unittest.TestCase):
                 clarify_run = self.run_specify(
                     consumer, workflow_environment, "workflow", "run", "speckit-flow-clarify",
                     "--input", "feature_context=disposable consumer fixture",
-                    "--input", "clarification_decision=begin-planning", "--json",
+                    "--json",
                 )
                 self.assertEqual("completed", json.loads(clarify_run)["status"])
                 feature_files_after_clarify = set((consumer / "specs").rglob("*")) if (consumer / "specs").exists() else set()

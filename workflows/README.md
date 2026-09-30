@@ -64,7 +64,7 @@ When native workflow dispatch is unavailable, the operator can follow the review
 
 ## Manual clarification path
 
-When native clarification dispatch is unavailable, assess significant ambiguity from the operator-selected active specification, then run `speckit.clarify` one session at a time within the same invocation while specific significant questions remain. The five-question cap applies per session. Present every substantive question in the main task, wait for the operator's answer, and apply only that answer to the current session. After each session, reassess the current specification and confirm that a prior significant ambiguity was resolved before continuing.
+When native clarification dispatch is unavailable, run `speckit.clarify` on the operator-selected active specification one session at a time within the same invocation. The command checks for significant ambiguity and may finish without questions. The five-question cap applies per session. Present every substantive question in the main task, wait for the operator's answer, and apply only that answer to the current session. After each session, assess the current specification and confirm that the session resolved a significant ambiguity before continuing. On later sessions, compare against the previous assessment's remaining question IDs.
 
 Stop as clarified when no significant unresolved ambiguity remains, without invoking Plan or treating that result as automatic planning approval. Stop with a specific decision when the question is outside Clarify's authority, on no measurable progress, after five sessions, or on a genuine blocker. Preserve accepted answers and report remaining question IDs with the smallest safe resumption action.
 

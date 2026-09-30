@@ -322,11 +322,16 @@ def route_assessment(
             raise ValueError("continue assessment must name a next step inside its loop body")
         return {"action": "continue", "next_step_id": next_step_id}
     if state == "needs-human":
-        gate_step_id = assessment.get("gate_step_id")
         gates = human_gate_step_ids or set()
-        if not isinstance(gate_step_id, str) or gate_step_id not in gates:
-            raise ValueError("needs-human assessment must name a declared main-task gate")
-        return {"action": "needs-human", "gate_step_id": gate_step_id}
+        if gates:
+            gate_step_id = assessment.get("gate_step_id")
+            if not isinstance(gate_step_id, str) or gate_step_id not in gates:
+                raise ValueError("needs-human assessment must name a declared main-task gate")
+            return {"action": "needs-human", "gate_step_id": gate_step_id}
+        resume_action = assessment.get("resume_action")
+        if not isinstance(resume_action, str) or REASON_CODE.fullmatch(resume_action) is None:
+            raise ValueError("needs-human assessment without a gate must name a stable resume action")
+        return {"action": "needs-human", "resume_action": resume_action}
     if state == "blocked":
         resume_action = assessment.get("resume_action")
         if not isinstance(resume_action, str) or REASON_CODE.fullmatch(resume_action) is None:
@@ -399,7 +404,7 @@ def validate_outcome_envelope(
     expected_route_key = {
         "complete": None,
         "continue": "next_step_id",
-        "needs-human": "gate_step_id",
+        "needs-human": "gate_step_id" if human_gate_step_ids else "resume_action",
         "blocked": "resume_action",
     }[state]
     route_keys = {"next_step_id", "gate_step_id", "resume_action"} & set(envelope)
@@ -445,7 +450,11 @@ def route_loop_assessment(
         return route
     if iteration == 0:
         return route
-    if previous_assessment is None or not assessment_made_progress(previous_assessment, assessment):
+    if previous_assessment is None:
+        made_progress = iteration == 1 and bool(assessment.get("resolved_ids"))
+    else:
+        made_progress = assessment_made_progress(previous_assessment, assessment)
+    if not made_progress:
         return {"action": "blocked", "blocker": "no-progress"}
     if iteration >= max_iterations:
         return {"action": "blocked", "blocker": "loop-cap-exhausted"}

@@ -316,30 +316,31 @@ class WorkflowPathTests(unittest.TestCase):
     def testClarifyRepeatsBoundedSessionsOnlyWhileFreshAmbiguityEvidenceProgresses(self) -> None:
         workflow = load_workflow("speckit-flow-clarify")
         steps = workflow["steps"]
-        self.assertEqual("assess-clarification-state", steps[0]["id"])
-        initial_route = find_step(steps, "route-initial-clarification-state")
-        self.assertEqual({"complete", "continue", "needs-human", "blocked"}, set(initial_route["cases"]))
-        self.assertEqual("clarification-session-loop", initial_route["cases"]["continue"][0]["id"])
+        self.assertEqual("clarification-session-loop", steps[0]["id"])
         loop = find_step(steps, "clarification-session-loop")
         self.assertEqual(5, loop["max_iterations"])
-        self.assertEqual("assess-clarification-before-session", loop["steps"][0]["id"])
-        self.assertEqual("assess-clarification-after-session", loop["steps"][-1]["id"])
-        session_route = find_step(steps, "route-clarification-session")
+        self.assertEqual(["clarify-session", "assess-clarification-after-session"],
+                         [step["id"] for step in loop["steps"]])
         command = find_step(steps, "clarify-session")
         self.assertEqual("speckit.clarify", command["command"])
         self.assertIn("five-question cap per session", command["input"]["args"])
         self.assertIn("operator", command["input"]["args"])
-        self.assertEqual("clarify-session", session_route["cases"]["continue"][0]["id"])
-        self.assertEqual([], commands(session_route["cases"]["complete"]))
-        final_route = find_step(steps, "route-final-clarification-state")
-        self.assertEqual({"complete", "needs-human", "blocked", "continue", "default"}, set(final_route["cases"]))
-        self.assertEqual("clarification-session-bounded-stop", final_route["cases"]["continue"][0]["id"])
+        self.assertEqual(["speckit.clarify"], commands(loop["steps"]))
+        self.assertEqual("clarification-outcome-stop", steps[-1]["id"])
+        self.assertFalse(any(step.get("type") in {"switch", "gate"} for step in steps))
         self.assertFalse(any("speckit-flow-plan" in command for command in commands(steps)))
 
         initial = {"state": "continue", "next_step_id": "clarify-session", "remaining_ids": ["Q1", "Q2"]}
         progress = {"state": "continue", "next_step_id": "clarify-session", "remaining_ids": ["Q2"], "resolved_ids": ["Q1"]}
         self.assertEqual({"action": "continue", "next_step_id": "clarify-session"}, self.controller.route_loop_assessment(
-            progress, iteration=1, max_iterations=5, loop_body_step_ids={"clarify-session"}, previous_assessment=initial
+            progress, iteration=1, max_iterations=5, loop_body_step_ids={"clarify-session"}
+        ))
+        self.assertEqual({"action": "blocked", "blocker": "no-progress"}, self.controller.route_loop_assessment(
+            {**initial, "resolved_ids": []}, iteration=1, max_iterations=5, loop_body_step_ids={"clarify-session"}
+        ))
+        self.assertEqual({"action": "continue", "next_step_id": "clarify-session"}, self.controller.route_loop_assessment(
+            {"state": "continue", "next_step_id": "clarify-session", "remaining_ids": ["Q3"], "resolved_ids": ["Q2"]},
+            iteration=2, max_iterations=5, loop_body_step_ids={"clarify-session"}, previous_assessment=progress
         ))
         self.assertEqual({"action": "blocked", "blocker": "no-progress"}, self.controller.route_loop_assessment(
             {**initial, "resolved_ids": []}, iteration=1, max_iterations=5,

@@ -438,6 +438,13 @@ class GraphPreflightTests(unittest.TestCase):
             self.assertEqual(needs_human, self.controller.validate_outcome_envelope(
                 needs_human, project, {"correct", "assess"}, {"review"}
             ))
+            needs_human_stop = {**needs_human, "resume_action": "ask-operator"}
+            del needs_human_stop["gate_step_id"]
+            self.assertEqual(needs_human_stop, self.controller.validate_outcome_envelope(
+                needs_human_stop, project, {"correct", "assess"}
+            ))
+            with self.assertRaisesRegex(ValueError, "route field required"):
+                self.controller.validate_outcome_envelope(needs_human_stop, project, {"correct", "assess"}, {"review"})
             self.assertEqual(blocked, self.controller.validate_outcome_envelope(blocked, project, {"correct", "assess"}))
             invalid = (
                 {**valid, "state": "unknown"},
@@ -574,18 +581,17 @@ class HumanInteractionTests(unittest.TestCase):
             self.assertEqual(0, self.controller.main(["gate"]))
         self.assertEqual({"choice": "defer"}, json.loads(output.getvalue()))
 
-    def test_clarifyGateBranches_stopWithoutLaunchingPlanning(self) -> None:
+    def test_clarifyNeedsHumanStopsWithoutAStopOnlyGateOrPlanning(self) -> None:
         workflow = yaml.safe_load((ROOT / "workflows/speckit-flow-clarify/workflow.yml").read_text(encoding="utf-8"))
-        gates = [
-            find_workflow_step(workflow["steps"], "clarification-consequential-gate"),
-            find_workflow_step(workflow["steps"], "clarification-final-consequential-gate"),
-        ]
+        self.assertNotIn("clarification_decision", workflow["inputs"])
         self.assertFalse(any("speckit-flow-plan" in str(step) for step in workflow["steps"]))
-        for gate in gates:
-            with self.subTest(gate=gate["id"]):
-                self.assertEqual(["defer", "abort"], gate["options"])
-                for option in gate["options"]:
-                    self.assertEqual(option, self.controller.validate_gate_choice(gate, option))
+        self.assertFalse(any(step.get("type") == "gate" for step in workflow["steps"]))
+        assessment = {"state": "needs-human", "reason_code": "product-decision", "resume_action": "ask-operator"}
+        self.assertEqual({"action": "needs-human", "resume_action": "ask-operator"},
+                         self.controller.route_assessment(assessment, loop_body_step_ids={"clarify-session"}))
+        with self.assertRaisesRegex(ValueError, "declared main-task gate"):
+            self.controller.route_assessment(assessment, loop_body_step_ids={"clarify-session"},
+                                             human_gate_step_ids={"required-gate"})
 
 
 class RecoveryTests(unittest.TestCase):

@@ -3,9 +3,9 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-clarify"
   name: "Clarify Specification"
-  version: "0.4.0"
+  version: "0.4.1"
   author: "pegagio"
-  description: "Assess significant ambiguity and continue bounded, operator-answered clarification sessions until clear or stopped safely."
+  description: "Run bounded, operator-answered clarification sessions until no significant ambiguity remains or the workflow stops safely."
 
 requires:
   speckit_version: ">=1.0.10.dev0+pegagio.2"
@@ -21,109 +21,29 @@ inputs:
     type: string
     default: "codex"
     enum: ["codex"]
-  clarification_decision:
-    type: string
-    default: ""
 
 steps:
-  - id: assess-clarification-state
-    type: prompt
-    flow_kit:
-      delegated: true
-      agent: Verifier
-    prompt: >-
-      Assess the operator-selected specification {{ inputs.feature_context }} for remaining significant ambiguity using the current spec and cited evidence. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths and current SHA-256 digests; remaining_ids tied to specific unresolved questions or passages; resolved_ids; and exactly one of next_step_id, gate_step_id, or resume_action as required. Use complete only when no significant unresolved ambiguity remains; this does not authorize Plan or declare planning readiness. Use continue only when specific significant questions remain answerable through another standard bounded Clarify session, and set next_step_id to clarify-session. Use needs-human for a consequential decision outside Clarify's question scope and set gate_step_id to clarification-consequential-gate. Use blocked for missing/unreadable specifications or an unsafe prerequisite and provide a stable resume_action. Do not count a newly discovered question as progress unless a prior remaining_id is explicitly resolved.
-  - id: route-initial-clarification-state
-    type: switch
-    expression: "{{ steps.assess-clarification-state.output.state }}"
-    cases:
-      complete:
-        - id: clarification-already-clear-stop
-          type: prompt
-          prompt: "Stop at Spec Clarified. Report the evidence showing no significant unresolved ambiguity. This is not a Plan invocation or automatic planning-readiness approval."
-      continue:
-        - id: clarification-session-loop
-          type: do-while
-          condition: "{{ steps.assess-clarification-after-session.output.state == 'continue' }}"
-          max_iterations: 5
-          steps:
-            - id: assess-clarification-before-session
-              type: prompt
-              flow_kit:
-                delegated: true
-                agent: Verifier
-              prompt: >-
-                Reassess current specification evidence immediately before this bounded Clarify session for {{ inputs.feature_context }}. Return the same structured outcome envelope and stable ambiguity IDs. Continue only for specific significant questions still needing operator answers; complete, needs-human, and blocked skip another command session.
-            - id: route-clarification-session
-              type: switch
-              expression: "{{ steps.assess-clarification-before-session.output.state }}"
-              cases:
-                complete: []
-                needs-human: []
-                blocked: []
-                continue:
-                  - id: clarify-session
-                    flow_kit:
-                      delegated: true
-                      agent: Architect
-                    command: "speckit.clarify"
-                    integration: "{{ inputs.integration }}"
-                    input:
-                      args: "Run exactly one bounded Clarify command session for {{ inputs.feature_context }}. Preserve the command's five-question cap per session. Ask every substantive question in the main task, require each answer to come from the operator, and relay that answer only to this same active child. Incorporate accepted answers incrementally. Do not decide product questions, declare readiness, or invoke Plan."
-              default:
-                - id: invalid-pre-session-stop
-                  type: prompt
-                  prompt: "Stop because the pre-session ambiguity assessment returned an unrecognized state. Preserve current evidence and report the validation error."
-            - id: assess-clarification-after-session
-              type: prompt
-              flow_kit:
-                delegated: true
-                agent: Verifier
-              prompt: >-
-                After the Clarify command session (or a skipped session because the fresh pre-session assessment changed state), reassess the current spec and operator answers for {{ inputs.feature_context }}. Return the same structured outcome envelope, identifying exactly which prior remaining_ids are resolved and which specific significant questions remain. The five-question cap applies to each command session, not the whole invocation. Continue only when a prior ambiguity is resolved and another specific significant question remains. Use needs-human for a consequential decision outside clarification scope, or blocked for a concrete prerequisite; provide the matching declared gate_step_id or stable resume_action. Never infer an answer or Plan readiness.
-        - id: route-final-clarification-state
-          type: switch
-          expression: "{{ steps.assess-clarification-after-session.output.state }}"
-          cases:
-            complete:
-              - id: clarification-resolved-stop
-                type: prompt
-                prompt: "Stop at Spec Clarified after fresh evidence confirms no significant unresolved ambiguity. Report resolved and any deferred questions; the operator may separately invoke Plan."
-            needs-human:
-              - id: clarification-final-consequential-gate
-                type: gate
-                message: "Review the specific consequential decision from the latest assessment. The Clarify workflow cannot decide it. Choose whether to return to this decision later or abort this Clarify run."
-                options: ["defer", "abort"]
-                verdict_input: "clarification_decision"
-              - id: clarification-final-decision-stop
-                type: prompt
-                prompt: "Stop after recording the consequential decision. Preserve the unresolved evidence and do not invoke Plan."
-            blocked:
-              - id: clarification-final-blocked-stop
-                type: prompt
-                prompt: "Stop with the specific Clarify prerequisite and stable resume_action from the latest assessment. Preserve accepted answers and current spec edits."
-            continue:
-              - id: clarification-session-bounded-stop
-                type: prompt
-                prompt: "Stop because the controller found no measurable resolution or the five-session safety cap was exhausted. Preserve completed answers and report the remaining ambiguity IDs and smallest safe resumption action; do not claim readiness."
-            default:
-              - id: clarification-final-invalid-state-stop
-                type: prompt
-                prompt: "Stop because the refreshed Clarify assessment state is invalid or unrecognized. Preserve evidence and report the validation error."
-      needs-human:
-        - id: clarification-consequential-gate
-          type: gate
-          message: "Review the exact consequential decision identified by the initial assessment. Clarify will not answer it or expand scope. Choose whether to defer this concern or abort the current run."
-          options: ["defer", "abort"]
-          verdict_input: "clarification_decision"
-        - id: clarification-initial-decision-stop
-          type: prompt
-          prompt: "Stop after recording the consequential decision. Preserve the unresolved evidence and do not invoke Plan."
-      blocked:
-        - id: clarification-initial-blocked-stop
-          type: prompt
-          prompt: "Stop with the specific Clarify prerequisite and stable resume_action from the initial assessment. Preserve current specification evidence."
-    default:
-      - id: clarification-initial-invalid-state-stop
+  - id: clarification-session-loop
+    type: do-while
+    condition: "{{ steps.assess-clarification-after-session.output.state == 'continue' }}"
+    max_iterations: 5
+    steps:
+      - id: clarify-session
+        flow_kit:
+          delegated: true
+          agent: Architect
+        command: "speckit.clarify"
+        integration: "{{ inputs.integration }}"
+        input:
+          args: "Run exactly one bounded Clarify command session for {{ inputs.feature_context }}. Preserve the command's five-question cap per session. Ask every substantive question in the main task, require each answer to come from the operator, and relay that answer only to this same active child. Incorporate accepted answers incrementally. Do not decide product questions, declare readiness, or invoke Plan."
+      - id: assess-clarification-after-session
         type: prompt
-        prompt: "Stop because the initial Clarify assessment state is invalid or unrecognized. Preserve evidence and report the validation error."
+        flow_kit:
+          delegated: true
+          agent: Verifier
+        prompt: >-
+          After the Clarify command session, assess the current spec and operator answers for {{ inputs.feature_context }}. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths and current SHA-256 digests; remaining_ids tied to specific unresolved questions or passages; resolved_ids; and exactly one of next_step_id or resume_action as required. Use complete only when no significant unresolved ambiguity remains; this does not authorize Plan or declare planning readiness. Use continue only when specific significant questions remain answerable through another standard bounded Clarify session, and set next_step_id to clarify-session. For the first session, name at least one ambiguity resolved by that session; for later sessions, identify exactly which prior remaining_ids were resolved. Do not count a newly discovered question as progress. The five-question cap applies to each command session, not the whole invocation. Use needs-human for a specific consequential decision outside clarification scope and provide a stable resume_action without choosing an answer or taking the consequential action. Use blocked for a concrete prerequisite and provide a stable resume_action. Never infer an answer or Plan readiness.
+  - id: clarification-outcome-stop
+    type: prompt
+    prompt: >-
+      End this Clarify invocation and report the latest assessment, resolved and remaining ambiguity IDs, changed specification paths, and the reason for stopping. For complete, report Spec Clarified without claiming Plan readiness. For needs-human, name the specific decision requiring operator direction and its smallest safe resumption action without answering it. For blocked or a bounded continue stop, report the concrete blocker and smallest safe resumption action. If assessment validation failed or the state is unrecognized, report that error and preserve current evidence. Do not invoke Plan.
