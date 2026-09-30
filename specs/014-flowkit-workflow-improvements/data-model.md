@@ -10,7 +10,7 @@ F014 extends the existing reviewed workflow definition and compact controller ev
 
 ## Loop policy and pass
 
-`LoopPolicy` belongs to one `do-while` node and contains its loop ID, body steps, one expression over a validated prior-step outcome, and a positive `max_iterations`. An initial assessment outside the body is required so `complete`, `needs-human`, and `blocked` can route without a corrective pass; only `continue` enters the body. F014's maximum is five body passes per loop. The controller must reject unsupported expression forms, unresolved references, invalid caps, or a loop whose body has no inspectable reassessment before workflow work. After a body pass, `complete` exits cleanly, `needs-human` reaches a declared main-task gate, and `blocked` stops. A still-`continue` outcome at the cap is a bounded stop.
+`LoopPolicy` belongs to one `do-while` node and contains its loop ID, body steps, one expression over a validated prior-step outcome, and a positive `max_iterations`. A loop may assess before entry or begin with a safe work-checking command. The optional boolean `assessment_only_first_pass` permits a first read-only baseline pass with all correction stages skipped. Only that first pass, without a previous assessment, may continue without resolved findings; later corrections require the previous assessment and verified progress. Analyze and Remediate uses six total passes for one baseline and at most five corrections; other F014 loops use five body passes. The controller rejects unsupported expressions, unresolved references, invalid caps or baseline flags, and bodies without inspectable assessment. `complete` exits cleanly; `needs-human` reaches a declared main-task gate or stops with the required operator decision; `blocked` stops. A still-`continue` outcome at the cap is a bounded stop.
 
 `LoopPass` is one execution of a loop body. It has a one-based iteration number, the outcome and reason from its assessment, a compact before/after evidence fingerprint, resolved finding or task identifiers, changed repository-relative paths, and per-step statuses. Passes are ordered and append-only in the run summary. A delegated executable step starts a fresh child for each pass; interactive questions within one step resume its current child.
 
@@ -22,7 +22,7 @@ The assessment step is a fresh reading of current artifacts and command outputs.
 
 ## Progress snapshot and state transitions
 
-`ProgressSnapshot` records the set of unresolved in-scope finding/work IDs, the set completed in the current pass, and fingerprints of relevant current artifacts. A pass counts as progress when refreshed evidence confirms that at least one prior finding was resolved or one eligible task was completed. A digest-only change does not count. Repeated unresolved IDs without material change or absent progress stops immediately. The safety cap stops the loop even when progress continues; it does not convert `continue` into `complete`.
+`ProgressSnapshot` records the set of unresolved in-scope finding/work IDs, the set completed in the current pass, and fingerprints of relevant current artifacts. A correction pass counts as progress when refreshed evidence confirms that at least one prior finding was resolved or one eligible task was completed. A digest-only change does not count. Repeated unresolved IDs without material change or absent progress stops immediately. The safety cap stops the loop even when progress continues; it does not convert `continue` into `complete`.
 
 ```text
 ready → running pass → assess → complete

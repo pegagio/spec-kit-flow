@@ -81,12 +81,8 @@ class CatalogReleaseTests(unittest.TestCase):
                 "generate-tasks": "Architect", "verify-task-output": "Verifier",
             },
             "speckit-flow-analyze-remediate": {
-                "assess-analysis": "Verifier", "remediate-specification": "Architect",
-                "replan-after-specification": "Architect", "retask-after-specification": "Architect",
-                "analyze-after-specification": "Verifier", "remediate-plan": "Architect",
-                "retask-after-plan": "Architect", "analyze-after-plan": "Verifier",
-                "remediate-tasks": "Architect", "analyze-after-tasks": "Verifier",
-                "reassess-analysis": "Verifier",
+                "remediate-specification": "Architect", "remediate-plan": "Architect",
+                "remediate-tasks": "Architect", "analyze-artifacts": "Verifier", "assess-analysis": "Verifier",
             },
             "speckit-flow-implement": {
                 "assess-implementation-state": "Verifier", "implement-eligible-work": "Builder",
@@ -127,7 +123,7 @@ class CatalogReleaseTests(unittest.TestCase):
         expected_versions = {
             "speckit-flow-start-feature": "0.5.0", "speckit-flow-clarify": "0.4.1",
             "speckit-flow-plan": "0.4.1", "speckit-flow-tasks": "0.4.1",
-            "speckit-flow-analyze-remediate": "0.4.0", "speckit-flow-implement": "0.4.1",
+            "speckit-flow-analyze-remediate": "0.4.1", "speckit-flow-implement": "0.4.1",
             "speckit-flow-converge": "0.4.0", "speckit-flow-closeout": "0.5.0",
         }
         step_pattern = __import__("re").compile(r"^(\s*)- id: ([A-Za-z0-9_-]+)$")

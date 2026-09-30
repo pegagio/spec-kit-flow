@@ -3,9 +3,9 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-analyze-remediate"
   name: "Analyze and Remediate"
-  version: "0.4.0"
+  version: "0.4.1"
   author: "pegagio"
-  description: "Assess findings and continue routine in-scope artifact corrections through fresh analysis or stop at a consequential decision."
+  description: "Analyze current artifacts and repeat a shared specification, plan, and task correction waterfall until clean or safely stopped."
 
 requires:
   speckit_version: ">=1.0.10.dev0+pegagio.2"
@@ -16,187 +16,82 @@ inputs:
   feature_context:
     type: string
     required: true
-    prompt: "Identify the analyzed feature and its current artifacts"
+    prompt: "Identify the feature and its current specification, plan, and tasks"
   integration:
     type: string
     default: "codex"
     enum: ["codex"]
-  analysis_decision:
-    type: string
-    default: ""
-    enum: ["", "defer", "escalate"]
 
 steps:
-  - id: assess-analysis
-    type: prompt
-    flow_kit:
-      delegated: true
-      agent: Verifier
-    prompt: >-
-        Assess the current analysis evidence and artifacts for {{ inputs.feature_context }} before doing any corrective work. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; evidence paths and current SHA-256 digests; remaining_ids; resolved_ids; and exactly one of next_step_id, gate_step_id, or resume_action as required by the state. Mark complete only when fresh analysis shows no unresolved in-scope finding. Use continue only for routine, in-scope findings and set next_step_id to the in-body step ID remediate-specification, remediate-plan, or remediate-tasks based on the smallest affected artifact. Use needs-human for constitutional, authority, ambiguous-recovery, material-scope, or consequential decisions and set gate_step_id to analysis-consequential-gate. Use blocked only when a specific prerequisite or operational blocker prevents safe progress; set a stable resume_action. Do not treat command success or changed file digests as progress.
-  - id: route-initial-analysis
-    type: switch
-    expression: "{{ steps.assess-analysis.output.state }}"
-    cases:
-      complete:
-        - id: analysis-clean-stop
-          type: prompt
-          prompt: "Stop at Tasks Analyzed. Report the evidence-backed clean result. The operator may separately invoke FlowKit Implement for eligible work."
-      continue:
-        - id: analysis-correction-loop
-          type: do-while
-          condition: "{{ steps.reassess-analysis.output.state == 'continue' }}"
-          max_iterations: 5
-          steps:
-            - id: reassess-analysis-before-pass
-              type: prompt
-              flow_kit:
-                delegated: true
-                agent: Verifier
-              prompt: >-
-                  Reassess current findings immediately before this corrective pass. Return the validated outcome envelope. Complete, needs-human, and blocked outcomes skip correction; continue must select the smallest affected in-scope artifact route.
-            - id: route-analysis-pass
-              type: switch
-              expression: "{{ steps.reassess-analysis-before-pass.output.state }}"
-              cases:
-                complete: []
-                needs-human: []
-                blocked: []
-                continue:
-                  - id: select-analysis-flowback
-                    type: switch
-                    expression: "{{ steps.reassess-analysis-before-pass.output.next_step_id }}"
-                    cases:
-                      remediate-specification:
-                        - id: remediate-specification
-                          command: "speckit.specify"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Apply only the routine, in-scope specification corrections identified in the current assessment for {{ inputs.feature_context }}. Stop and report any authority, product, or material-scope decision."
-                        - id: replan-after-specification
-                          command: "speckit.plan"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Reconcile the plan and dependent design artifacts for {{ inputs.feature_context }} after its specification correction."
-                        - id: retask-after-specification
-                          command: "speckit.tasks"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Reconcile tasks for {{ inputs.feature_context }} after the specification and plan corrections."
-                        - id: analyze-after-specification
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          input:
-                            args: "Run fresh read-only analysis for {{ inputs.feature_context }} after the ordered specification, plan, and task corrections."
-                      remediate-plan:
-                        - id: remediate-plan
-                          command: "speckit.plan"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Apply only the routine, in-scope plan corrections identified in the current assessment for {{ inputs.feature_context }}."
-                        - id: retask-after-plan
-                          command: "speckit.tasks"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Reconcile tasks for {{ inputs.feature_context }} after the plan correction."
-                        - id: analyze-after-plan
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          input:
-                            args: "Run fresh read-only analysis for {{ inputs.feature_context }} after the ordered plan and task corrections."
-                      remediate-tasks:
-                        - id: remediate-tasks
-                          command: "speckit.tasks"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Architect
-                          input:
-                            args: "Apply only the routine, in-scope task corrections identified in the current assessment for {{ inputs.feature_context }}."
-                        - id: analyze-after-tasks
-                          command: "speckit.analyze"
-                          integration: "{{ inputs.integration }}"
-                          flow_kit:
-                            delegated: true
-                            agent: Verifier
-                          input:
-                            args: "Run fresh read-only analysis for {{ inputs.feature_context }} after the task correction."
-                    default:
-                      - id: analysis-unknown-flowback-stop
-                        type: prompt
-                        prompt: "Stop because the assessment named an unsupported artifact flow-back route. Preserve current evidence and report the route value."
-              default: []
-            - id: reassess-analysis
-              type: prompt
-              flow_kit:
-                delegated: true
-                agent: Verifier
-              prompt: >-
-                  Reassess {{ inputs.feature_context }} from fresh analysis output and current spec, plan, and task artifacts after this corrective pass. Return the same structured outcome envelope. Identify previously unresolved IDs that are now explicitly resolved. A digest change without resolved work is not progress. Route consequential decisions to analysis-final-consequential-gate, blockers to a stable resume_action, and routine remaining findings to the smallest next_step_id.
-        - id: route-final-analysis
-          type: switch
-          expression: "{{ steps.reassess-analysis.output.state }}"
-          cases:
-            complete:
-              - id: analysis-corrected-stop
-                type: prompt
-                prompt: "Stop at Tasks Analyzed after fresh analysis confirms that all in-scope findings are resolved. The operator may separately invoke FlowKit Implement for eligible work."
-            needs-human:
-              - id: analysis-final-consequential-gate
-                type: gate
-                message: "Review the exact constitutional, authority, ambiguous-recovery, material-scope, or other consequential decision from the latest assessment. Decide whether to defer or escalate it; the workflow will not resolve it automatically."
-                options: ["defer", "escalate", "abort"]
-                verdict_input: "analysis_decision"
-              - id: stop-after-final-analysis-decision
-                type: prompt
-                prompt: "Stop after recording the operator's consequential decision. Do not change authority or start another FlowKit workflow."
-            blocked:
-              - id: analysis-final-blocked-stop
-                type: prompt
-                prompt: "Stop with the specific blocker and resume_action from the latest assessment. Preserve partial work and do not claim implementation readiness."
-            continue:
-              - id: analysis-loop-bounded-stop
-                type: prompt
-                prompt: "Stop because the controller found no progress or exhausted the five-pass safety cap. Report the stable blocker and latest evidence; do not call the remaining findings clean."
-            default:
-              - id: analysis-final-invalid-state-stop
-                type: prompt
-                prompt: "Stop because the refreshed assessment state is invalid or unrecognized. Preserve evidence and report the validation error."
-      needs-human:
-        - id: analysis-consequential-gate
-          type: gate
-          message: "Review the exact constitutional, authority, ambiguous-recovery, material-scope, or other consequential decision from the initial assessment. Decide whether to defer or escalate it; the workflow will not resolve it automatically."
-          options: ["defer", "escalate", "abort"]
-          verdict_input: "analysis_decision"
-        - id: stop-after-initial-analysis-decision
-          type: prompt
-          prompt: "Stop after recording the operator's consequential decision. Do not change authority or start another FlowKit workflow."
-      blocked:
-        - id: analysis-initial-blocked-stop
-          type: prompt
-          prompt: "Stop with the specific blocker and resume_action from the initial assessment. Preserve partial work and do not claim implementation readiness."
-    default:
-      - id: analysis-initial-invalid-state-stop
+  - id: analysis-remediation-loop
+    type: do-while
+    assessment_only_first_pass: true
+    condition: "{{ steps.assess-analysis.output.state == 'continue' }}"
+    max_iterations: 6
+    steps:
+      - id: prepare-analysis-flowback
         type: prompt
-        prompt: "Stop because the assessment state is invalid or unrecognized. Preserve evidence and report the validation error."
+        prompt: >-
+          Prepare the next pass for {{ inputs.feature_context }}. On the first pass, set spec_action, plan_action, and task_action to skip: no artifact correction is authorized before fresh analysis. On subsequent passes, use the latest validated assess-analysis findings and next_step_id. For remediate-specification, set all three actions to run. For remediate-plan, set spec_action to skip and plan_action and task_action to run. For remediate-tasks, set only task_action to run. Any unsupported route, missing evidence, blocker, or required operator decision stops before mutation. Return those action fields and specification_args, plan_args, and task_args containing the exact findings and required downstream reconciliation for each stage. Preserve the selected feature, existing reviewed decisions, task IDs, completion markers, and completed work. Scope routine corrections to the operator-authorized feature; consequential product, constitutional, authority, material-scope, or ambiguous-recovery decisions require operator input. Do not invoke another FlowKit workflow or implementation.
+      - id: route-specification-remediation
+        type: switch
+        expression: "{{ steps.prepare-analysis-flowback.output.spec_action }}"
+        cases:
+          run:
+            - id: remediate-specification
+              command: "speckit.specify"
+              integration: "{{ inputs.integration }}"
+              flow_kit:
+                delegated: true
+                agent: Architect
+              input:
+                args: "{{ steps.prepare-analysis-flowback.output.specification_args }}"
+          skip: []
+      - id: route-plan-remediation
+        type: switch
+        expression: "{{ steps.prepare-analysis-flowback.output.plan_action }}"
+        cases:
+          run:
+            - id: remediate-plan
+              command: "speckit.plan"
+              integration: "{{ inputs.integration }}"
+              flow_kit:
+                delegated: true
+                agent: Architect
+              input:
+                args: "{{ steps.prepare-analysis-flowback.output.plan_args }}"
+          skip: []
+      - id: route-task-remediation
+        type: switch
+        expression: "{{ steps.prepare-analysis-flowback.output.task_action }}"
+        cases:
+          run:
+            - id: remediate-tasks
+              command: "speckit.tasks"
+              integration: "{{ inputs.integration }}"
+              flow_kit:
+                delegated: true
+                agent: Architect
+              input:
+                args: "{{ steps.prepare-analysis-flowback.output.task_args }}"
+          skip: []
+      - id: analyze-artifacts
+        command: "speckit.analyze"
+        integration: "{{ inputs.integration }}"
+        flow_kit:
+          delegated: true
+          agent: Verifier
+        input:
+          args: >-
+            Run fresh read-only speckit.analyze for {{ inputs.feature_context }}. Return the full findings, severity, locations, recommendations, and prerequisite errors in a report output field. Do not modify artifacts. The controller classifies the report and owns any separately declared corrections.
+      - id: assess-analysis
+        type: prompt
+        flow_kit:
+          delegated: true
+          agent: Verifier
+        prompt: >-
+          Classify this fresh speckit.analyze report for {{ inputs.feature_context }} against current artifacts: {{ steps.analyze-artifacts.output.report }}. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids; resolved_ids identifying prior findings now resolved; and exactly one of next_step_id or resume_action as required. Use complete only when fresh analysis confirms no unresolved in-scope findings. Use continue for routine, safely repairable findings within the operator-issued scope and set next_step_id to remediate-specification, remediate-plan, or remediate-tasks at the highest affected artifact. The first analysis establishes the finding baseline; later assessments must identify resolved prior findings, not merely changed bytes or command success. Use needs-human for a specific product, constitutional, authority, material-scope, or ambiguous-recovery decision and blocked for missing prerequisites, failed commands, stale or unavailable analysis, or unsafe correction; provide a stable resume_action without taking the consequential action. The analyzer report is the authoritative finding source; do not substitute an independent review or treat missing output as clean analysis.
+  - id: report-analysis-outcome
+    type: prompt
+    prompt: >-
+      Report the latest verified analysis outcome for {{ inputs.feature_context }}, resolved and remaining finding IDs, and changed artifact paths. If clean, report Tasks Analyzed without implying feature acceptance or implementation. Otherwise present the exact blocker or required operator decision and safe resumption action, preserving completed corrections. No progress or exhaustion of five correction passes is a bounded stop, not a clean result. Stop this workflow here. Implementation and any consequential change require separate operator action.

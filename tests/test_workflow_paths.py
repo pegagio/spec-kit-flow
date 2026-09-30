@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import hashlib
+import io
 import json
 import sys
 import tempfile
@@ -11,6 +13,7 @@ import unittest
 from zipfile import ZipFile
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import yaml
 
@@ -83,29 +86,81 @@ class WorkflowPathTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.controller = load_module("flowkit_workflow_path_controller", CONTROLLER_PATH)
 
-    def test_analyzeStartsWithEvidenceAssessmentAndReassessesEveryBoundedPass(self) -> None:
+    def testAnalyzeUsesOneWaterfallAnalyzerAndAssessment(self) -> None:
         workflow = load_workflow("speckit-flow-analyze-remediate")
-        steps = workflow["steps"]
-        self.assertEqual("assess-analysis", steps[0]["id"])
-        self.assertEqual("Verifier", steps[0]["flow_kit"]["agent"])
-        loop = find_step(steps, "analysis-correction-loop")
-        self.assertIsNotNone(loop)
-        self.assertEqual(5, loop["max_iterations"])
-        self.assertTrue(loop["condition"].startswith("{{ steps.reassess-analysis.output.state =="))
-        self.assertEqual("reassess-analysis-before-pass", loop["steps"][0]["id"])
-        self.assertEqual("reassess-analysis", loop["steps"][-1]["id"])
-        route = find_step(steps, "select-analysis-flowback")
-        self.assertEqual(["remediate-specification", "remediate-plan", "remediate-tasks"], list(route["cases"]))
+        loop, report = workflow["steps"]
+        self.assertEqual("analysis-remediation-loop", loop["id"])
+        self.assertTrue(loop["assessment_only_first_pass"])
+        self.assertEqual(6, loop["max_iterations"])
+        self.assertEqual("assess-analysis", loop["steps"][-1]["id"])
+        self.assertEqual(["speckit.specify", "speckit.plan", "speckit.tasks", "speckit.analyze"], commands(workflow["steps"]))
+        flags = ("spec_action", "plan_action", "task_action")
         expected = {
-            "remediate-specification": ["speckit.specify", "speckit.plan", "speckit.tasks", "speckit.analyze"],
-            "remediate-plan": ["speckit.plan", "speckit.tasks", "speckit.analyze"],
-            "remediate-tasks": ["speckit.tasks", "speckit.analyze"],
+            "baseline": (["skip", "skip", "skip"], ["speckit.analyze"]),
+            "specification": (["run", "run", "run"], ["speckit.specify", "speckit.plan", "speckit.tasks", "speckit.analyze"]),
+            "plan": (["skip", "run", "run"], ["speckit.plan", "speckit.tasks", "speckit.analyze"]),
+            "tasks": (["skip", "skip", "run"], ["speckit.tasks", "speckit.analyze"]),
         }
-        for route_name, expected_commands in expected.items():
-            self.assertEqual(expected_commands, commands(route["cases"][route_name]))
-        self.assertTrue(find_step(steps, "analysis-consequential-gate"))
-        self.assertTrue(find_step(steps, "analysis-final-blocked-stop"))
-        self.assertFalse(any(command.startswith("speckit.flow-kit-") for command in commands(steps)))
+        for entry, (actions, expected_commands) in expected.items():
+            with self.subTest(entry=entry):
+                outputs = {"prepare-analysis-flowback": dict(zip(flags, actions))}
+                observed = []
+                for node in loop["steps"]:
+                    if node.get("type") == "switch":
+                        choice = self.controller.render_template(node["expression"], {}, outputs)
+                        observed.extend(commands(self.controller.select_switch_branch(node, choice)))
+                    elif "command" in node:
+                        observed.append(node["command"])
+                self.assertEqual(expected_commands, observed)
+        assessor = loop["steps"][-1]
+        self.assertIn("{{ steps.analyze-artifacts.output.report }}", assessor["prompt"])
+        with self.assertRaisesRegex(ValueError, "unresolved step output reference"):
+            self.controller.render_template(assessor["prompt"], {"feature_context": "014"}, {})
+        self.assertNotIn("analysis_decision", workflow["inputs"])
+        self.assertIn("required operator decision", report["prompt"])
+
+    def testAssessmentOnlyFirstPassEstablishesBaselineOnce(self) -> None:
+        baseline = {"state": "continue", "next_step_id": "remediate-tasks",
+                    "remaining_ids": ["F001"], "resolved_ids": []}
+        common = {"max_iterations": 6, "loop_body_step_ids": {"remediate-tasks"}}
+        self.assertEqual("continue", self.controller.route_loop_assessment(
+            baseline, iteration=1, assessment_only_first_pass=True, **common)["action"])
+        for iteration, previous in ((1, baseline), (2, None), (2, baseline)):
+            self.assertEqual("no-progress", self.controller.route_loop_assessment(
+                baseline, iteration=iteration, previous_assessment=previous,
+                assessment_only_first_pass=True, **common)["blocker"])
+        self.assertEqual("no-progress", self.controller.route_loop_assessment(
+            baseline, iteration=1, **common)["blocker"])
+        self.assertEqual("complete", self.controller.route_loop_assessment(
+            {"state": "complete"}, iteration=1, assessment_only_first_pass=True, **common)["action"])
+        resolved = {"state": "continue", "next_step_id": "remediate-tasks",
+                    "remaining_ids": ["F002"], "resolved_ids": ["F001"]}
+        self.assertEqual("loop-cap-exhausted", self.controller.route_loop_assessment(
+            resolved, iteration=6, previous_assessment=baseline,
+            assessment_only_first_pass=True, **common)["blocker"])
+        for node in (
+            {"id": "invalid", "type": "prompt", "prompt": "x", "assessment_only_first_pass": True},
+            {"id": "invalid", "type": "do-while", "assessment_only_first_pass": "true"},
+        ):
+            with self.assertRaisesRegex(ValueError, "assessment_only_first_pass"):
+                self.controller.validate_workflow_graph([node])
+
+    def testAssessmentOnlyBaselineCliFlag(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            (project / "tasks.md").write_text("Finding F001 remains", encoding="utf-8")
+            assessment = {
+                "state": "continue", "reason_code": "routine-task-gap",
+                "evidence": [{"path": "tasks.md", "sha256": hashlib.sha256((project / "tasks.md").read_bytes()).hexdigest()}],
+                "remaining_ids": ["F001"], "resolved_ids": [], "next_step_id": "remediate-tasks",
+            }
+            argv = ["route-loop", "--project", str(project), "--iteration", "1",
+                    "--max-iterations", "6", "--loop-body-step", "remediate-tasks"]
+            for flag, expected in (([], "blocked"), (["--assessment-only-first-pass"], "continue")):
+                output = io.StringIO()
+                with patch("sys.stdin", io.StringIO(json.dumps({"assessment": assessment}))), patch("sys.stdout", output):
+                    self.assertEqual(0, self.controller.main(argv + flag))
+                self.assertEqual(expected, json.loads(output.getvalue())["action"])
 
     def test_implementRepeatsExistingTasksOnlyWhileProgressIsVerified(self) -> None:
         workflow = load_workflow("speckit-flow-implement")
@@ -149,15 +204,12 @@ class WorkflowPathTests(unittest.TestCase):
             progress, iteration=5, max_iterations=5, loop_body_step_ids={"correct"}, previous_assessment=initial
         ))
 
-    def testConsequentialGateIsMainTaskOnlyAndNoNestedWorkflowIsDeclared(self) -> None:
-        for workflow_id, gate_id, expected_options in (
-            ("speckit-flow-analyze-remediate", "analysis-consequential-gate", ["defer", "escalate", "abort"]),
-        ):
-            workflow = load_workflow(workflow_id)
-            gate = find_step(workflow["steps"], gate_id)
-            self.assertEqual(expected_options, gate["options"])
-            self.assertNotIn("flow_kit", gate)
-            self.assertTrue(all(not command.startswith("speckit.flow-kit-") for command in commands(workflow["steps"])))
+    def testAnalyzeReportsConsequentialDecisionWithoutTakingAction(self) -> None:
+        workflow = load_workflow("speckit-flow-analyze-remediate")
+        assessment = find_step(workflow["steps"], "assess-analysis")
+        self.assertIn("without taking the consequential action", assessment["prompt"])
+        self.assertFalse(any(node.get("type") == "gate" for node, _, _ in walk(workflow["steps"])))
+        self.assertFalse(any(command.startswith("speckit.flow-kit-") for command in commands(workflow["steps"])))
 
     def testManualAnalyzeAndImplementPathsMatchTheirContinuationContracts(self) -> None:
         readme = (ROOT / "workflows/README.md").read_text(encoding="utf-8")

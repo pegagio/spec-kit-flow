@@ -68,8 +68,11 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         for projection in projections:
             with self.subTest(workflow=projection["workflow_id"]):
                 self.assertTrue(projection["entry_step_id"])
-                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan", "speckit-flow-tasks"}:
-                    self.assertFalse(projection["branches"])
+                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan", "speckit-flow-tasks", "speckit-flow-analyze-remediate"}:
+                    if projection["workflow_id"] == "speckit-flow-analyze-remediate":
+                        self.assertTrue(projection["branches"])
+                    else:
+                        self.assertFalse(projection["branches"])
                     self.assertFalse(projection["human_decisions"])
                 else:
                     self.assertTrue(projection["branches"])
@@ -78,7 +81,7 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
                 self.assertIn("unexplained_terminal_paths", projection)
         analyze = next(item for item in projections if item["workflow_id"] == "speckit-flow-analyze-remediate")
         implement = next(item for item in projections if item["workflow_id"] == "speckit-flow-implement")
-        self.assertTrue(analyze["success_paths"])
+        self.assertEqual("analysis-remediation-loop", analyze["entry_step_id"])
         self.assertTrue(analyze["continuation_edges"])
         self.assertEqual("assess-implementation-state", implement["entry_step_id"])
         self.assertTrue(implement["continuation_edges"])
