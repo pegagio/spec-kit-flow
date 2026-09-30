@@ -533,14 +533,14 @@ class WorkflowPathTests(unittest.TestCase):
         paths = {
             "clean": (["skip"] * 3, "complete", "complete", ["speckit.converge"]),
             "convergence-blocked": (["skip"] * 3, "blocked", "complete", ["speckit.converge"]),
-            "convergence-question": (["skip"] * 3, "needs-human", "complete", ["speckit.converge"]),
+            "convergence-question": (["skip"] * 3, "blocked", "complete", ["speckit.converge"]),
             "specification": (["run"] * 3, "continue", "continue", ["speckit.converge", "speckit.specify", "speckit.plan", "speckit.tasks", "speckit.analyze", "speckit.implement"]),
             "plan": (["skip", "run", "run"], "continue", "continue", ["speckit.converge", "speckit.plan", "speckit.tasks", "speckit.analyze", "speckit.implement"]),
             "tasks": (["skip", "skip", "run"], "continue", "continue", ["speckit.converge", "speckit.tasks", "speckit.analyze", "speckit.implement"]),
             "implementation-only": (["skip"] * 3, "continue", "continue", ["speckit.converge", "speckit.analyze", "speckit.implement"]),
             "no-eligible-work": (["skip"] * 3, "continue", "complete", ["speckit.converge", "speckit.analyze"]),
             "analysis-blocked": (["skip"] * 3, "continue", "blocked", ["speckit.converge", "speckit.analyze"]),
-            "analysis-question": (["skip"] * 3, "continue", "needs-human", ["speckit.converge", "speckit.analyze"]),
+            "analysis-question": (["skip"] * 3, "continue", "blocked", ["speckit.converge", "speckit.analyze"]),
         }
         for name, (actions, convergence, eligibility, expected) in paths.items():
             with self.subTest(path=name):
@@ -562,7 +562,7 @@ class WorkflowPathTests(unittest.TestCase):
             self.controller.render_template(assessor["prompt"], {"feature_context": "014"}, {})
         self.assertIn("fresh report", self.controller.render_template(assessor["prompt"], {"feature_context": "014"},
             {"append-task-remediation": {"report": "fresh report"}}))
-        self.assertIn("Propagate any unresolved needs-human or blocked", report["prompt"])
+        self.assertIn("Propagate any unresolved blocked", report["prompt"])
         self.assertIn("current-pass outcomes", report["prompt"])
         before = {"state": "continue", "next_step_id": "implement-remediation", "remaining_ids": ["G1", "G2"], "resolved_ids": []}
         after = {**before, "remaining_ids": ["G2"], "resolved_ids": ["G1"]}
@@ -577,6 +577,26 @@ class WorkflowPathTests(unittest.TestCase):
                 {"state": state, "resume_action": "resolve-finding"}, iteration=1, **common)["action"])
         with self.assertRaisesRegex(ValueError, "mutually exclusive"):
             self.controller.route_loop_assessment(before, iteration=1, assessment_only_first_pass=True, **common)
+
+
+    def testUngatedLoopStatesStopForOperatorInputAndRetainLegacyGateRouting(self) -> None:
+        import copy
+        for purpose in ("clarify", "plan", "tasks", "implement", "analyze-remediate", "converge"):
+            workflow = load_workflow("speckit-flow-" + purpose)
+            self.controller.validate_workflow_graph(workflow["steps"])
+            self.assertNotIn("needs-human", json.dumps(workflow))
+            self.assertEqual({"action": "blocked", "resume_action": "answer-operator-question"},
+                self.controller.route_loop_assessment(
+                    {"state": "blocked", "resume_action": "answer-operator-question"},
+                    iteration=1, max_iterations=5, loop_body_step_ids=set()))
+        legacy = copy.deepcopy(load_workflow("speckit-flow-converge"))
+        legacy["steps"][0]["steps"][2]["cases"]["needs-human"] = []
+        self.controller.validate_workflow_graph(legacy["steps"])
+        self.assertEqual({"action": "needs-human", "gate_step_id": "operator-review"},
+            self.controller.route_loop_assessment(
+                {"state": "needs-human", "gate_step_id": "operator-review"},
+                iteration=1, max_iterations=5, loop_body_step_ids=set(),
+                human_gate_step_ids={"operator-review"}))
 
     def testHeadAssessmentRequiresGuardedCorrectionAndCliFlag(self) -> None:
         import copy

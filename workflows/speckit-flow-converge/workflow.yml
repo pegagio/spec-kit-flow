@@ -2,7 +2,7 @@ schema_version: '1.0'
 workflow:
   id: speckit-flow-converge
   name: Converge Feature
-  version: "0.4.1"
+  version: "0.4.2"
   author: pegagio
   description: Assess convergence and repeat a shared correction waterfall, task analysis, and eligible implementation until clean or safely stopped.
 requires:
@@ -41,7 +41,7 @@ steps:
           delegated: true
           agent: Verifier
         prompt: >-
-          Classify this fresh speckit.converge report for {{ inputs.feature_context }}: {{ steps.append-task-remediation.output.report }}. The command report is the authoritative finding source; do not substitute an independent convergence review. Return a validated outcome envelope with state complete, continue, needs-human, or blocked; stable reason_code; current repository-relative evidence paths with SHA-256 digests; remaining_ids; resolved_ids; and exactly one state-appropriate route. The first report establishes the gap baseline. Later reports must prove resolution of a prior gap against current implementation and required validation; new appended task IDs, completed checkboxes, changed bytes, and command success alone are not progress. Complete requires current convergence findings clean and required validation satisfied. Continue selects the highest affected in-scope entry as next_step_id: reconcile-convergence-specification, reconcile-convergence-plan, reconcile-convergence-tasks, or implement-remediation for implementation-only gaps. Product, constitutional, authority, material-scope, or ambiguous-recovery decisions require needs-human with a stable resume_action without taking the consequential action. Missing prerequisites, stale or unavailable reports, failed commands, and unsafe work require blocked with the smallest safe resume_action. Do not modify artifacts in this assessment. The controller validates this outcome and checks progress and the correction limit before entering any correction branch.
+          Classify this fresh speckit.converge report for {{ inputs.feature_context }}: {{ steps.append-task-remediation.output.report }}. The command report is the authoritative finding source; do not substitute an independent convergence review. Return a validated outcome envelope with state complete, continue, or blocked; stable reason_code; current repository-relative evidence paths with SHA-256 digests; remaining_ids; resolved_ids; and exactly one state-appropriate route. The first report establishes the gap baseline. Later reports must prove resolution of a prior gap against current implementation and required validation; new appended task IDs, completed checkboxes, changed bytes, and command success alone are not progress. Complete requires current convergence findings clean and required validation satisfied. Continue selects the highest affected in-scope entry as next_step_id: reconcile-convergence-specification, reconcile-convergence-plan, reconcile-convergence-tasks, or implement-remediation for implementation-only gaps. Product, constitutional, authority, material-scope, or ambiguous-recovery decisions require blocked with a stable resume_action without taking the consequential action. Missing prerequisites, stale or unavailable reports, failed commands, and unsafe work require blocked with the smallest safe resume_action. Do not modify artifacts in this assessment. The controller validates this outcome and checks progress and the correction limit before entering any correction branch.
       - id: route-convergence-correction
         type: switch
         expression: '{{ steps.assess-convergence.output.state }}'
@@ -109,7 +109,7 @@ steps:
                 delegated: true
                 agent: Verifier
               prompt: >-
-                Assess this fresh analyzer report for {{ inputs.feature_context }}: {{ steps.analyze-remediation-tasks.output.report }}. Return a validated outcome envelope with state, stable reason_code, current repository-relative evidence paths and SHA-256 digests, remaining_ids, resolved_ids, and exactly one state-appropriate route. Return continue with next_step_id implement-remediation only when analysis is clean, dependent artifacts are reconciled, and exact in-scope unfinished tasks are eligible; include their IDs as remaining_ids. Complete here means no eligible task work, not Feature Converged. Needs-human reports the exact consequential decision with a stable resume_action; blocked reports unresolved analysis findings, stale or missing output, failed prerequisites, or uncertain task eligibility with a stable resume_action. Never infer eligibility from successful commands or checkbox claims.
+                Assess this fresh analyzer report for {{ inputs.feature_context }}: {{ steps.analyze-remediation-tasks.output.report }}. Return a validated outcome envelope with state, stable reason_code, current repository-relative evidence paths and SHA-256 digests, remaining_ids, resolved_ids, and exactly one state-appropriate route. Return continue with next_step_id implement-remediation only when analysis is clean, dependent artifacts are reconciled, and exact in-scope unfinished tasks are eligible; include their IDs as remaining_ids. Complete here means no eligible task work, not Feature Converged. Blocked reports the exact consequential decision or unresolved analysis findings, stale or missing output, failed prerequisites, or uncertain task eligibility, with the operator question or blocker and a stable resume_action. Never infer eligibility from successful commands or checkbox claims.
             - id: route-remediation-implementation
               type: switch
               expression: '{{ steps.assess-remediation-eligibility.output.state }}'
@@ -125,13 +125,11 @@ steps:
                       args: >-
                         Implement only the exact analyzed, eligible tasks for {{ inputs.feature_context }} identified by {{ steps.assess-remediation-eligibility.output.remaining_ids }}. Complete all remaining eligible work within that set, preserving reviewed scope and completed work. Stop for a concrete blocker, unsafe discovery, or required operator input; do not re-specify, re-plan, re-task, invoke another workflow, integrate Git, or claim acceptance. Return completed task IDs, validation evidence, and any blocker or operator question in a report output field.
                 complete: []
-                needs-human: []
                 blocked: []
           complete: []
-          needs-human: []
           blocked: []
     assessment_before_correction: true
   - id: report-convergence-outcome
     type: prompt
     prompt: >-
-      Report the latest verified outcome for {{ inputs.feature_context }}, resolved and remaining gap IDs, completed task IDs, changed artifact paths, and validation evidence. Use only current-pass outcomes. Propagate any unresolved needs-human or blocked task eligibility result or implementation report; never replace it with an earlier convergence continue or complete outcome. Clean fresh convergence ends at Feature Converged; Close Out remains separately invoked. Otherwise report the exact blocker or required operator decision and safe resumption action, preserving completed work. No progress or exhaustion of five correction passes is a bounded stop, not clean convergence. Stop here; do not update the roadmap, integrate Git, or claim feature acceptance.
+      Report the latest verified outcome for {{ inputs.feature_context }}, resolved and remaining gap IDs, completed task IDs, changed artifact paths, and validation evidence. Use only current-pass outcomes. Propagate any unresolved blocked task eligibility result or implementation report; never replace it with an earlier convergence continue or complete outcome. Clean fresh convergence ends at Feature Converged; Close Out remains separately invoked. Otherwise report the exact blocker or required operator decision and safe resumption action, preserving completed work. No progress or exhaustion of five correction passes is a bounded stop, not clean convergence. Stop here; do not update the roadmap, integrate Git, or claim feature acceptance.

@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-implement"
   name: "Implement Eligible Work"
-  version: "0.4.1"
+  version: "0.4.2"
   author: "pegagio"
   description: "Repeat the existing implementation skill while eligible tasks remain and progress is evidenced, stopping on completion or a specific bounded blocker."
 
@@ -29,7 +29,7 @@ steps:
       delegated: true
       agent: Verifier
     prompt: >-
-      Inspect the existing task plan and current validation evidence for {{ inputs.feature_context }} before implementation. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids for unfinished eligible tasks; resolved_ids; and exactly one of next_step_id or resume_action as required. Mark complete only when no required task remains and relevant validation has passed. Use continue only for specific eligible unfinished tasks and set next_step_id to implement-eligible-work. Use needs-human for a specific required operator answer and blocked for a concrete prerequisite, failed validation, or unsafe continuation; provide a stable resume_action. This snapshot is the progress baseline; do not invoke implementation or other workflow phases.
+      Inspect the existing task plan and current validation evidence for {{ inputs.feature_context }} before implementation. Return a structured outcome envelope with state complete, continue, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids for unfinished eligible tasks; resolved_ids; and exactly one of next_step_id or resume_action as required. Mark complete only when no required task remains and relevant validation has passed. Use continue only for specific eligible unfinished tasks and set next_step_id to implement-eligible-work. Use blocked for a specific required operator answer or a concrete prerequisite, failed validation, or unsafe continuation; provide a stable resume_action. This snapshot is the progress baseline; do not invoke implementation or other workflow phases.
   - id: implementation-continuation-loop
     type: do-while
     condition: "{{ steps.assess-implementation-after-pass.output.state == 'continue' }}"
@@ -50,7 +50,7 @@ steps:
           delegated: true
           agent: Verifier
         prompt: >-
-          Inspect the current task checklist, implementation changes, and validation evidence for {{ inputs.feature_context }} after this implementation session. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids for unfinished eligible tasks; resolved_ids for previously unfinished tasks now completed with inspectable evidence; and exactly one of next_step_id or resume_action as required. Mark complete only when the existing task plan is finished and relevant validation passed. Use continue only when specific eligible tasks remain, the session completed at least one previously unfinished task, and another speckit.implement session can safely proceed; set next_step_id to implement-eligible-work. A checkbox change, a child saying it is done, or a successful command alone is not completion evidence. Use needs-human when a specific operator answer is required, and blocked for a concrete prerequisite, failed validation, unavailable command, or unsafe continuation; provide a stable resume_action. Do not re-specify, re-plan, re-task, re-analyze, or invoke another FlowKit workflow.
+          Inspect the current task checklist, implementation changes, and validation evidence for {{ inputs.feature_context }} after this implementation session. Return a structured outcome envelope with state complete, continue, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids for unfinished eligible tasks; resolved_ids for previously unfinished tasks now completed with inspectable evidence; and exactly one of next_step_id or resume_action as required. Mark complete only when the existing task plan is finished and relevant validation passed. Use continue only when specific eligible tasks remain, the session completed at least one previously unfinished task, and another speckit.implement session can safely proceed; set next_step_id to implement-eligible-work. A checkbox change, a child saying it is done, or a successful command alone is not completion evidence. Use blocked when a specific operator answer is required or for a concrete prerequisite, failed validation, unavailable command, or unsafe continuation; provide a stable resume_action. Do not re-specify, re-plan, re-task, re-analyze, or invoke another FlowKit workflow.
   - id: report-implementation-outcome
     type: prompt
     prompt: >-

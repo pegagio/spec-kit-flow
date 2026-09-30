@@ -13,7 +13,7 @@ This repository owns the generic workflow and feedback source. The repository an
 
 ## What the bundle installs
 
-The [bundle source manifest](bundles/spec-kit-flow/bundle.yml) is version `0.10.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The changed controller source is version `0.4.0`; the checked-in catalog still contains the earlier `0.4.1` bundle and `0.1.1` controller release. The bundle pins these extensions:
+The [bundle source manifest](bundles/spec-kit-flow/bundle.yml) is version `0.11.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The changed controller source is version `0.4.1`; the checked-in catalog still contains the earlier `0.4.1` bundle and `0.1.1` controller release. The bundle pins these extensions:
 
 | Extension ID | Version | Purpose |
 | --- | --- | --- |
@@ -27,19 +27,19 @@ It also installs the nine active workflows in [`workflows/`](workflows/README.md
 | --- | --- | --- |
 | `speckit-flow-select-feature` | `0.1.0` | List and discuss dependencies, select and activate a feature without authoring a spec |
 | `speckit-flow-specify` | `0.1.0` | Author the active specification with cited context, verified linkage, and a roadmap brief |
-| `speckit-flow-clarify` | `0.4.1` | Run one bounded clarification session |
-| `speckit-flow-plan` | `0.4.1` | Review readiness and create the technical plan |
-| `speckit-flow-tasks` | `0.4.1` | Generate implementation tasks separately from planning |
-| `speckit-flow-analyze-remediate` | `0.4.1` | Analyze artifact consistency and route bounded remediation |
-| `speckit-flow-implement` | `0.4.1` | Implement eligible tasks within the selected agent's scope |
-| `speckit-flow-converge` | `0.4.1` | Compare implementation with the feature artifacts and close gaps |
+| `speckit-flow-clarify` | `0.4.2` | Run one bounded clarification session |
+| `speckit-flow-plan` | `0.4.2` | Review readiness and create the technical plan |
+| `speckit-flow-tasks` | `0.4.2` | Generate implementation tasks separately from planning |
+| `speckit-flow-analyze-remediate` | `0.4.2` | Analyze artifact consistency and route bounded remediation |
+| `speckit-flow-implement` | `0.4.2` | Implement eligible tasks within the selected agent's scope |
+| `speckit-flow-converge` | `0.4.2` | Compare implementation with the feature artifacts and close gaps |
 | `speckit-flow-closeout` | `0.5.0` | Review completion, roadmap verification, wiki maintenance, and commit readiness through explicit gates |
 
 The bundle does not include a preset or `speckit-flow-feedback-maintainer`. Maintainer intake belongs in this source environment, not a consumer project.
 
 ## Installation
 
-The checked-in catalog contains the locally built `0.4.1` release, including controller package `0.1.1` and the eight FlowKit controller skills. Current source bundle `0.10.0` and controller `0.4.0` are not released. The normal catalog installer verifies that release metadata matches source; it rejects the old catalog from this unreleased source checkout. Use a checkout matching the release for ordinary installation, or use a disposable initialized consumer and development-snapshot mode to validate current source. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. The catalog has not been published or pushed.
+The checked-in catalog contains the locally built `0.4.1` release, including controller package `0.1.1` and the eight FlowKit controller skills. Current source bundle `0.11.0` and controller `0.4.1` are not released. The normal catalog installer verifies that release metadata matches source; it rejects the old catalog from this unreleased source checkout. Use a checkout matching the release for ordinary installation, or use a disposable initialized consumer and development-snapshot mode to validate current source. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. The catalog has not been published or pushed.
 
 To install the checked-in release from a checkout matching that release, run `mise run catalog:install /path/to/my-project` after preparing the checkout. To validate source changes that have not reached the catalog, create and initialize a disposable consumer under the system temporary directory, then use development-snapshot mode:
 

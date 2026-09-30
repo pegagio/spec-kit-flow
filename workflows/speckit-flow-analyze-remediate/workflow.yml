@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "speckit-flow-analyze-remediate"
   name: "Analyze and Remediate"
-  version: "0.4.1"
+  version: "0.4.2"
   author: "pegagio"
   description: "Analyze current artifacts and repeat a shared specification, plan, and task correction waterfall until clean or safely stopped."
 
@@ -90,7 +90,7 @@ steps:
           delegated: true
           agent: Verifier
         prompt: >-
-          Classify this fresh speckit.analyze report for {{ inputs.feature_context }} against current artifacts: {{ steps.analyze-artifacts.output.report }}. Return a structured outcome envelope with state complete, continue, needs-human, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids; resolved_ids identifying prior findings now resolved; and exactly one of next_step_id or resume_action as required. Use complete only when fresh analysis confirms no unresolved in-scope findings. Use continue for routine, safely repairable findings within the operator-issued scope and set next_step_id to remediate-specification, remediate-plan, or remediate-tasks at the highest affected artifact. The first analysis establishes the finding baseline; later assessments must identify resolved prior findings, not merely changed bytes or command success. Use needs-human for a specific product, constitutional, authority, material-scope, or ambiguous-recovery decision and blocked for missing prerequisites, failed commands, stale or unavailable analysis, or unsafe correction; provide a stable resume_action without taking the consequential action. The analyzer report is the authoritative finding source; do not substitute an independent review or treat missing output as clean analysis.
+          Classify this fresh speckit.analyze report for {{ inputs.feature_context }} against current artifacts: {{ steps.analyze-artifacts.output.report }}. Return a structured outcome envelope with state complete, continue, or blocked; a stable reason_code; repository-relative evidence paths with current SHA-256 digests; remaining_ids; resolved_ids identifying prior findings now resolved; and exactly one of next_step_id or resume_action as required. Use complete only when fresh analysis confirms no unresolved in-scope findings. Use continue for routine, safely repairable findings within the operator-issued scope and set next_step_id to remediate-specification, remediate-plan, or remediate-tasks at the highest affected artifact. The first analysis establishes the finding baseline; later assessments must identify resolved prior findings, not merely changed bytes or command success. Use blocked for a specific product, constitutional, authority, material-scope, or ambiguous-recovery decision or for missing prerequisites, failed commands, stale or unavailable analysis, or unsafe correction; provide a stable resume_action without taking the consequential action. The analyzer report is the authoritative finding source; do not substitute an independent review or treat missing output as clean analysis.
   - id: report-analysis-outcome
     type: prompt
     prompt: >-

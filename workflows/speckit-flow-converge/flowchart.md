@@ -28,9 +28,8 @@ flowchart TD
     loop -- first or next convergence check --> converge --> assess --> correctionRoute
     assess -- controller stops for no progress or cap --> report
     correctionRoute -- continue --> prepare --> specRoute
-    correctionRoute -- complete --> loop
-    correctionRoute -- needs-human --> loop
-    correctionRoute -- blocked --> loop
+    correctionRoute -- complete --> report
+    correctionRoute -- blocked --> report
     specRoute -- run --> spec --> planRoute
     specRoute -- skip --> planRoute
     planRoute -- run --> plan --> tasksRoute
@@ -40,9 +39,8 @@ flowchart TD
     analyze --> eligibility --> implementRoute
     implementRoute -- continue --> implement --> loop
     implementRoute -- complete --> loop
-    implementRoute -- needs-human --> report
     implementRoute -- blocked --> report
-    loop -- clean, blocked, or required input --> report
+    loop -- complete or blocked --> report
 
     classDef delegated stroke:#4b5563,stroke-width:2px,stroke-dasharray:6 4
     class converge,assess,spec,plan,tasks,analyze,eligibility,implement delegated

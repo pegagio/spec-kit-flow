@@ -69,6 +69,8 @@ Pass `SPECIFY_FEATURE_DIRECTORY` explicitly to `speckit.specify`. Author or revi
 
 `speckit-flow-start-feature` is retained as a stop-only deprecated source, with replacement links in its metadata. It is excluded from the current bundle and controller package. The former combined selection/authoring path is replaced by the two workflows above; invoking the deprecated source does not launch either replacement.
 
+The six loop workflows—Clarify, Plan, Tasks, Implement, Analyze and Remediate, and Converge—use `blocked` for both unmet prerequisites and required operator input. Their reports preserve the specific question or blocker and safe resumption action. `complete` remains distinct from blocked, and only evidenced `continue` permits another pass. Closeout retains its explicit human-gate routing.
+
 ## Manual clarification path
 
 When native clarification dispatch is unavailable, run `speckit.clarify` on the operator-selected active specification one session at a time within the same invocation. The command checks for significant ambiguity and may finish without questions. The five-question cap applies per session. Present every substantive question in the main task, wait for the operator's answer, and apply only that answer to the current session. After each session, assess the current specification and confirm that the session resolved a significant ambiguity before continuing. On later sessions, compare against the previous assessment's remaining question IDs.

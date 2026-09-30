@@ -15,10 +15,10 @@ flowchart TD
 
     start --> initial
     initial -- eligible tasks remain --> loop
-    initial -- complete, needs-human, or blocked --> report
+    initial -- complete or blocked --> report
     loop -- first pass or continued progress --> implement
     implement --> assess --> loop
-    loop -- complete, needs-human, blocked, no progress, or cap --> report
+    loop -- complete, blocked, no progress, or cap --> report
 
     classDef delegated stroke:#4b5563,stroke-width:2px,stroke-dasharray:6 4
     class initial,implement,assess delegated

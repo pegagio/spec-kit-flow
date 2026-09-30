@@ -17,7 +17,7 @@ flowchart TD
     loop -- first pass or retry with progress --> prepare
     prepare -- exact output gaps --> generate
     generate --> verify --> loop
-    loop -- complete, needs-human, blocked, no progress, or cap --> report
+    loop -- complete, blocked, no progress, or cap --> report
 
     classDef delegated stroke:#4b5563,stroke-width:2px,stroke-dasharray:6 4
     class generate,verify delegated

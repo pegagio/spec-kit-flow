@@ -310,8 +310,10 @@ def validate_workflow_graph(steps: list[dict[str, Any]]) -> None:
                         if (len(body) != 3 or _node_kind(body[0]) != "command" or assessor is not body[1]
                                 or _node_kind(assessor) != "prompt" or _node_kind(body[2]) != "switch"
                                 or body[2].get("expression") != "{{ steps." + assessment_id + ".output.state }}"
-                                or set(body[2].get("cases", {})) != {"continue", "complete", "needs-human", "blocked"}
-                                or any(body[2]["cases"][state] for state in ("complete", "needs-human", "blocked"))
+                                or set(body[2].get("cases", {})) not in (
+                                    {"continue", "complete", "blocked"},
+                                    {"continue", "complete", "needs-human", "blocked"})
+                                or any(body[2]["cases"].get(state) for state in ("complete", "needs-human", "blocked"))
                                 or body[2].get("default")):
                             raise ValueError(f"assessment_before_correction requires command, assessment, and guarded correction: {step_id}")
                     elif assessor is not body[-1] or _node_kind(assessor) not in {"prompt", "command"}:

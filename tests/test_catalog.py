@@ -118,10 +118,10 @@ class CatalogReleaseTests(unittest.TestCase):
             },
         }
         expected_versions = {
-            "speckit-flow-start-feature": "0.6.0", "speckit-flow-select-feature": "0.1.0", "speckit-flow-specify": "0.1.0", "speckit-flow-clarify": "0.4.1",
-            "speckit-flow-plan": "0.4.1", "speckit-flow-tasks": "0.4.1",
-            "speckit-flow-analyze-remediate": "0.4.1", "speckit-flow-implement": "0.4.1",
-            "speckit-flow-converge": "0.4.1", "speckit-flow-closeout": "0.5.0",
+            "speckit-flow-start-feature": "0.6.0", "speckit-flow-select-feature": "0.1.0", "speckit-flow-specify": "0.1.0", "speckit-flow-clarify": "0.4.2",
+            "speckit-flow-plan": "0.4.2", "speckit-flow-tasks": "0.4.2",
+            "speckit-flow-analyze-remediate": "0.4.2", "speckit-flow-implement": "0.4.2",
+            "speckit-flow-converge": "0.4.2", "speckit-flow-closeout": "0.5.0",
         }
         step_pattern = __import__("re").compile(r"^(\s*)- id: ([A-Za-z0-9_-]+)$")
         for workflow_id, expected_steps in expectations.items():

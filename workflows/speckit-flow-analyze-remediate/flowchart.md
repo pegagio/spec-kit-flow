@@ -28,7 +28,7 @@ flowchart TD
     tasksRoute -- run --> tasks --> analyze
     tasksRoute -- skip --> analyze
     analyze --> assess --> loop
-    loop -- complete, needs-human, blocked, no progress, or cap --> report
+    loop -- complete, blocked, no progress, or cap --> report
 
     classDef delegated stroke:#4b5563,stroke-width:2px,stroke-dasharray:6 4
     class spec,plan,tasks,analyze,assess delegated

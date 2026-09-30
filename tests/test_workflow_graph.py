@@ -205,8 +205,8 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         self.assertEqual(["speckit.converge", "speckit.specify", "speckit.plan", "speckit.tasks",
                           "speckit.analyze", "speckit.implement"], commands(steps))
         eligibility = find_step(steps, "route-remediation-implementation")
-        self.assertEqual({"continue", "complete", "needs-human", "blocked"}, set(eligibility["cases"]))
-        for state in ("complete", "needs-human", "blocked"):
+        self.assertEqual({"continue", "complete", "blocked"}, set(eligibility["cases"]))
+        for state in ("complete", "blocked"):
             self.assertEqual([], eligibility["cases"][state])
         self.assertFalse(any(command.startswith("speckit.flow-") for command in commands(steps)))
         self.assertFalse(any(node.get("type") == "gate" for node, _, _ in self.inventory._walk(steps)))

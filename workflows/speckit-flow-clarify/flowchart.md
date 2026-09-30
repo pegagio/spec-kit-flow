@@ -17,7 +17,7 @@ flowchart TD
     sessionLoop -- first session or continue within limit --> clarify
     clarify -- session complete --> after
     after --> sessionLoop
-    sessionLoop -- complete, needs-human, blocked, or limit reached --> outcome
+    sessionLoop -- complete, blocked, or limit reached --> outcome
 
     classDef delegated stroke:#4b5563,stroke-width:2px,stroke-dasharray:6 4
     class clarify,after delegated
