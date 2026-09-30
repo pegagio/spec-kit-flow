@@ -224,77 +224,57 @@ class WorkflowPathTests(unittest.TestCase):
         self.assertIn("five-pass safety cap", implement)
         self.assertIn("Leave Converge", implement)
 
-    def testStartFeatureExplicitHandoffsAndOnlyVerifiedLinksReachSharedBrief(self) -> None:
-        workflow = load_workflow("speckit-flow-start-feature")
+    def testSpecificationUsesActiveTargetAndOnlyVerifiedLinksReachBrief(self) -> None:
+        workflow = load_workflow("speckit-flow-specify")
         steps = workflow["steps"]
-        self.assertEqual(["list-roadmap-options", "select-roadmap-feature", "route-feature-selection",
-                          "prepare-start-outcome", "route-start-outcome", "report-start-feature-outcome"],
-                         [n["id"] for n in steps])
-        self.assertNotIn("final_review_decision", workflow["inputs"])
-        ready = find_step(steps, "route-start-readiness")
-        self.assertEqual([], ready["cases"]["needs-human"])
-        self.assertEqual([], ready["cases"]["blocked"])
-        initial = find_step(steps, "route-roadmap-decision")
-        for choice in ("amend-roadmap", "resolve-context", "defer"):
-            self.assertEqual([], initial["cases"][choice])
+        self.assertEqual("inspect-active-feature", steps[0]["id"])
+        self.assertNotIn("feature_request", workflow["inputs"])
+        draft = find_step(steps, "draft-specification")["input"]["args"]
+        self.assertIn("SPECIFY_FEATURE_DIRECTORY", draft)
+        prepare = find_step(steps, "prepare-specification-request")["prompt"]
+        self.assertIn("{{ steps.inspect-active-feature.output.actual_spec_dir }}", prepare)
+        self.assertIn("{{ steps.retrieve-governing-context.output.report }}", prepare)
         linkage = find_step(steps, "route-created-spec-linkage")
-        self.assertEqual([], linkage["cases"]["linked"])
-        self.assertEqual([], linkage["cases"]["conflict"])
-        self.assertEqual([], linkage["cases"]["ambiguous"])
         patch = find_step(steps, "route-spec-dir-patch-decision")
-        self.assertEqual(["apply-approved-spec-dir-patch", "verify-repaired-spec-linkage"],
-                         [n["id"] for n in patch["cases"]["approve-exact-patch"]])
-        for choice in ("amend", "defer"):
-            self.assertEqual([], patch["cases"][choice])
-        outputs = {
-            "retrieve-governing-context": {"report": "CITED-CONTEXT"},
-            "select-roadmap-feature": {"choice": "F014: Exact selected entry"},
-            "assess-eligibility": {"selected_entry_id": "F014: Exact selected entry",
-                                  "proposed_status_patch": "EXACT-STATUS-PATCH", "feature_brief": "APPROVED-SCOPE"},
-        }
-        gate = self.controller.render_template(find_step(steps, "approve-roadmap-patch")["message"], {}, outputs)
-        write = self.controller.render_template(find_step(steps, "apply-approved-roadmap-patch")["input"]["args"], {}, outputs)
-        draft = self.controller.render_template(find_step(steps, "draft-specification")["input"]["args"], {}, outputs)
-        for text in (gate, write):
-            self.assertIn("EXACT-STATUS-PATCH", text)
-            self.assertIn("F014: Exact selected entry", text)
-        for text in (gate, draft):
-            self.assertIn("CITED-CONTEXT", text)
-            self.assertIn("APPROVED-SCOPE", text)
-        with self.assertRaisesRegex(ValueError, "unresolved step output reference"):
-            self.controller.render_template(find_step(steps, "assess-eligibility")["prompt"], {"feature_request": "014"}, {})
-        assessor = find_step(steps, "assess-created-spec-linkage")["prompt"]
-        self.assertIn("{{ steps.draft-specification.output.actual_spec_dir }}", assessor)
-        self.assertIn("{{ steps.assess-eligibility.output.selected_entry_id }}", assessor)
-        self.assertIn("no trailing punctuation inside the backticks", assessor)
-        prepare = find_step(steps, "prepare-start-outcome")["prompt"]
-        self.assertIn("fresh verify-repaired-spec-linkage state linked", prepare)
-        self.assertIn("cannot authorize the brief", prepare)
-        outcome_route = find_step(steps, "route-start-outcome")
-        self.assertEqual(["brief-against-roadmap"], [n["id"] for n in outcome_route["cases"]["ready-for-brief"]])
-        for state in ("needs-human", "blocked", "deferred"):
-            self.assertEqual([], outcome_route["cases"][state])
-        fixtures = json.loads((ROOT / "tests/consumer-fixtures/start-feature-linkage.json").read_text())
-        for case in fixtures["scenarios"]:
-            with self.subTest(case=case["id"]):
-                writes = commands(self.controller.select_switch_branch(linkage, case["observed_state"]))
-                if case["observed_state"] == "repairable":
-                    writes = commands(self.controller.select_switch_branch(patch, case["gate_choice"]))
-                else:
-                    writes = []
-                self.assertEqual(case["roadmap_write_allowed"], "speckit.flow-roadmap.write" in writes)
-                verified = case.get("post_patch_state", "linked") if case["roadmap_write_allowed"] else case["observed_state"]
-                brief_allowed = verified == "linked"
-                self.assertEqual(case["brief_allowed"], brief_allowed)
-                selected = self.controller.select_switch_branch(outcome_route, "ready-for-brief" if brief_allowed else "blocked")
-                self.assertEqual(["speckit.flow-roadmap.brief"] if brief_allowed else [], commands(selected))
-                self.assertEqual("report-start-feature-outcome", case["expected_terminal"])
-        for state in ("invalid", "missing"):
+        outcome = find_step(steps, "route-specification-outcome")
+        self.assertEqual(["apply-approved-spec-dir-patch", "verify-repaired-spec-linkage"], [n["id"] for n in patch["cases"]["approve-exact-patch"]])
+        self.assertEqual({"repairable", "linked", "blocked"}, set(linkage["cases"]))
+        for state in ("linked", "blocked"):
+            self.assertEqual([], self.controller.select_switch_branch(linkage, state))
+        self.assertTrue(self.controller.select_switch_branch(linkage, "repairable"))
+        for choice in ("amend", "defer", "invalid"):
+            self.assertEqual([], self.controller.select_switch_branch(patch, choice))
+        self.assertEqual(["speckit.flow-roadmap.brief"], commands(outcome["cases"]["ready-for-brief"]))
+        self.assertEqual([], self.controller.select_switch_branch(outcome, "blocked"))
+        with self.assertRaises(ValueError):
+            self.controller.select_switch_branch(outcome, "invalid")
+        for step_id in ("route-active-feature", "route-specification-readiness"):
+            route = find_step(steps, step_id)
+            self.assertEqual([], self.controller.select_switch_branch(route, "blocked"))
             with self.assertRaises(ValueError):
-                self.controller.select_switch_branch(linkage, state)
+                self.controller.select_switch_branch(route, "invalid")
+            self.assertIn("speckit.specify", commands(self.controller.select_switch_branch(route, "ready")))
+        self.assertIn("original active target", find_step(steps, "prepare-specification-outcome")["prompt"])
+        self.assertFalse(any("select-roadmap-feature" == n["id"] for n, _, _ in walk(steps)))
+
+    def testTransitionLabelsPreserveHumanChoiceRouting(self) -> None:
+        for workflow_id, route_id, approval in (
+            ("speckit-flow-select-feature", "route-selection-approval", "approve"),
+            ("speckit-flow-specify", "route-spec-dir-patch-decision", "approve-exact-patch"),
+        ):
+            workflow = load_workflow(workflow_id)
+            route = find_step(workflow["steps"], route_id)
+            self.assertEqual({approval: "approved", "default": "not-approved"}, route["transition_labels"])
+            self.assertIn("speckit.flow-roadmap.write", commands(self.controller.select_switch_branch(route, approval)))
+            for choice in ("amend", "defer"):
+                self.assertEqual([], self.controller.select_switch_branch(route, choice))
+            self.controller.validate_workflow_graph(workflow["steps"])
+            for labels in ({"missing-branch": "blocked"}, {approval: ""}, []):
+                with self.subTest(labels=labels), self.assertRaises(ValueError):
+                    self.controller.validate_workflow_graph([{**route, "transition_labels": labels}])
 
     def testStartFeatureListsCandidatesAndWaitsForExactHumanSelection(self) -> None:
-        workflow = load_workflow("speckit-flow-start-feature")
+        workflow = load_workflow("speckit-flow-select-feature")
         self.assertEqual("", self.controller.validate_required_inputs(workflow, {})["feature_request"])
         listing, gate, route = workflow["steps"][:3]
         outputs = {"list-roadmap-options": {
@@ -312,12 +292,11 @@ class WorkflowPathTests(unittest.TestCase):
         self.assertEqual([], self.controller.select_switch_branch(route, "defer"))
         chosen = self.controller.validate_gate_choice(rendered, "2")
         selected = self.controller.select_switch_branch(route, chosen)
-        self.assertEqual("retrieve-governing-context", selected[0]["id"])
-        rendered_args = self.controller.render_template(selected[0]["input"]["args"], {},
+        self.assertEqual("prepare-feature-selection", selected[0]["id"])
+        rendered_args = self.controller.render_template(selected[0]["prompt"], {},
             {"select-roadmap-feature": {"choice": chosen}})
         self.assertIn(chosen, rendered_args)
-        self.assertNotIn("{{ inputs.feature_request }}", selected[1]["prompt"])
-        self.assertIn("instead of substituting another entry", selected[1]["prompt"])
+        self.assertIn("Do not substitute another candidate", selected[0]["prompt"])
         for required in ("direct_unlock_count", "downstream_dependent_count", "Deduplicate", "Missing references, cycles", "do not pick a candidate"):
             self.assertIn(required, listing["prompt"])
         no_candidates = self.controller.render_template(gate, {},
@@ -333,6 +312,62 @@ class WorkflowPathTests(unittest.TestCase):
         for malformed in ("invented-options", "{{ inputs.feature_request }}"):
             with self.assertRaises(ValueError):
                 self.controller.validate_workflow_graph([{**gate, "options": malformed}])
+
+    def testActivationWritesOnlyPointerAndPreservesExistingSpec(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            (project / ".specify").mkdir()
+            pointer = project / ".specify/feature.json"
+            pointer.write_text(json.dumps({"feature_directory": "specs/old", "consumer_field": "keep"}))
+            result = self.controller.activate_feature(project, "specs/026-new")
+            self.assertTrue(result["changed"])
+            self.assertFalse((project / "specs").exists())
+            self.assertEqual("keep", json.loads(pointer.read_text())["consumer_field"])
+            target = project / "specs/026-new"
+            target.mkdir(parents=True)
+            spec = target / "spec.md"
+            spec.write_bytes(b"Existing reviewed specification\n")
+            before = spec.read_bytes()
+            self.assertFalse(self.controller.activate_feature(project, "specs/026-new")["changed"])
+            self.assertEqual(before, spec.read_bytes())
+            self.assertEqual([], list((project / ".specify").glob(".feature-*")))
+            self.assertEqual([pointer], list((project / ".specify").iterdir()))
+            for unsafe in ("../escape", "/absolute", "specs/../escape", "specs//bad", ".specify/target", "specs/trailing/", ""):
+                with self.subTest(unsafe=unsafe), self.assertRaises(ValueError):
+                    self.controller.activate_feature(project, unsafe)
+            with tempfile.TemporaryDirectory() as outside:
+                (project / "escape").symlink_to(outside, target_is_directory=True)
+                with self.assertRaises(ValueError):
+                    self.controller.activate_feature(project, "escape/target")
+            for invalid in (None, 42, ""):
+                pointer.write_text(json.dumps({"feature_directory": invalid}))
+                before = pointer.read_bytes()
+                with self.assertRaises(ValueError):
+                    self.controller.activate_feature(project, "specs/next")
+                self.assertEqual(before, pointer.read_bytes())
+            pointer.write_text("broken json")
+            with self.assertRaises(ValueError):
+                self.controller.activate_feature(project, "specs/next")
+            self.assertEqual("broken json", pointer.read_text())
+
+    def testSelectionApprovalSeparatesRoadmapAndPointerMutation(self) -> None:
+        w = load_workflow("speckit-flow-select-feature")
+        route = find_step(w["steps"], "route-selection-approval")
+        self.assertEqual(["apply-selected-roadmap-patch", "activate-selected-feature", "verify-feature-selection"],
+                         [n["id"] for n in route["cases"]["approve"]])
+        for choice in ("amend", "defer", "invalid"):
+            self.assertEqual([], self.controller.select_switch_branch(route, choice))
+        readiness = find_step(w["steps"], "route-selection-readiness")
+        self.assertEqual([], self.controller.select_switch_branch(readiness, "blocked"))
+        with self.assertRaises(ValueError):
+            self.controller.select_switch_branch(readiness, "invalid")
+        gate = find_step(w["steps"], "approve-feature-selection")
+        self.assertIn("feature_json", gate["message"])
+        self.assertIn("proposed_patch", gate["message"])
+        self.assertNotIn("speckit.specify", commands(w["steps"]))
+        deprecated = load_workflow("speckit-flow-start-feature")
+        self.assertTrue(deprecated["workflow"]["deprecated"])
+        self.assertFalse(commands(deprecated["steps"]))
 
     def testRoadmapBriefResolverRequiresTheExplicitExactPairInDisposableFixtures(self) -> None:
         archive = ROOT / "catalog/packages/flow-roadmap-0.2.1.zip"

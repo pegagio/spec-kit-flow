@@ -31,7 +31,8 @@ SPECIFY_BIN = Path(os.environ.get("SPECIFY_BIN", "specify"))
 ROADMAP_SOURCE = os.environ.get("SPEC_KIT_FLOW_TEST_ROADMAP_SOURCE")
 WIKI_SOURCE = os.environ.get("SPEC_KIT_FLOW_TEST_WIKI_SOURCE")
 WORKFLOW_IDS = (
-    "speckit-flow-start-feature",
+    "speckit-flow-select-feature",
+    "speckit-flow-specify",
     "speckit-flow-clarify",
     "speckit-flow-plan",
     "speckit-flow-tasks",
@@ -315,9 +316,9 @@ class BundleLifecycleTests(unittest.TestCase):
                 self.assertIn("- name: speckit.flow-feedback.capture", feedback_manifest)
                 self.assertIn("- name: speckit.flow-feedback.report", feedback_manifest)
                 self.assertNotIn("speckit.speckit-flow-feedback.", feedback_manifest)
-                for workflow_id in ("speckit-flow-start-feature", "speckit-flow-closeout"):
+                for workflow_id in ("speckit-flow-select-feature", "speckit-flow-specify", "speckit-flow-closeout"):
                     workflow = (consumer / ".specify/workflows" / workflow_id / "workflow.yml").read_text(encoding="utf-8")
-                    commands = re.findall(r'^\s+command: "(speckit\.flow-(?:roadmap|wiki)\.[^"]+)"', workflow, re.MULTILINE)
+                    commands = re.findall(r'^\s+command: ["\']?(speckit\.flow-(?:roadmap|wiki)\.[a-z-]+)', workflow, re.MULTILINE)
                     self.assertTrue(commands, workflow_id)
                     for command in commands:
                         extension_id = command.split(".", 2)[1]
@@ -335,14 +336,8 @@ class BundleLifecycleTests(unittest.TestCase):
                 workflow_environment = dict(environment)
                 workflow_environment["SPECKIT_INTEGRATION_CODEX_EXECUTABLE"] = str(codex_stub)
                 feature_files_before = set((consumer / "specs").rglob("*")) if (consumer / "specs").exists() else set()
-                start_run = self.run_specify(
-                    consumer, workflow_environment, "workflow", "run", "speckit-flow-start-feature",
-                    "--input", "feature_request=disposable consumer fixture",
-                    "--input", "roadmap_decision=defer", "--json",
-                )
-                self.assertEqual("completed", json.loads(start_run)["status"])
-                feature_files_after = set((consumer / "specs").rglob("*")) if (consumer / "specs").exists() else set()
-                self.assertEqual(feature_files_before, feature_files_after)
+                # Inventory-driven selection needs a real human gate; a no-op child cannot supply it.
+                # Direct-controller selection and activation are covered by deterministic fixtures.
                 clarify_run = self.run_specify(
                     consumer, workflow_environment, "workflow", "run", "speckit-flow-clarify",
                     "--input", "feature_context=disposable consumer fixture",

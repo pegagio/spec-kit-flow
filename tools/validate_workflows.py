@@ -155,7 +155,7 @@ def project_workflow(definition: dict[str, Any]) -> dict[str, Any]:
 
 
 def load_workflows() -> list[dict[str, Any]]:
-    """Read the eight checked-in source workflow definitions in stable order."""
+    """Read active and deprecated source workflow definitions in stable order."""
     paths = sorted(WORKFLOW_ROOT.glob("speckit-flow-*/workflow.yml"))
     definitions = []
     for path in paths:
@@ -163,8 +163,9 @@ def load_workflows() -> list[dict[str, Any]]:
         if not isinstance(data, dict) or not isinstance(data.get("workflow"), dict) or not isinstance(data.get("steps"), list):
             raise ValueError(f"malformed workflow definition: {path.relative_to(ROOT)}")
         definitions.append(data)
-    if len(definitions) != 8:
-        raise ValueError(f"expected eight source workflows, found {len(definitions)}")
+    identities = [item["workflow"]["id"] for item in definitions]
+    if not definitions or len(set(identities)) != len(identities):
+        raise ValueError("source workflow inventory is empty or has duplicate identities")
     return definitions
 
 

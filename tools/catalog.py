@@ -33,7 +33,8 @@ EXTENSION_SOURCES = {
     "flow-feedback": "feedback",
 }
 CONTROLLER_BINDINGS = (
-    ("flow-kit-start-feature", "FlowKit Start Feature", "speckit-flow-start-feature"),
+    ("flow-kit-select-feature", "FlowKit Select Feature", "speckit-flow-select-feature"),
+    ("flow-kit-specify", "FlowKit Specify", "speckit-flow-specify"),
     ("flow-kit-clarify", "FlowKit Clarify", "speckit-flow-clarify"),
     ("flow-kit-plan", "FlowKit Plan", "speckit-flow-plan"),
     ("flow-kit-tasks", "FlowKit Tasks", "speckit-flow-tasks"),
@@ -184,8 +185,8 @@ def controller_manifest() -> dict[str, object]:
         fail("controller package manifest identity or version is invalid")
     actual = [(item.get("skill_id"), item.get("display_name"), item.get("workflow_id")) for item in controllers]
     if actual != list(CONTROLLER_BINDINGS):
-        fail("controller manifest must declare the reviewed eight-skill inventory in order")
-    if len({item["skill_id"] for item in controllers}) != 8 or len({item["workflow_id"] for item in controllers}) != 8:
+        fail("controller manifest must declare the reviewed controller inventory in order")
+    if len({item["skill_id"] for item in controllers}) != len(CONTROLLER_BINDINGS) or len({item["workflow_id"] for item in controllers}) != len(CONTROLLER_BINDINGS):
         fail("controller skill and workflow bindings must be unique")
     return {
         "package_id": package_id,
@@ -325,7 +326,7 @@ def _owned_target(project: Path, relative: str) -> Path:
     parts = path.parts
     if path.is_absolute() or path.as_posix() != relative or ".." in parts:
         fail(f"invalid FlowKit ownership path: {relative}")
-    skills = {skill_id for skill_id, _, _ in CONTROLLER_BINDINGS}
+    skills = {skill_id for skill_id, _, _ in CONTROLLER_BINDINGS} | {"flow-kit-start-feature"}
     skill_path = (
         len(parts) >= 4 and parts[:2] == (".agents", "skills")
         and parts[2] in skills and parts[3:] in {("SKILL.md",), ("agents", "openai.yaml")}

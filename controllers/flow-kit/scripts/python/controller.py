@@ -12,6 +12,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -260,6 +261,13 @@ def validate_workflow_graph(steps: list[dict[str, Any]]) -> None:
                 cases = node.get("cases", {})
                 if not isinstance(cases, dict):
                     raise ValueError(f"switch cases must be a mapping: {step_id}")
+                if "transition_labels" in node:
+                    labels = node["transition_labels"]
+                    branch_keys = set(cases) | ({"default"} if "default" in node else set())
+                    if (not isinstance(labels, dict) or not labels
+                            or any(key not in branch_keys or not isinstance(label, str) or not label.strip()
+                                   for key, label in labels.items())):
+                        raise ValueError(f"transition labels must name existing branches with nonempty text: {step_id}")
                 for branch in cases.values():
                     if not isinstance(branch, list):
                         raise ValueError(f"switch case must contain a step list: {step_id}")
@@ -750,6 +758,48 @@ def select_switch_branch(switch: dict[str, Any], choice: str) -> list[dict[str, 
     return branch
 
 
+def activate_feature(project_root: Path, feature_directory: str) -> dict[str, Any]:
+    """Activate an approved project-relative target without creating feature files."""
+    project = project_root.resolve()
+    if (not isinstance(feature_directory, str) or not feature_directory
+            or Path(feature_directory).is_absolute() or "\\" in feature_directory
+            or any(part in {"", ".", ".."} for part in feature_directory.split("/"))
+            or feature_directory.split("/")[0] in {".git", ".specify"}):
+        raise ValueError("feature_directory must be a normalized project-relative directory")
+    target = project / feature_directory
+    try:
+        target.resolve().relative_to(project)
+    except ValueError as error:
+        raise ValueError("feature_directory escapes the project") from error
+    if target.exists() and not target.is_dir():
+        raise ValueError("feature_directory is not a directory")
+    metadata = project / ".specify"
+    pointer = metadata / "feature.json"
+    if not metadata.is_dir() or metadata.is_symlink() or pointer.is_symlink():
+        raise ValueError("activation requires a local initialized .specify directory and nonsymlink pointer")
+    data = json.loads(pointer.read_text(encoding="utf-8")) if pointer.exists() else {}
+    if not isinstance(data, dict):
+        raise ValueError("active feature state must be a JSON object")
+    previous = data.get("feature_directory")
+    if "feature_directory" in data and (not isinstance(previous, str) or not previous):
+        raise ValueError("existing feature_directory must be a nonempty string")
+    if previous == feature_directory:
+        return {"feature_directory": feature_directory, "previous_feature_directory": previous, "changed": False}
+    data["feature_directory"] = feature_directory
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=metadata, prefix=".feature-", delete=False) as handle:
+            temporary_path = Path(handle.name)
+            json.dump(data, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+        os.chmod(temporary_path, stat.S_IMODE(pointer.stat().st_mode) if pointer.exists() else 0o644)
+        os.replace(temporary_path, pointer)
+    finally:
+        if temporary_path is not None and temporary_path.exists():
+            temporary_path.unlink()
+    return {"feature_directory": feature_directory, "previous_feature_directory": previous, "changed": True}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -781,6 +831,8 @@ def main(argv: list[str] | None = None) -> int:
     loop_route_parser.add_argument("--human-gate-step", action="append", default=[])
     condition_parser = subparsers.add_parser("loop-condition", help="evaluate the reviewed loop condition from JSON on stdin")
     condition_parser.add_argument("--condition", required=True)
+    activate_parser = subparsers.add_parser("activate-feature", help="activate an approved directory without creating a spec")
+    activate_parser.add_argument("--project", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "inspect":
         verify_controller_install(args.project, args.skill_id, args.workflow_id)
@@ -796,7 +848,9 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(definition, sort_keys=True))
         return 0
     payload = json.load(sys.stdin)
-    if args.command == "question":
+    if args.command == "activate-feature":
+        result = activate_feature(args.project, payload["feature_directory"])
+    elif args.command == "question":
         result = validate_child_question(payload, args.step_id)
     elif args.command == "answer":
         result = resolve_child_answer(payload["request"], payload["answer"], args.child_id, args.target_child_id)

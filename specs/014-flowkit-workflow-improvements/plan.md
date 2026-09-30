@@ -14,6 +14,7 @@ The main sections describe the selected runtime approach, authority checks, sour
 - [Constitution Check](#constitution-check)
 - [Project Structure](#project-structure)
 - [Design Sequence](#design-sequence)
+- [Selection and authoring split](#selection-and-authoring-split)
 
 ## Summary
 
@@ -39,7 +40,7 @@ Review all eight FlowKit workflows branch by branch, then make each invoked work
 
 **Constraints**: Human-directed workflow scope and exact consequential gates; no nested FlowKit workflow invocation or automatic next phase; no command-success-as-clean shortcut; five-question Clarify command cap per session; independently reviewable workflow packages and manual fallback; portable evidence without raw transcripts or absolute paths.
 
-**Scale/Scope**: Eight existing workflow IDs, all possible branches and delegated assignments, one selected feature/workflow invocation at a time, and up to five correction passes for each reviewed corrective loop.
+**Scale/Scope**: Nine active workflow IDs plus the deprecated Start Feature source, all possible branches and delegated assignments, one selected feature/workflow invocation at a time, and up to five correction passes for each reviewed corrective loop.
 
 ## Loop Entry and Progress
 
@@ -129,3 +130,10 @@ workflows/README.md
 4. Update each source workflow in small reviewable groups. Include evidence classification and re-entry after routine correction; keep exact patch and consequential gates; stop at the current workflow's conclusion without starting the next phase. Validate each package's manual path with automated fixtures.
 5. Review step responsibilities against the four starting agent names, approve any justified new name before source use, and add usable repository-local native configurations before full direct-Codex story checks. Retire probe-only behavior from ordinary workflow use without changing consumer bundle ownership.
 6. Run automated graph, recovery, branch, manual-fallback, and disposable-consumer checks. Capture native agent-selection evidence through the supported client when observable; otherwise mark that claim unverified. Generate a validation report with versions, digests, source coordinates, results, skipped paths, and limitations. Once automated validation is complete, offer at most two concrete Codex desktop experience checks for the operator: one representative continuation and one native-agent/gate presentation check. Record their observations separately from automated results; routine verification must not require operator checks or attestations.
+
+
+## Selection and authoring split
+
+The operator-approved split replaces Start Feature with `speckit-flow-select-feature` and `speckit-flow-specify`. Selection owns inventory, dependency discussion, exact selection approval, roadmap mutation, and active-pointer verification, without writing spec files or creating target directories. The main-task pointer step uses the shared atomic `activate-feature` helper. Specify consumes the pointer, keeps `SPECIFY_FEATURE_DIRECTORY` explicit, authors or revises only that target, verifies linkage, and runs the brief. Existing spec contents survive selection. A reserved directory is valid until authoring. Failed pointer activation after a roadmap write is reported as partial state. Deprecation is stop-only source plus retirement from the active bundle and controller inventory; historical catalog evidence is preserved. Tests cover pointer-only writes, shared brief paths, package inventory, and retirement of unchanged owned launcher files; locally modified retired files block refresh.
+
+The two replacement workflows use `blocked` for unmet prerequisites, required operator input, conflicts, ambiguity, and unapproved or deferred changes, with the cause and recovery action retained in output. Readiness and brief switches use explicit success and `blocked` cases. Linkage retains separate `linked` and `blocked` transitions to the shared outcome step because only verified linkage permits the roadmap brief. Human gate choices remain explicit and are preserved for reporting; optional `transition_labels` metadata labels their shared approval paths `approved` and `not-approved` without changing runtime choices. The validated feature-selection fallback is labeled `selected`.

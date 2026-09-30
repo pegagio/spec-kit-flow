@@ -8,7 +8,8 @@ Use the selected consumer project in the Codex task and invoke one skill at a ti
 
 | Workflow | Codex skill and display name | Required input | Delegated step agents |
 | --- | --- | --- | --- |
-| `speckit-flow-start-feature` | `$flow-kit-start-feature` — FlowKit Start Feature | `feature_request` | `list-roadmap-options`, `assess-eligibility`, `draft-specification`: Architect; `assess-created-spec-linkage`, `verify-repaired-spec-linkage`, `brief-against-roadmap`: Verifier |
+| `speckit-flow-select-feature` | `$flow-kit-select-feature` — FlowKit Select Feature | optional `feature_request` | inventory and selection preparation: Architect; activation verification: Verifier |
+| `speckit-flow-specify` | `$flow-kit-specify` — FlowKit Specify | active `.specify/feature.json` | target inspection, request preparation, drafting: Architect; linkage and brief: Verifier |
 | `speckit-flow-clarify` | `$flow-kit-clarify` — FlowKit Clarify | `feature_context` | `clarify-session`: Architect; ambiguity assessments: Verifier |
 | `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`: Architect; `verify-plan-output`: Verifier |
 | `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`: Architect; `verify-task-output`: Verifier |
@@ -42,7 +43,8 @@ Codex owns optional `model` and `model_reasoning_effort` fields and their inheri
 
 | Workflow | Core or extension commands |
 | --- | --- |
-| `speckit-flow-start-feature` | `speckit.flow-roadmap.write`, `speckit.flow-wiki.query`, `speckit.specify`, `speckit.flow-roadmap.brief` |
+| `speckit-flow-select-feature` | `speckit.flow-roadmap.write` |
+| `speckit-flow-specify` | `speckit.flow-wiki.query`, `speckit.specify`, `speckit.flow-roadmap.write`, `speckit.flow-roadmap.brief` |
 | `speckit-flow-clarify` | `speckit.clarify` |
 | `speckit-flow-plan` | `speckit.plan`, `speckit.clarify` |
 | `speckit-flow-tasks` | `speckit.tasks` |
@@ -51,18 +53,21 @@ Codex owns optional `model` and `model_reasoning_effort` fields and their inheri
 | `speckit-flow-converge` | `speckit.converge`, `speckit.specify`, `speckit.plan`, `speckit.tasks`, `speckit.analyze`, `speckit.implement` |
 | `speckit-flow-closeout` | `speckit.specify`, `speckit.plan`, `speckit.tasks`, `speckit.analyze`, `speckit.implement`, `speckit.flow-roadmap.debrief`, `speckit.flow-roadmap.write`, `speckit.flow-wiki.ingest`, `speckit.flow-wiki.lint` |
 
-## Manual start-feature path
+## Manual feature-selection path
 
-When native workflow dispatch is unavailable, the operator can follow the reviewed `speckit-flow-start-feature` source manually:
+Select Feature lists dependency-ready roadmap choices, blocked unfinished features, prerequisite chains, immediate unlock counts, and distinct downstream dependents. Discuss dependencies with the operator and wait for one exact selection or defer. Optional interest never authorizes automatic selection.
 
-1. Read the roadmap without changing it. List dependency-ready candidates with exact identifiers, titles, statuses, prerequisites, immediate unlock counts, and distinct unfinished downstream dependents. Show blocked unfinished features and text chains such as `Feature 29 -> Feature 28 -> Feature 26`, where the arrow means depends on. Include all branches and relevant prerequisite statuses. Immediate unlocks require every other prerequisite already satisfied; downstream dependents are not all immediately unblocked. Report missing references, cycles, and undefined readiness rules rather than guessing.
-2. Display the inventory and wait for the operator to select one listed exact entry or defer. A supplied feature request is optional interest, not permission to auto-select. No candidates means explain the blockers and offer only defer. Recheck the selected entry before proceeding; never silently replace it with another candidate.
-3. Query cited governing context and coverage with `speckit.flow-wiki.query`. Select one roadmap candidate and record its exact roadmap entry identifier, eligibility, dependencies, approved outcome and scope. Prepare the exact proposed status patch without applying it. Never infer the entry from its feature number alone. Stop for ambiguous identity, unsatisfied prerequisites, or missing governing context that prevents a safe draft.
-4. Present that exact patch, entry identity, feature brief, and cited context to the human operator. Apply only the approved patch with `speckit.flow-roadmap.write`; amendment, context resolution, or deferral makes no transition write. Pass the exact approved patch and entry identity explicitly to the write command.
-5. Invoke `speckit.specify` with the selected entry identity, approved outcome, scope, dependencies, and cited context explicitly included. Read the actual created spec directory from its output, `.specify/feature.json`, and files on disk.
-6. Compare its exact repository-relative directory with the `Spec dir` mapping on the exact selected roadmap entry and check that no other entry claims that directory. Write the path inside backticks with a trailing slash and no punctuation before the closing backtick.
-7. If the selected entry is uniquely identified and its mapping is missing or stale, with no competing owner for the actual directory, prepare the minimal exact `Spec dir` patch and show it to the operator. Apply only that exact approved patch with `speckit.flow-roadmap.write`, reread the roadmap, and verify the unique exact mapping. Amendment or deferral makes no roadmap change. A conflicting, ambiguous, missing, or still-invalid repaired mapping stops before the brief; report the evidence and smallest safe operator action.
-8. Both already-linked and successfully-repaired paths reach one `speckit.flow-roadmap.brief` invocation with explicit `SPEC_TARGET` and `ROADMAP_ENTRY` constraints. Present the specification and uniquely matched brief for human review through one final outcome report. A failed or mismatched brief is a blocker. Do not ask for a terminal routing choice; start any next workflow only on a separate operator instruction. Preserve created artifacts and explain non-success outcomes without undoing earlier approved changes.
+Recheck only the chosen entry. For an existing spec, preserve its directory and contents. For a new feature, propose a repository-relative target without creating it. Show the exact roadmap delta and active-pointer payload together. Only approval authorizes `speckit.flow-roadmap.write`, followed by `controller.py activate-feature` to update `.specify/feature.json`. Verify unique roadmap ownership and pointer agreement. No specification, checklist, feature directory, or branch is created. A pointer failure after the roadmap write is a reported partial state, not an implicit rollback. Stop after reporting selection; authoring is separately invoked.
+
+## Manual specification-authoring path
+
+Specify reads the active `feature_directory` and resolves its exact unique roadmap entry. A reserved target may lack a directory or spec; missing or malformed selection, escaping paths, and ambiguous mapping stop. Retrieve cited context, then prepare the authoring request from the roadmap outcome, scope, dependencies, and current decisions. Stop on material missing context or required human input.
+
+Pass `SPECIFY_FEATURE_DIRECTORY` explicitly to `speckit.specify`. Author or revise only that target, preserving existing reviewed decisions and active identity. Verify the produced directory and pointer against the selected entry. Missing or stale linkage may be repaired only through exact patch approval and fresh verification; a different generated target or pointer drift must stop rather than being legitimized by a new mapping. Both verified paths reach one roadmap brief with explicit `SPEC_TARGET` and `ROADMAP_ENTRY`, then one report. Clarify and Plan remain separate invocations.
+
+## Deprecated Start Feature
+
+`speckit-flow-start-feature` is retained as a stop-only deprecated source, with replacement links in its metadata. It is excluded from the current bundle and controller package. The former combined selection/authoring path is replaced by the two workflows above; invoking the deprecated source does not launch either replacement.
 
 ## Manual clarification path
 

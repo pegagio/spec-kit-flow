@@ -197,6 +197,8 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 
 - [X] T055 [US2] Begin Start Feature with a read-only candidate and dependency inventory and an explicit human feature-selection gate; distinguish immediate unlocks from downstream dependents, support validated dynamic gate option lists, make the feature request optional, preserve exact selected identity through later handoffs, and update diagram, manual path, controller protocol/version, and tests.
 
+- [X] T056 [US2] Split Start Feature into separately invoked Select Feature and Specify workflows; activate a uniquely mapped target through exact approval and pointer-only updates without spec writes, author that same target with context and brief, deprecate the combined source, and update launchers, package lifecycle, diagrams, contracts, and tests.
+
 **Checkpoint**: Automated evidence and documentation cover the delivered source; optional desktop observations are separate. Release, roadmap verification, Git integration, and feature acceptance retain their own explicit decisions.
 
 ## Dependencies and Execution Order

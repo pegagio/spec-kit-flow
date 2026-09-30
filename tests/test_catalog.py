@@ -28,14 +28,15 @@ class CatalogReleaseTests(unittest.TestCase):
             self.assertEqual(0, catalog.main())
         remove.assert_called_once_with(Path("/consumer"))
 
-    def test_controllerManifest_hasEightStableBindingsAndDisplayNames(self) -> None:
+    def test_controllerManifest_hasNineStableBindingsAndDisplayNames(self) -> None:
         manifest = catalog.controller_manifest()
         self.assertEqual("flow-kit-controllers", manifest["package_id"])
         self.assertEqual("1.0.10.dev0+pegagio.2", manifest["specify_cli_version"])
-        self.assertEqual(8, len(manifest["controllers"]))
+        self.assertEqual(9, len(manifest["controllers"]))
         self.assertEqual(
             [
-                ("flow-kit-start-feature", "FlowKit Start Feature", "speckit-flow-start-feature"),
+                ("flow-kit-select-feature", "FlowKit Select Feature", "speckit-flow-select-feature"),
+                ("flow-kit-specify", "FlowKit Specify", "speckit-flow-specify"),
                 ("flow-kit-clarify", "FlowKit Clarify", "speckit-flow-clarify"),
                 ("flow-kit-plan", "FlowKit Plan", "speckit-flow-plan"),
                 ("flow-kit-tasks", "FlowKit Tasks", "speckit-flow-tasks"),
@@ -47,7 +48,7 @@ class CatalogReleaseTests(unittest.TestCase):
             [(item["skill_id"], item["display_name"], item["workflow_id"]) for item in manifest["controllers"]],
         )
 
-    def test_controllerPackage_containsSharedRuntimeAndEightCodexSkills(self) -> None:
+    def test_controllerPackage_containsSharedRuntimeAndNineCodexSkills(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             archive = Path(temporary) / "controller-package.zip"
             catalog.package_controller(archive)
@@ -57,8 +58,8 @@ class CatalogReleaseTests(unittest.TestCase):
                 self.assertIn(".specify/flow-kit/manifest.yml", names)
                 self.assertIn(".specify/flow-kit/controller-protocol.md", names)
                 self.assertIn(".specify/flow-kit/scripts/python/controller.py", names)
-                self.assertEqual(8, sum(name.endswith("/SKILL.md") and name.startswith(".agents/skills/flow-kit-") for name in names))
-                self.assertEqual(8, sum(name.endswith("/agents/openai.yaml") and name.startswith(".agents/skills/flow-kit-") for name in names))
+                self.assertEqual(9, sum(name.endswith("/SKILL.md") and name.startswith(".agents/skills/flow-kit-") for name in names))
+                self.assertEqual(9, sum(name.endswith("/agents/openai.yaml") and name.startswith(".agents/skills/flow-kit-") for name in names))
                 for skill_id, display_name, _ in catalog.CONTROLLER_BINDINGS:
                     metadata = members[f".agents/skills/{skill_id}/agents/openai.yaml"]
                     self.assertIn(f'display_name: "{display_name}"', metadata)
@@ -66,10 +67,15 @@ class CatalogReleaseTests(unittest.TestCase):
 
     def test_namedAgentAssignments_matchReviewedWorkflowPackage(self) -> None:
         expectations = {
-            "speckit-flow-start-feature": {
-                "list-roadmap-options": "Architect", "assess-eligibility": "Architect", "draft-specification": "Architect",
-                "assess-created-spec-linkage": "Verifier", "verify-repaired-spec-linkage": "Verifier",
-                "brief-against-roadmap": "Verifier",
+            "speckit-flow-start-feature": {},
+            "speckit-flow-select-feature": {
+                "list-roadmap-options": "Architect", "prepare-feature-selection": "Architect",
+                "verify-feature-selection": "Verifier",
+            },
+            "speckit-flow-specify": {
+                "inspect-active-feature": "Architect", "prepare-specification-request": "Architect",
+                "draft-specification": "Architect", "assess-created-spec-linkage": "Verifier",
+                "verify-repaired-spec-linkage": "Verifier", "brief-against-roadmap": "Verifier",
             },
             "speckit-flow-clarify": {
                 "clarify-session": "Architect", "assess-clarification-after-session": "Verifier",
@@ -112,7 +118,7 @@ class CatalogReleaseTests(unittest.TestCase):
             },
         }
         expected_versions = {
-            "speckit-flow-start-feature": "0.5.1", "speckit-flow-clarify": "0.4.1",
+            "speckit-flow-start-feature": "0.6.0", "speckit-flow-select-feature": "0.1.0", "speckit-flow-specify": "0.1.0", "speckit-flow-clarify": "0.4.1",
             "speckit-flow-plan": "0.4.1", "speckit-flow-tasks": "0.4.1",
             "speckit-flow-analyze-remediate": "0.4.1", "speckit-flow-implement": "0.4.1",
             "speckit-flow-converge": "0.4.1", "speckit-flow-closeout": "0.5.0",
@@ -167,13 +173,37 @@ class CatalogReleaseTests(unittest.TestCase):
             catalog.install_controller_package(project, archive, refresh=False, source_digest=catalog.digest(archive), catalog_status="snapshot")
             record = json.loads((project / ".specify/flow-kit/skills-install.json").read_text(encoding="utf-8"))
             self.assertEqual("installed", record["status"])
-            self.assertEqual(8, len(record["controllers"]))
+            self.assertEqual(9, len(record["controllers"]))
             catalog.remove_controller_package(project)
             self.assertTrue(recovery.is_file())
             self.assertTrue(feedback.is_file())
             self.assertEqual("consumer-owned", local_skill.read_text(encoding="utf-8"))
             self.assertFalse((project / ".specify/flow-kit/skills-install.json").exists())
             self.assertFalse((project / ".agents/skills/flow-kit-tasks").exists())
+
+    def testRefreshRetiresUnchangedDeprecatedLauncherButBlocksEditedCopy(self) -> None:
+        for edited in (False, True):
+            with self.subTest(edited=edited), tempfile.TemporaryDirectory() as temporary:
+                project = Path(temporary)
+                archive = project / "controllers.zip"
+                catalog.package_controller(archive)
+                catalog.install_controller_package(project, archive, refresh=False, source_digest=catalog.digest(archive), catalog_status="snapshot")
+                legacy = project / ".agents/skills/flow-kit-start-feature/SKILL.md"
+                legacy.parent.mkdir(parents=True)
+                legacy.write_text("legacy owned launcher")
+                record_path = project / ".specify/flow-kit/skills-install.json"
+                record = json.loads(record_path.read_text())
+                record["files"][legacy.relative_to(project).as_posix()] = catalog.digest(legacy)
+                record_path.write_text(json.dumps(record))
+                if edited:
+                    legacy.write_text("consumer modified launcher")
+                    with self.assertRaisesRegex(ValueError, "obsolete.*blocks refresh"):
+                        catalog.install_controller_package(project, archive, refresh=True, source_digest=catalog.digest(archive), catalog_status="snapshot")
+                    self.assertEqual("consumer modified launcher", legacy.read_text())
+                else:
+                    catalog.install_controller_package(project, archive, refresh=True, source_digest=catalog.digest(archive), catalog_status="snapshot")
+                    self.assertFalse(legacy.exists())
+                    self.assertTrue((project / ".agents/skills/flow-kit-select-feature/SKILL.md").exists())
 
     def test_controllerInstall_preflightsNameCollisionBeforeWriting(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -196,7 +226,7 @@ class CatalogReleaseTests(unittest.TestCase):
             catalog.install_controller_package(project, archive, refresh=True, source_digest=catalog.digest(archive), catalog_status="released")
             record = json.loads((project / ".specify/flow-kit/skills-install.json").read_text(encoding="utf-8"))
             self.assertEqual("installed", record["status"])
-            self.assertEqual(8, len(record["controllers"]))
+            self.assertEqual(9, len(record["controllers"]))
             self.assertTrue((project / ".agents/skills/flow-kit-tasks/SKILL.md").is_file())
 
     def test_controllerRefresh_legacyBundleRejectsConsumerSkillCollision(self) -> None:

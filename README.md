@@ -1,6 +1,6 @@
 # Spec Kit Flow
 
-Spec Kit Flow is a human-directed, merge-bounded flow-back workbench for Spec-Driven Development. It packages eight reusable Spec Kit workflows, portable consumer feedback, and a version-pinned bundle that composes independently maintained roadmap and wiki extensions.
+Spec Kit Flow is a human-directed, merge-bounded flow-back workbench for Spec-Driven Development. It packages nine active reusable Spec Kit workflows, portable consumer feedback, and a version-pinned bundle that composes independently maintained roadmap and wiki extensions.
 
 This repository owns the generic workflow and feedback source. The repository and bundle ID are `spec-kit-flow`; its workflows use `speckit-flow-<purpose>` IDs, and the consumer feedback extension uses `flow-feedback`. The independent `spec-kit-flow-roadmap` and `spec-kit-flow-wiki` repositories publish the extension IDs `flow-roadmap` and `flow-wiki`.
 
@@ -13,7 +13,7 @@ This repository owns the generic workflow and feedback source. The repository an
 
 ## What the bundle installs
 
-The [bundle source manifest](bundles/spec-kit-flow/bundle.yml) is version `0.5.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The changed controller source is version `0.2.0`; the checked-in catalog still contains the earlier `0.4.1` bundle and `0.1.1` controller release. The bundle pins these extensions:
+The [bundle source manifest](bundles/spec-kit-flow/bundle.yml) is version `0.10.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The changed controller source is version `0.4.0`; the checked-in catalog still contains the earlier `0.4.1` bundle and `0.1.1` controller release. The bundle pins these extensions:
 
 | Extension ID | Version | Purpose |
 | --- | --- | --- |
@@ -21,24 +21,25 @@ The [bundle source manifest](bundles/spec-kit-flow/bundle.yml) is version `0.5.0
 | `flow-wiki` | `2.0.1` | Cited project context, ingestion, and linting; source: `spec-kit-flow-wiki` |
 | `flow-feedback` | `0.2.1` | Local observation capture and portable report export; source: this repository |
 
-It also installs the eight workflows in [`workflows/`](workflows/README.md):
+It also installs the nine active workflows in [`workflows/`](workflows/README.md):
 
 | Workflow ID | Version | Role |
 | --- | --- | --- |
-| `speckit-flow-start-feature` | `0.4.0` | Assess an eligible roadmap feature, obtain approval for its exact patch, query context, specify, and brief |
-| `speckit-flow-clarify` | `0.3.0` | Run one bounded clarification session |
-| `speckit-flow-plan` | `0.3.0` | Review readiness and create the technical plan |
-| `speckit-flow-tasks` | `0.3.0` | Generate implementation tasks separately from planning |
-| `speckit-flow-analyze-remediate` | `0.3.0` | Analyze artifact consistency and route bounded remediation |
-| `speckit-flow-implement` | `0.3.0` | Implement eligible tasks within the selected agent's scope |
-| `speckit-flow-converge` | `0.3.0` | Compare implementation with the feature artifacts and close gaps |
-| `speckit-flow-closeout` | `0.4.0` | Review completion, roadmap verification, wiki maintenance, and commit readiness through explicit gates |
+| `speckit-flow-select-feature` | `0.1.0` | List and discuss dependencies, select and activate a feature without authoring a spec |
+| `speckit-flow-specify` | `0.1.0` | Author the active specification with cited context, verified linkage, and a roadmap brief |
+| `speckit-flow-clarify` | `0.4.1` | Run one bounded clarification session |
+| `speckit-flow-plan` | `0.4.1` | Review readiness and create the technical plan |
+| `speckit-flow-tasks` | `0.4.1` | Generate implementation tasks separately from planning |
+| `speckit-flow-analyze-remediate` | `0.4.1` | Analyze artifact consistency and route bounded remediation |
+| `speckit-flow-implement` | `0.4.1` | Implement eligible tasks within the selected agent's scope |
+| `speckit-flow-converge` | `0.4.1` | Compare implementation with the feature artifacts and close gaps |
+| `speckit-flow-closeout` | `0.5.0` | Review completion, roadmap verification, wiki maintenance, and commit readiness through explicit gates |
 
 The bundle does not include a preset or `speckit-flow-feedback-maintainer`. Maintainer intake belongs in this source environment, not a consumer project.
 
 ## Installation
 
-The checked-in catalog contains the locally built `0.4.1` release, including controller package `0.1.1` and the eight FlowKit controller skills. Source versions `0.5.0` and `0.2.0` are not released. The normal catalog installer verifies that release metadata matches source; it rejects the old catalog from this unreleased source checkout. Use a checkout matching the release for ordinary installation, or use a disposable initialized consumer and development-snapshot mode to validate current source. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. The catalog has not been published or pushed.
+The checked-in catalog contains the locally built `0.4.1` release, including controller package `0.1.1` and the eight FlowKit controller skills. Current source bundle `0.10.0` and controller `0.4.0` are not released. The normal catalog installer verifies that release metadata matches source; it rejects the old catalog from this unreleased source checkout. Use a checkout matching the release for ordinary installation, or use a disposable initialized consumer and development-snapshot mode to validate current source. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. The catalog has not been published or pushed.
 
 To install the checked-in release from a checkout matching that release, run `mise run catalog:install /path/to/my-project` after preparing the checkout. To validate source changes that have not reached the catalog, create and initialize a disposable consumer under the system temporary directory, then use development-snapshot mode:
 
@@ -69,11 +70,12 @@ The same task serves the temporary catalogs during refresh and verifies controll
 
 ## Using the workflows
 
-Prepare a project constitution, use `speckit.flow-roadmap.write` for an approved roadmap, then use `speckit.flow-wiki.init` and `speckit.flow-wiki.ingest` to establish cited project context. In a project installed through the FlowKit catalog route, invoke one named controller skill from the selected Codex task. The eight picker names and skill IDs are:
+Prepare a project constitution, use `speckit.flow-roadmap.write` for an approved roadmap, then use `speckit.flow-wiki.init` and `speckit.flow-wiki.ingest` to establish cited project context. In a project installed through the FlowKit catalog route, invoke one named controller skill from the selected Codex task. The nine active picker names and skill IDs are:
 
 | Codex display name | Skill ID | Required input |
 | --- | --- | --- |
-| FlowKit Start Feature | `flow-kit-start-feature` | `feature_request` |
+| FlowKit Select Feature | `flow-kit-select-feature` | optional `feature_request` |
+| FlowKit Specify | `flow-kit-specify` | active `.specify/feature.json` |
 | FlowKit Clarify | `flow-kit-clarify` | `feature_context` |
 | FlowKit Plan | `flow-kit-plan` | `feature_context` |
 | FlowKit Tasks | `flow-kit-tasks` | `feature_context` |
@@ -85,7 +87,9 @@ Prepare a project constitution, use `speckit.flow-roadmap.write` for an approved
 Use the `$skill-id key=value` form. For example, in the selected project's Codex task:
 
 ```text
-$flow-kit-start-feature feature_request="Start feature 013"
+$flow-kit-select-feature
+# Separately, after activation:
+$flow-kit-specify
 ```
 
 The remaining workflows use the required `feature_context` input, for example `$flow-kit-tasks feature_context=013`. Each controller checks the compatible Specify runtime and installed workflow before starting. In the updated source workflows, every delegated step names a reviewed Codex custom agent. The controller validates assignments across all branches and probes each distinct native agent before workflow work. Codex loads the consumer-owned agent configuration, including optional model and effort settings; FlowKit has no per-run agent, model, or effort override. Native subagent activity shows a task label containing the agent name, and Codex may show model and effort in the child pane. The task keeps questions and gates in the main chat, sends answers back to the same child, and shows results and workspace diffs. The checked-in `0.4.1` release retains the earlier concrete-model behavior; use a matching release checkout for that version.
@@ -93,15 +97,16 @@ The remaining workflows use the required `feature_context` input, for example `$
 A typical operator-directed route is:
 
 ```text
-start-feature → clarify (as needed) → plan → tasks → analyze-remediate
+select-feature → specify → clarify (as needed) → plan → tasks → analyze-remediate
               → implement → converge → closeout
 ```
 
 The native CLI path remains available. Inspect an installed workflow and supply its required context when running it. For example:
 
 ```sh
-specify workflow info speckit-flow-start-feature
-specify workflow run speckit-flow-start-feature --input "feature_request=Describe the chosen roadmap feature"
+specify workflow info speckit-flow-select-feature
+specify workflow info speckit-flow-specify
+specify workflow run speckit-flow-select-feature
 ```
 
 The workflows preserve a manual-prompt fallback. Clarification may need another session after the current command's five-question cap. Analyze after task generation or consequential artifact reconciliation before implementation; converge after implementation until gaps are resolved. Planning and task generation remain separate. The closeout workflow requires a separately approved feature-completion operation and does not create one. The native `specify workflow run` path does not apply FlowKit's `reasoning_effort` values and does not provide the controller's child-chat experience.
@@ -113,3 +118,6 @@ Human review controls roadmap patches, material scope and authority changes, amb
 Consumers may use `flow-feedback` to capture local observations and export a portable report. Its commands are `speckit.flow-feedback.capture` and `speckit.flow-feedback.report`. Capture and export do not change workflow source or project authority; maintainer intake is a separate step. See [feedback guidance](docs/feedback.md).
 
 The [release metadata](catalog/release.json) records packaged versions, source commits, digests, and local release status. The [installation guide](docs/installation.md) documents the tested CLI and local catalog route. The disposable lifecycle test proves bundle installation and native dispatch with a no-op Codex executable; it does not prove live-agent behavior or general consumer compatibility.
+
+
+Start Feature is deprecated and excluded from current source bundle bindings. Its retained source only reports the replacement workflows and stops. Select Feature never creates or changes `spec.md`; an absent target directory is valid until Specify is separately invoked. Existing specifications remain untouched during selection.

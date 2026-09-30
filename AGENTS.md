@@ -13,7 +13,7 @@ Spec Kit Flow is the reusable, human-directed, merge-bounded flow-back workbench
 
 ## Working conventions
 
-- Keep the eight `workflows/speckit-flow-*/workflow.yml` packages independently reviewable and preserve a manual-prompt fallback. Keep planning and task generation separate.
+- Keep the nine active `workflows/speckit-flow-*/workflow.yml` packages independently reviewable; retain Start Feature as a stop-only deprecated source and preserve a manual-prompt fallback. Keep planning and task generation separate.
 - Treat the five-question clarification cap as a current command/template behavior. A custom preset and its continuation policy remain unapproved follow-up work; do not imply the existing workflow removes the cap.
 - Validate source definitions and bundle behavior in disposable initialized consumers. A no-op Codex executable can test native dispatch, but it does not prove live-agent behavior. Preserve consumer-owned feedback and unrelated components across bundle removal.
 - Record component IDs, versions, source digests, and observed results when changing a package or triaging feedback. Keep reports portable: no raw transcripts, secrets, or absolute host paths.

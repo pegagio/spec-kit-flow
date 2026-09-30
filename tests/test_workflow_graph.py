@@ -58,16 +58,20 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.inventory = load_module("flowkit_workflow_inventory", ROOT / "tools/validate_workflows.py")
 
-    def test_allEightWorkflowsExposeStopsAndAssignmentsWithRequiredGates(self) -> None:
+    def test_activeAndDeprecatedWorkflowsExposeStopsAndAssignmentsWithRequiredGates(self) -> None:
         projections = [self.inventory.project_workflow(item) for item in self.inventory.load_workflows()]
         expected = {
-            "speckit-flow-start-feature", "speckit-flow-clarify", "speckit-flow-plan", "speckit-flow-tasks",
+            "speckit-flow-start-feature", "speckit-flow-select-feature", "speckit-flow-specify", "speckit-flow-clarify", "speckit-flow-plan", "speckit-flow-tasks",
             "speckit-flow-analyze-remediate", "speckit-flow-implement", "speckit-flow-converge", "speckit-flow-closeout",
         }
         self.assertEqual(expected, {item["workflow_id"] for item in projections})
         for projection in projections:
             with self.subTest(workflow=projection["workflow_id"]):
                 self.assertTrue(projection["entry_step_id"])
+                if projection["workflow_id"] == "speckit-flow-start-feature":
+                    self.assertFalse(projection["assignments"])
+                    self.assertFalse(projection["branches"])
+                    continue
                 if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan", "speckit-flow-tasks", "speckit-flow-analyze-remediate", "speckit-flow-converge"}:
                     if projection["workflow_id"] in {"speckit-flow-analyze-remediate", "speckit-flow-converge"}:
                         self.assertTrue(projection["branches"])
@@ -124,34 +128,23 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
 
     def testInventoryCLIListsAllWorkflows(self) -> None:
         projections = [self.inventory.project_workflow(item) for item in self.inventory.load_workflows()]
-        self.assertEqual(8, len(projections))
+        self.assertEqual(10, len(projections))
         self.assertTrue(all("continuation_edges" in item and "bounded_stops" in item for item in projections))
 
-    def testStartFeatureManualFallbackAndLinkageFixtureStayExplicit(self) -> None:
-        workflow = next(item for item in self.inventory.load_workflows()
-                        if item["workflow"]["id"] == "speckit-flow-start-feature")
-        graph = self.inventory.project_workflow(workflow)
-        self.assertEqual("0.5.1", graph["version"])
-        self.assertEqual(3, len(graph["human_decisions"]))
-        self.assertEqual("list-roadmap-options", graph["entry_step_id"])
-        self.assertEqual(["speckit.flow-wiki.query", "speckit.flow-roadmap.write", "speckit.specify",
-                          "speckit.flow-roadmap.write", "speckit.flow-roadmap.brief"], commands(workflow["steps"]))
-        self.assertIn("assess-created-spec-linkage", {item["step_id"] for item in graph["nodes"]})
-        self.assertIn("verify-repaired-spec-linkage", {item["step_id"] for item in graph["nodes"]})
-        readme = (ROOT / "workflows/README.md").read_text(encoding="utf-8")
-        manual = readme.split("## Manual start-feature path", 1)[1].split("## Manual clarification path", 1)[0]
-        for required in (
-            "exact roadmap entry identifier", "Never infer the entry from its feature number alone",
-            "SPEC_TARGET", "ROADMAP_ENTRY", "minimal exact `Spec dir` patch",
-            "Apply only that exact approved patch", "no other entry claims that directory",
-            "no punctuation before the closing backtick",
-            "Amendment or deferral makes no roadmap change",
-        ):
-            self.assertIn(required, manual)
-        fixture = json.loads((ROOT / "tests/consumer-fixtures/start-feature-linkage.json").read_text(encoding="utf-8"))
-        self.assertEqual(8, len(fixture["scenarios"]))
-        self.assertEqual({"linked", "repairable", "conflict", "ambiguous"},
-                         {case["observed_state"] for case in fixture["scenarios"]})
+    def testSelectionAndSpecificationSeparateMutationAuthority(self) -> None:
+        workflows = {w["workflow"]["id"]: w for w in self.inventory.load_workflows()}
+        selection = workflows["speckit-flow-select-feature"]
+        authoring = workflows["speckit-flow-specify"]
+        self.assertEqual(["speckit.flow-roadmap.write"], commands(selection["steps"]))
+        self.assertNotIn("speckit.specify", commands(selection["steps"]))
+        self.assertEqual(2, len(self.inventory.project_workflow(selection)["human_decisions"]))
+        self.assertEqual(1, len(self.inventory.project_workflow(authoring)["human_decisions"]))
+        self.assertEqual("inspect-active-feature", authoring["steps"][0]["id"])
+        self.assertEqual(["speckit.flow-wiki.query", "speckit.specify", "speckit.flow-roadmap.write", "speckit.flow-roadmap.brief"], commands(authoring["steps"]))
+        deprecated = workflows["speckit-flow-start-feature"]
+        self.assertTrue(deprecated["workflow"]["deprecated"])
+        self.assertEqual([], commands(deprecated["steps"]))
+        self.assertEqual(1, len(deprecated["steps"]))
 
     def testPlanGraphLoopsThroughCorePlanningAndOutputVerification(self) -> None:
         workflow = next(item for item in self.inventory.load_workflows()

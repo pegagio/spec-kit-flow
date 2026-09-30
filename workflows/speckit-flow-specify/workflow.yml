@@ -1,0 +1,136 @@
+schema_version: '1.0'
+workflow:
+  id: speckit-flow-specify
+  name: Author Active Specification
+  version: "0.1.0"
+  author: pegagio
+  description: Author the selected active specification with cited context, verified roadmap linkage, and a shared roadmap brief.
+requires:
+  speckit_version: '>=1.0.10.dev0'
+  integrations:
+    any:
+      - codex
+inputs:
+  integration:
+    type: string
+    default: codex
+    enum:
+      - codex
+  linkage_patch_decision:
+    type: string
+    default: ''
+steps:
+  - id: inspect-active-feature
+    type: prompt
+    prompt: >-
+      Read .specify/feature.json and the roadmap without modifying either. Return state ready or blocked; exact selected_entry_id; actual_spec_dir ending in slash; feature_brief containing approved outcome, scope, and dependencies; and evidence. Blocked includes required operator input; give the cause, question, and recovery action. Resolve only the active feature_directory and the unique roadmap entry whose Spec dir matches it. A reserved directory or missing spec.md is valid for authoring; do not create another feature or renumber the target. Missing or malformed pointer, escaping paths, absent or competing roadmap ownership, or unsettled product/authority/scope decisions stop with the exact operator action. Do not auto-select from the roadmap or invoke selection.
+    flow_kit:
+      delegated: true
+      agent: Architect
+  - id: route-active-feature
+    type: switch
+    expression: '{{ steps.inspect-active-feature.output.state }}'
+    cases:
+      ready:
+        - id: retrieve-governing-context
+          command: speckit.flow-wiki.query
+          integration: '{{ inputs.integration }}'
+          input:
+            args: >-
+              For exact operator-selected roadmap entry {{ steps.inspect-active-feature.output.selected_entry_id }}, retrieve cited governing decisions, constraints, dependencies, and coverage classification before any roadmap mutation. Return the cited context and coverage gaps in a report output field. Report Partial or Uncovered rather than inventing a fact. Do not change the roadmap or start another workflow.
+        - id: prepare-specification-request
+          type: prompt
+          prompt: >-
+            Prepare specification authoring for exact active entry {{ steps.inspect-active-feature.output.selected_entry_id }} at {{ steps.inspect-active-feature.output.actual_spec_dir }} using this approved feature brief: {{ steps.inspect-active-feature.output.feature_brief }} and cited context: {{ steps.retrieve-governing-context.output.report }}. Return state ready or blocked and specification_args. Blocked includes missing prerequisites and required operator input; report the cause and recovery action. Ready requires sufficient governing context and no unapproved consequential decision. Include explicit SPECIFY_FEATURE_DIRECTORY equal to the active directory in specification_args. Author or revise only that specification, preserving reviewed decisions and existing content; do not select a new feature, create another target, or infer lifecycle acceptance.
+          flow_kit:
+            delegated: true
+            agent: Architect
+        - id: route-specification-readiness
+          type: switch
+          expression: '{{ steps.prepare-specification-request.output.state }}'
+          cases:
+            ready:
+              - id: draft-specification
+                flow_kit:
+                  delegated: true
+                  agent: Architect
+                command: speckit.specify
+                integration: '{{ inputs.integration }}'
+                input:
+                  args: >-
+                    {{ steps.prepare-specification-request.output.specification_args }} Return actual_spec_dir and the authoring report. Honor the explicit SPECIFY_FEATURE_DIRECTORY and preserve .specify/feature.json identity; do not invoke another workflow.
+              - id: assess-created-spec-linkage
+                flow_kit:
+                  delegated: true
+                  agent: Verifier
+                type: prompt
+                integration: '{{ inputs.integration }}'
+                prompt: >-
+                  Inspect the created specification at {{ steps.draft-specification.output.actual_spec_dir }} and .specify/feature.json feature_directory, then compare them with every roadmap Spec dir mapping. Use exact selected_entry_id {{ steps.inspect-active-feature.output.selected_entry_id }} and never infer identity from feature number alone. Return one structured result with state (linked, repairable, or blocked), selected_entry_id, actual_spec_dir, and evidence. Format actual_spec_dir as a repository-relative directory ending in slash. Use linked only when that one entry has exactly one exact mapping to this directory and no other entry claims the same directory. Use repairable only when the selected entry is uniquely identified and its Spec dir is missing or stale, no other entry claims the actual directory, and you can present a minimal exact patch to that row as proposed_patch. Write the patch as the exact Markdown row with the path inside backticks and no trailing punctuation inside the backticks. Return blocked with the exact cause and recovery action for conflicting ownership, ambiguous identity, or required operator input. Do not edit the roadmap. Require the observed directory to equal the active target {{ steps.inspect-active-feature.output.actual_spec_dir }}; return blocked for unexpected target creation or pointer drift, never authorize a roadmap patch to legitimize a new target.
+              - id: route-created-spec-linkage
+                type: switch
+                expression: '{{ steps.assess-created-spec-linkage.output.state }}'
+                cases:
+                  repairable:
+                    - id: review-spec-dir-patch
+                      type: gate
+                      message: |-
+                        Review this exact Spec dir patch for roadmap entry {{ steps.assess-created-spec-linkage.output.selected_entry_id }} and directory {{ steps.assess-created-spec-linkage.output.actual_spec_dir }}:
+                        {{ steps.assess-created-spec-linkage.output.proposed_patch }}
+                        Approve only this patch verbatim; amendment or deferral makes no roadmap change.
+                      options:
+                        - approve-exact-patch
+                        - amend
+                        - defer
+                      verdict_input: linkage_patch_decision
+                      on_reject: skip
+                    - id: route-spec-dir-patch-decision
+                      type: switch
+                      expression: '{{ steps.review-spec-dir-patch.output.choice }}'
+                      transition_labels:
+                        approve-exact-patch: approved
+                        default: not-approved
+                      cases:
+                        approve-exact-patch:
+                          - id: apply-approved-spec-dir-patch
+                            command: speckit.flow-roadmap.write
+                            integration: '{{ inputs.integration }}'
+                            input:
+                              args: >-
+                                Apply only this exact Spec dir patch, which was explicitly approved at review-spec-dir-patch, for roadmap entry {{ steps.assess-created-spec-linkage.output.selected_entry_id }} and actual directory {{ steps.assess-created-spec-linkage.output.actual_spec_dir }}: {{ steps.assess-created-spec-linkage.output.proposed_patch }}. Do not infer the target from its feature number or broaden the patch.
+                          - id: verify-repaired-spec-linkage
+                            flow_kit:
+                              delegated: true
+                              agent: Verifier
+                            type: prompt
+                            integration: '{{ inputs.integration }}'
+                            prompt: >-
+                              Re-read the roadmap after the approved write and re-check .specify/feature.json plus the actual created spec directory. Return a structured result with state and fresh evidence. Return state linked only if selected_entry_id {{ steps.assess-created-spec-linkage.output.selected_entry_id }} is the unique exact owner of actual_spec_dir {{ steps.assess-created-spec-linkage.output.actual_spec_dir }}. The directory and pointer must also still equal the original active target {{ steps.inspect-active-feature.output.actual_spec_dir }}; otherwise return blocked. For any failed verification return blocked with the exact cause and recovery action; do not propose another repair in this invocation. Do not edit the roadmap.
+                      default: []
+                  linked: []
+                  blocked: []
+            blocked: []
+      blocked: []
+  - id: prepare-specification-outcome
+    type: prompt
+    prompt: >-
+      Use only completed outputs from this invocation. Return state ready-for-brief or blocked and brief_args for a verified link. A blocked result records the cause, any human question or original gate choice, and the smallest recovery action. Explicit amendments or deferrals also stop through blocked without being treated as approval. Authoring requires a ready active target and sufficient context; otherwise skip the brief. Both an initially linked directory and an exactly approved repair with fresh verify-repaired-spec-linkage state linked reach the shared brief. The directory must still equal the original active target; invalid states, command failure, pointer drift, conflicts, ambiguous ownership, amendments, and deferrals cannot authorize a brief. Construct explicit SPEC_TARGET and ROADMAP_ENTRY from the verified pair. Preserve partial artifacts and report the exact blocker or recovery action without invoking another workflow.
+  - id: route-specification-outcome
+    type: switch
+    expression: '{{ steps.prepare-specification-outcome.output.state }}'
+    cases:
+      ready-for-brief:
+        - id: brief-against-roadmap
+          flow_kit:
+            delegated: true
+            agent: Verifier
+          command: speckit.flow-roadmap.brief
+          integration: '{{ inputs.integration }}'
+          input:
+            args: >-
+              Run the roadmap brief with these exact verified constraints: {{ steps.prepare-specification-outcome.output.brief_args }}. Resolve only this selected entry and actual specification directory. Return the full brief, constraints, and errors in a report output field. Do not implement or invoke another workflow.
+      blocked: []
+  - id: report-specification-outcome
+    type: prompt
+    prompt: >-
+      Present the authored or revised active specification, exact directory and roadmap entry, verified linkage, completed brief, and any approved repair. Missing, failed, or mismatched brief output is a blocker. Report stopped outcomes and partial artifacts with the exact question or recovery action. Do not claim a new spec is specced unless the roadmap records that state; any lifecycle patch requires explicit approval rather than inferred success. Stop here. Clarify, Plan, Git integration, and acceptance remain separate operator actions.

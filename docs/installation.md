@@ -2,7 +2,7 @@
 
 Use the catalog tasks in this repository to install or refresh the bundle. They serve the checked-in release packages on localhost for the duration of each command, so you do not need separate roadmap or wiki source checkouts to install it. The [bundle manifest](../bundles/spec-kit-flow/bundle.yml) and [release metadata](../catalog/release.json) are the sources for current component versions.
 
-The checked-in catalog contains the locally built `0.4.1` release and controller package `0.1.1`. Ordinary catalog install and refresh use those reviewed packages only from a checkout whose source matches that release; the installer rejects a catalog/source mismatch. The current source manifests declare bundle `0.9.7` and controller `0.3.4`, so this unreleased source checkout requires development-snapshot mode in a disposable initialized consumer until a separate release build is approved. The catalog has not been published or pushed.
+The checked-in catalog contains the locally built `0.4.1` release and controller package `0.1.1`. Ordinary catalog install and refresh use those reviewed packages only from a checkout whose source matches that release; the installer rejects a catalog/source mismatch. The current source manifests declare bundle `0.10.0` and controller `0.4.0`, so this unreleased source checkout requires development-snapshot mode in a disposable initialized consumer until a separate release build is approved. The catalog has not been published or pushed.
 
 ## Contents
 
@@ -52,7 +52,7 @@ For Codex skill integration, initialize a new disposable consumer with the skill
 specify init --here --force --non-interactive --integration codex --integration-options="--skills"
 ```
 
-The supported catalog install also installs eight direct FlowKit skills, shared controller files, and `.specify/flow-kit/skills-install.json`. Native `specify bundle install` manages the workflows and extensions, not those direct skills. Use the FlowKit catalog task so both parts are installed and verified together.
+The supported catalog install also installs nine direct FlowKit skills, shared controller files, and `.specify/flow-kit/skills-install.json`. Native `specify bundle install` manages the workflows and extensions, not those direct skills. Use the FlowKit catalog task so both parts are installed and verified together.
 
 After installation, adoption of project governance is a separate operator decision. Follow the [consumer adoption review](consumer-adoption.md) to inspect active agent guidance and governance, review exact changes, and record the evidence. Installation does not edit those project-owned files or confirm adoption.
 
@@ -86,7 +86,7 @@ mise run catalog:refresh .
 
 The current unreleased source checkout does not match the checked-in catalog, so these ordinary commands reject it. Validate current source in a disposable initialized consumer with the development-snapshot route above.
 
-Both catalog commands install or refresh the eight Specify workflows **and** the eight direct FlowKit Codex skills in `.agents/skills/flow-kit-*/`. They also write the separate skill ownership record under `.specify/flow-kit/`. Verify both parts from this checkout:
+Both catalog commands install or refresh the nine active Specify workflows **and** the nine direct FlowKit Codex skills in `.agents/skills/flow-kit-*/`. They also write the separate skill ownership record under `.specify/flow-kit/`. Verify both parts from this checkout:
 
 ```sh
 mise exec -- specify bundle list
@@ -95,7 +95,7 @@ ls .agents/skills/flow-kit-*/SKILL.md
 test -f .specify/flow-kit/skills-install.json
 ```
 
-The skill picker should then show FlowKit Start Feature, FlowKit Clarify, FlowKit Plan, FlowKit Tasks, FlowKit Analyze, FlowKit Implement, FlowKit Converge, and FlowKit Close Out in a Codex task for this project. If a task was already open before installation, open a fresh task to check discovery. Edit reviewed source under `controllers/`, `workflows/`, and the extension source packages, not the installed copies under `.agents/skills/` or `.specify/`. This repository ignores local installation records and installed payloads.
+The skill picker should then show FlowKit Select Feature, FlowKit Specify, FlowKit Clarify, FlowKit Plan, FlowKit Tasks, FlowKit Analyze, FlowKit Implement, FlowKit Converge, and FlowKit Close Out in a Codex task for this project. If a task was already open before installation, open a fresh task to check discovery. Edit reviewed source under `controllers/`, `workflows/`, and the extension source packages, not the installed copies under `.agents/skills/` or `.specify/`. This repository ignores local installation records and installed payloads.
 
 After installing in this checkout, new local Codex-managed worktrees copy its ignored installation records, FlowKit skill ownership record, extension and workflow payloads, and generated agent files through `.worktreeinclude`. No worktree setup script is needed. Run `mise install` in a worktree if the pinned tools are not already available there.
 
@@ -103,11 +103,14 @@ The copy reflects the source checkout's installed bundle. After changing reviewe
 
 ## Use a workflow
 
-Inspect the workflow before running it in the installed project. For example, start-feature requires an eligible roadmap candidate and governing wiki context:
+Inspect the workflow before running it in the installed project. Inspect selection and specification authoring as separate workflows:
 
 ```sh
-specify workflow info speckit-flow-start-feature
-specify workflow run speckit-flow-start-feature --input "feature_request=Describe the selected eligible feature"
+specify workflow info speckit-flow-select-feature
+specify workflow info speckit-flow-specify
+$flow-kit-select-feature
+# After selection completes, separately invoke:
+$flow-kit-specify
 ```
 
 The workflow stops at human review gates. Invoke each later workflow separately. The [workflow guide](../workflows/README.md) gives the route and manual fallback. While editing a workflow in this repository, you can run its source `workflow.yml` by path to test an uninstalled change.
@@ -116,7 +119,8 @@ In the Codex app, invoke the corresponding FlowKit skill in a task whose selecte
 
 | Display name | Skill invocation | Required input |
 | --- | --- | --- |
-| FlowKit Start Feature | `$flow-kit-start-feature` | `feature_request` |
+| FlowKit Select Feature | `$flow-kit-select-feature` | optional `feature_request` |
+| FlowKit Specify | `$flow-kit-specify` | active `.specify/feature.json` |
 | FlowKit Clarify | `$flow-kit-clarify` | `feature_context` |
 | FlowKit Plan | `$flow-kit-plan` | `feature_context` |
 | FlowKit Tasks | `$flow-kit-tasks` | `feature_context` |
@@ -178,3 +182,8 @@ mise run catalog:build /path/to/spec-kit-flow-roadmap /path/to/spec-kit-flow-wik
 ```
 
 The builder checks source IDs, versions, tags, and cleanliness, then writes deterministic extension archives and source digests to `catalog/`. Review the resulting package contents and diff before committing a release. `--snapshot` is for development packaging; install and refresh reject snapshots. Do not edit archives directly.
+
+
+## Start Feature deprecation
+
+Current source replaces Start Feature with separately invoked Select Feature and Specify. Selection updates the exactly approved roadmap delta and active pointer without writing a specification; Specify authors the active target and runs its brief. Controller refresh removes an unchanged owned `flow-kit-start-feature` launcher and installs the replacements; a locally edited retired launcher blocks refresh for operator resolution. Historical catalog releases still contain the old workflow. Do not infer replacement discovery until the current development snapshot has been installed or refreshed. The deprecated source is retained as a stop-only compatibility notice, outside active bundle bindings.

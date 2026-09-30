@@ -2,16 +2,19 @@ schema_version: "1.0"
 
 package:
   id: "flow-kit-controllers"
-  version: "0.3.4"
+  version: "0.4.0"
   compatible_codex: true
 
 requires:
   specify_cli_version: "1.0.10.dev0+pegagio.2"
 
 controllers:
-  - skill_id: "flow-kit-start-feature"
-    display_name: "FlowKit Start Feature"
-    workflow_id: "speckit-flow-start-feature"
+  - skill_id: "flow-kit-select-feature"
+    display_name: "FlowKit Select Feature"
+    workflow_id: "speckit-flow-select-feature"
+  - skill_id: "flow-kit-specify"
+    display_name: "FlowKit Specify"
+    workflow_id: "speckit-flow-specify"
   - skill_id: "flow-kit-clarify"
     display_name: "FlowKit Clarify"
     workflow_id: "speckit-flow-clarify"
