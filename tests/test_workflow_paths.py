@@ -632,86 +632,132 @@ class WorkflowPathTests(unittest.TestCase):
                 self.assertEqual(0, self.controller.main(argv))
             self.assertEqual("continue", json.loads(output.getvalue())["action"])
 
-    def testCloseoutCompletesOnlyWithEvidenceAndRepeatsDebriefBeforeExactPatchGate(self) -> None:
+    def testCloseoutUsesSharedWaterfallAndStopsBeforeCorrectionsWhenBlocked(self) -> None:
         workflow = load_workflow("speckit-flow-closeout")
         steps = workflow["steps"]
-        self.assertIn("exact repository-relative spec directory", workflow["inputs"]["feature_context"]["prompt"])
-        self.assertEqual("assess-closeout-readiness", steps[0]["id"])
-        initial_route = find_step(steps, "route-initial-closeout")
-        self.assertEqual({"complete", "continue", "needs-human", "blocked"}, set(initial_route["cases"]))
-        self.assertEqual("closeout-debrief-loop", initial_route["cases"]["continue"][0]["id"])
-        self.assertEqual("closeout-initial-consequential-gate", initial_route["cases"]["needs-human"][0]["id"])
-        self.assertEqual("closeout-initial-blocked-stop", initial_route["cases"]["blocked"][0]["id"])
-        initial_gate = initial_route["cases"]["needs-human"][0]
-        self.assertEqual(["defer", "abort"], initial_gate["options"])
-        self.assertFalse(any(node.get("type") == "gate" and "operation" in node.get("message", "").lower()
-                             for node, _, _ in walk(steps)))
-
+        self.controller.validate_workflow_graph(steps)
+        self.assertNotIn("needs-human", json.dumps(workflow))
         loop = find_step(steps, "closeout-debrief-loop")
-        self.assertEqual(5, loop["max_iterations"])
-        self.assertEqual("assess-closeout-before-pass", loop["steps"][0]["id"])
-        self.assertEqual("assess-closeout-after-pass", loop["steps"][-1]["id"])
-        self.assertIn("Draft specification Complete", loop["steps"][0]["prompt"])
-        self.assertIn("next_step_id to route-closeout-pass", loop["steps"][0]["prompt"])
-        self.assertEqual("{{ steps.assess-closeout-before-pass.output.reason_code }}",
-                         find_step(steps, "select-closeout-action")["expression"])
+        self.assertTrue(loop["assessment_before_correction"])
+        self.assertEqual(6, loop["max_iterations"])
+        self.assertEqual(["debrief-roadmap", "assess-closeout-debrief", "route-closeout-correction"],
+                         [n["id"] for n in loop["steps"]])
+        route = find_step(steps, "route-closeout-correction")
+        for state in ("complete", "blocked"):
+            self.assertEqual([], self.controller.select_switch_branch(route, state))
+        correction = route["cases"]["continue"]
+        flags = ("spec_action", "plan_action", "task_action")
+        for name, actions, eligibility, expected in (
+            ("spec", ["run"] * 3, "continue", ["speckit.specify", "speckit.plan", "speckit.tasks", "speckit.analyze", "speckit.implement"]),
+            ("plan", ["skip", "run", "run"], "continue", ["speckit.plan", "speckit.tasks", "speckit.analyze", "speckit.implement"]),
+            ("tasks", ["skip", "skip", "run"], "continue", ["speckit.tasks", "speckit.analyze", "speckit.implement"]),
+            ("implementation", ["skip"] * 3, "continue", ["speckit.analyze", "speckit.implement"]),
+            ("no-work", ["skip"] * 3, "complete", ["speckit.analyze"]),
+            ("blocked", ["skip"] * 3, "blocked", ["speckit.analyze"]),
+        ):
+            outputs = {"prepare-closeout-flowback": dict(zip(flags, actions)),
+                       "assess-closeout-task-eligibility": {"state": eligibility}}
+            def selected(nodes):
+                observed = []
+                for n in nodes:
+                    if "command" in n:
+                        observed.append(n["command"])
+                    elif n.get("type") == "switch":
+                        choice = self.controller.render_template(n["expression"], {}, outputs)
+                        observed.extend(selected(self.controller.select_switch_branch(n, choice)))
+                return observed
+            with self.subTest(path=name):
+                self.assertEqual(expected, selected(correction))
+        self.assertEqual(1, commands(steps).count("speckit.flow-roadmap.debrief"))
+        eligibility_route = find_step(steps, "route-closeout-implementation")
+        self.assertEqual([], eligibility_route["cases"]["blocked"])
+        self.assertFalse(any("speckit.flow-roadmap.debrief" in commands(branch)
+                             for branch in eligibility_route["cases"].values()))
+        common = {"max_iterations": 6, "loop_body_step_ids": {"reconcile-closeout-tasks"},
+                  "assessment_before_correction": True}
+        before = {"state": "continue", "next_step_id": "reconcile-closeout-tasks", "remaining_ids": ["F1", "F2"], "resolved_ids": []}
+        after = {**before, "remaining_ids": ["F2"], "resolved_ids": ["F1"]}
+        self.assertEqual("continue", self.controller.route_loop_assessment(before, iteration=1, **common)["action"])
+        self.assertEqual("continue", self.controller.route_loop_assessment(after, iteration=2, previous_assessment=before, **common)["action"])
+        self.assertEqual("no-progress", self.controller.route_loop_assessment(before, iteration=2, previous_assessment=before, **common)["blocker"])
+        self.assertEqual("loop-cap-exhausted", self.controller.route_loop_assessment(after, iteration=6, previous_assessment=before, **common)["blocker"])
+        self.assertEqual("complete", self.controller.route_loop_assessment({"state": "complete"}, iteration=6, **common)["action"])
+        self.assertEqual("blocked", self.controller.route_loop_assessment(
+            {"state": "blocked", "resume_action": "answer-product-question"}, iteration=1, **common)["action"])
 
-        for branch_id, expected in {
-            "mark-spec-complete": ["speckit.specify", "speckit.flow-roadmap.debrief"],
-            "debrief-current-spec": ["speckit.flow-roadmap.debrief"],
-            "reconcile-specification": ["speckit.specify", "speckit.plan", "speckit.tasks", "speckit.analyze",
-                                        "speckit.implement", "speckit.flow-roadmap.debrief"],
-            "reconcile-plan": ["speckit.plan", "speckit.tasks", "speckit.analyze", "speckit.implement",
-                               "speckit.flow-roadmap.debrief"],
-            "reconcile-tasks": ["speckit.tasks", "speckit.analyze", "speckit.implement",
-                                "speckit.flow-roadmap.debrief"],
-            "implement-eligible": ["speckit.implement", "speckit.flow-roadmap.debrief"],
-        }.items():
-            branch = find_step(steps, "select-closeout-action")["cases"][branch_id]
-            self.assertEqual(expected, commands(branch))
-            if "speckit.analyze" in expected:
-                self.assertLess(expected.index("speckit.analyze"), expected.index("speckit.implement"))
-
-        final_route = find_step(steps, "route-final-closeout")
-        self.assertEqual({"complete", "needs-human", "blocked", "continue", "default"}, set(final_route["cases"]))
-        self.assertEqual("route-supported-roadmap-result", final_route["cases"]["complete"][0]["id"])
-        self.assertEqual("closeout-loop-bounded-stop", final_route["cases"]["continue"][0]["id"])
-        final_gate = find_step(steps, "closeout-final-consequential-gate")
-        self.assertEqual(["defer", "abort"], final_gate["options"])
-        final_gate_route = find_step(steps, "route-closeout-consequential-decision")
-        self.assertEqual("{{ steps.closeout-final-consequential-gate.output.choice }}",
-                         final_gate_route["expression"])
-        patch_gate = find_step(steps, "approve-roadmap-transition")
-        self.assertEqual(["approve-patch", "return-to-workflow", "defer"], patch_gate["options"])
+    def testCloseoutSharedMaintenanceRequiresVerificationAndCleanLintBeforeReview(self) -> None:
+        steps = load_workflow("speckit-flow-closeout")["steps"]
+        initial = find_step(steps, "route-initial-closeout")
+        for state in ("complete", "blocked"):
+            self.assertEqual([], self.controller.select_switch_branch(initial, state))
+        preparation = find_step(steps, "prepare-roadmap-verification")
+        self.assertNotIn("{{ steps.", preparation["prompt"])
+        self.assertIn("without requiring a loop output", preparation["prompt"])
+        roadmap = find_step(steps, "route-roadmap-verification")
+        self.assertEqual([], roadmap["cases"]["already-verified"])
+        self.assertEqual([], roadmap["cases"]["blocked"])
         patch_route = find_step(steps, "route-roadmap-transition")
-        self.assertEqual("apply-approved-roadmap-verification",
-                         patch_route["cases"]["approve-patch"][0]["id"])
+        self.assertEqual(["speckit.flow-roadmap.write"], commands(patch_route["cases"]["approve-patch"]))
         for choice in ("return-to-workflow", "defer"):
-            self.assertNotIn("speckit.flow-roadmap.write", commands(patch_route["cases"][choice]))
-        for node, _, _ in walk(steps):
-            if node.get("command") in {"speckit.flow-roadmap.debrief", "speckit.flow-roadmap.write"}:
-                self.assertIn("SPEC_TARGET={{ inputs.feature_context }}", node["input"]["args"])
-        self.assertFalse(any(command.startswith("speckit-flow-") or command == "speckit.flow-closeout"
-                             for command in commands(steps)))
+            self.assertEqual([], self.controller.select_switch_branch(patch_route, choice))
+        gate = find_step(steps, "approve-roadmap-transition")
+        self.assertIn("proposed_patch", gate["message"])
+        write = find_step(steps, "apply-approved-roadmap-verification")["input"]["args"]
+        self.assertIn("SPEC_TARGET={{ inputs.feature_context }}", write)
+        self.assertIn("proposed_patch", write)
+        maintenance = find_step(steps, "prepare-wiki-maintenance")
+        self.assertIn("already-verified", maintenance["prompt"])
+        self.assertIn("freshly verified", maintenance["prompt"])
+        wiki_route = find_step(steps, "route-wiki-maintenance")
+        self.assertEqual([], wiki_route["cases"]["blocked"])
+        self.assertEqual(["speckit.flow-wiki.ingest", "speckit.flow-wiki.lint"], commands(wiki_route["cases"]["ready"]))
+        self.assertIsNone(find_step(steps, "route-commit-readiness"))
+        self.assertIsNone(find_step(steps, "confirm-commit-readiness"))
+        self.assertNotIn("commit_readiness_decision", load_workflow("speckit-flow-closeout")["inputs"])
+        verification = find_step(steps, "verify-closeout-readiness")
+        self.assertIn("ready-for-explicit-commit or blocked", verification["prompt"])
+        self.assertEqual("verify-closeout-readiness", wiki_route["cases"]["ready"][-1]["id"])
+        self.assertIn("latest verify-closeout-readiness result", steps[-1]["prompt"])
+        self.assertIn("subsequent explicit operator request", steps[-1]["prompt"])
+        self.assertEqual("report-closeout-outcome", steps[-1]["id"])
+        self.assertEqual(1, sum(n.get("type") == "gate" for n, _, _ in walk(steps)))
+        self.assertFalse(any(c.startswith("speckit-flow-") for c in commands(steps)))
 
-        before = {"state": "continue", "next_step_id": "debrief-current-spec", "remaining_ids": ["FIND-1", "FIND-2"]}
-        after = {"state": "continue", "next_step_id": "debrief-current-spec", "remaining_ids": ["FIND-2"],
-                 "resolved_ids": ["FIND-1"]}
-        self.assertEqual({"action": "continue", "next_step_id": "debrief-current-spec"},
-                         self.controller.route_loop_assessment(
-                             after, iteration=1, max_iterations=5,
-                             loop_body_step_ids={"debrief-current-spec"}, previous_assessment=before,
-                         ))
-        self.assertEqual({"action": "blocked", "blocker": "no-progress"},
-                         self.controller.route_loop_assessment(
-                             {**before, "resolved_ids": []}, iteration=1, max_iterations=5,
-                             loop_body_step_ids={"debrief-current-spec"}, previous_assessment=before,
-                         ))
-        self.assertEqual({"action": "blocked", "blocker": "loop-cap-exhausted"},
-                         self.controller.route_loop_assessment(
-                             after, iteration=5, max_iterations=5,
-                             loop_body_step_ids={"debrief-current-spec"}, previous_assessment=before,
-                         ))
+
+    def testWikiRefreshRepeatsOnlyForResolvedGapsAndStopsForUntrustedEvidence(self) -> None:
+        steps = load_workflow("speckit-flow-closeout")["steps"]
+        self.controller.validate_workflow_graph(steps)
+        loop = find_step(steps, "wiki-reconciliation-loop")
+        self.assertEqual(5, loop["max_iterations"])
+        self.assertEqual(["prepare-wiki-refresh", "ingest-curated-context", "lint-wiki", "assess-wiki-maintenance"],
+                         [n["id"] for n in loop["steps"]])
+        self.assertEqual("{{ steps.assess-wiki-maintenance.output.state == 'continue' }}", loop["condition"])
+        self.assertEqual("{{ steps.prepare-wiki-refresh.output.source }}", loop["steps"][1]["input"]["args"])
+        self.assertIn("already-authorized", loop["steps"][0]["prompt"])
+        self.assertIn("baseline_remaining_ids", loop["steps"][-1]["prompt"])
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            evidence = project / "lint-report.md"
+            evidence.write_text("G1 source coverage verified; G2 stale claim remains")
+            current = {"state": "continue", "reason_code": "refresh-authorized-source",
+                "evidence": [{"path": "lint-report.md", "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest()}],
+                "remaining_ids": ["G2"], "resolved_ids": ["G1"], "next_step_id": "prepare-wiki-refresh"}
+            body = {n["id"] for n in loop["steps"]}
+            validated = self.controller.validate_outcome_envelope(current, project, body)
+            common = {"max_iterations": 5, "loop_body_step_ids": body}
+            self.assertEqual("continue", self.controller.route_loop_assessment(validated, iteration=1, **common)["action"])
+            before = {**validated, "remaining_ids": ["G1", "G2"], "resolved_ids": []}
+            self.assertEqual("continue", self.controller.route_loop_assessment(validated, iteration=2, previous_assessment=before, **common)["action"])
+            self.assertEqual("no-progress", self.controller.route_loop_assessment(validated, iteration=3, previous_assessment=validated, **common)["blocker"])
+            self.assertEqual("loop-cap-exhausted", self.controller.route_loop_assessment(validated, iteration=5, previous_assessment=before, **common)["blocker"])
+            for reason in ("conflicting-source-authority", "age-only-stale-warning", "source-unavailable"):
+                blocked = {**current, "state": "blocked", "reason_code": reason, "resume_action": "resolve-wiki-finding"}
+                blocked.pop("next_step_id")
+                blocked = self.controller.validate_outcome_envelope(blocked, project, body)
+                self.assertEqual("blocked", self.controller.route_loop_assessment(blocked, iteration=2, **common)["action"])
+            evidence.write_text("changed after assessment")
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                self.controller.validate_outcome_envelope(current, project, body)
 
 
 if __name__ == "__main__":

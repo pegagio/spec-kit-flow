@@ -217,38 +217,26 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         self.assertIn("Analyze changed tasks before implementation", manual)
         self.assertIn("separate operator instruction", manual)
 
-    def testCloseoutGraphContinuesDebriefAndRetainsIndependentApprovalGates(self) -> None:
+    def testCloseoutGraphSharesCorrectionAndMaintainsVerifiedContext(self) -> None:
         workflow = next(item for item in self.inventory.load_workflows()
                         if item["workflow"]["id"] == "speckit-flow-closeout")
         steps = workflow["steps"]
         self.assertEqual("assess-closeout-readiness", steps[0]["id"])
-        route = find_step(steps, "route-initial-closeout")
-        self.assertEqual({"complete", "continue", "needs-human", "blocked"}, set(route["cases"]))
-        self.assertEqual("closeout-debrief-loop", route["cases"]["continue"][0]["id"])
         loop = find_step(steps, "closeout-debrief-loop")
-        self.assertEqual(5, loop["max_iterations"])
-        self.assertEqual("assess-closeout-before-pass", loop["steps"][0]["id"])
-        self.assertEqual("assess-closeout-after-pass", loop["steps"][-1]["id"])
-        self.assertEqual("route-supported-roadmap-result",
-                         find_step(steps, "route-final-closeout")["cases"]["complete"][0]["id"])
-        self.assertEqual("closeout-loop-bounded-stop",
-                         find_step(steps, "route-final-closeout")["cases"]["continue"][0]["id"])
-        patch_gate = find_step(steps, "approve-roadmap-transition")
-        self.assertEqual(["approve-patch", "return-to-workflow", "defer"], patch_gate["options"])
-        patch_route = find_step(steps, "route-roadmap-transition")
-        self.assertEqual("apply-approved-roadmap-verification",
-                         patch_route["cases"]["approve-patch"][0]["id"])
-        for choice in ("return-to-workflow", "defer"):
-            self.assertFalse(any(node.get("id") == "apply-approved-roadmap-verification"
-                                 for node, _, _ in self.inventory._walk(patch_route["cases"][choice])))
+        self.assertTrue(loop["assessment_before_correction"])
+        self.assertEqual(6, loop["max_iterations"])
+        self.assertEqual("debrief-roadmap", loop["steps"][0]["id"])
+        self.assertEqual("assess-closeout-debrief", loop["steps"][1]["id"])
+        self.assertEqual({"continue", "complete", "blocked"}, set(loop["steps"][2]["cases"]))
+        self.assertEqual("report-closeout-outcome", steps[-1]["id"])
+        self.assertEqual(1, commands(steps).count("speckit.flow-roadmap.debrief"))
+        self.assertEqual(1, commands(steps).count("speckit.plan"))
+        self.assertEqual(1, commands(steps).count("speckit.tasks"))
+        self.assertEqual(1, sum(n.get("type") == "gate" for n, _, _ in self.inventory._walk(steps)))
         self.assertEqual([], self.inventory.project_workflow(workflow)["unexplained_terminal_paths"])
-        manual = (ROOT / "workflows/README.md").read_text(encoding="utf-8").split(
-            "## Manual closeout path", 1
-        )[1]
-        self.assertIn("in-place Draft-to-Complete", manual)
-        self.assertIn("rerun debrief", manual)
-        self.assertIn("exact roadmap verification patch", manual)
-        self.assertIn("does not commit", manual)
+        manual = (ROOT / "workflows/README.md").read_text().split("## Manual closeout path", 1)[1]
+        for phrase in ("in-place Draft-to-Complete", "rerun debrief", "exact roadmap verification patch", "does not commit"):
+            self.assertIn(phrase, manual)
 
 
 if __name__ == "__main__":

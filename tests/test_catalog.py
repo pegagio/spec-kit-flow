@@ -101,27 +101,20 @@ class CatalogReleaseTests(unittest.TestCase):
                 "implement-remediation": "Builder", "assess-convergence": "Verifier",
             },
             "speckit-flow-closeout": {
-                "assess-closeout-readiness": "Verifier", "assess-closeout-before-pass": "Verifier",
-                "mark-converged-specification-complete": "Architect", "debrief-after-status-completion": "Verifier",
-                "debrief-roadmap": "Verifier", "reconcile-closeout-specification": "Architect",
-                "replan-after-closeout-specification": "Architect", "retask-after-closeout-specification": "Architect",
-                "analyze-after-closeout-specification": "Verifier", "assess-closeout-specification-eligibility": "Verifier",
-                "implement-after-closeout-specification": "Builder", "debrief-after-closeout-specification": "Verifier",
-                "reconcile-closeout-plan": "Architect", "retask-after-closeout-plan": "Architect",
-                "analyze-after-closeout-plan": "Verifier", "assess-closeout-plan-eligibility": "Verifier",
-                "implement-after-closeout-plan": "Builder", "debrief-after-closeout-plan": "Verifier",
-                "reconcile-closeout-tasks": "Architect", "analyze-after-closeout-tasks": "Verifier",
-                "assess-closeout-task-eligibility": "Verifier", "implement-after-closeout-tasks": "Builder",
-                "debrief-after-closeout-tasks": "Verifier", "implement-closeout-eligible-tasks": "Builder",
-                "debrief-after-closeout-implementation": "Verifier", "assess-closeout-after-pass": "Verifier",
-                "ingest-curated-context": "Builder", "lint-wiki": "Verifier",
+                "assess-closeout-readiness": "Verifier", "mark-converged-specification-complete": "Architect",
+                "debrief-roadmap": "Verifier", "assess-closeout-debrief": "Verifier",
+                "reconcile-closeout-specification": "Architect", "reconcile-closeout-plan": "Architect",
+                "reconcile-closeout-tasks": "Architect", "analyze-closeout-artifacts": "Verifier",
+                "assess-closeout-task-eligibility": "Verifier", "implement-closeout-eligible-tasks": "Builder",
+                "prepare-wiki-maintenance": "Verifier", "ingest-curated-context": "Builder",
+                "lint-wiki": "Verifier", "assess-wiki-maintenance": "Verifier", "verify-closeout-readiness": "Verifier",
             },
         }
         expected_versions = {
             "speckit-flow-start-feature": "0.6.0", "speckit-flow-select-feature": "0.1.0", "speckit-flow-specify": "0.1.0", "speckit-flow-clarify": "0.4.2",
             "speckit-flow-plan": "0.4.2", "speckit-flow-tasks": "0.4.2",
             "speckit-flow-analyze-remediate": "0.4.2", "speckit-flow-implement": "0.4.2",
-            "speckit-flow-converge": "0.4.2", "speckit-flow-closeout": "0.5.0",
+            "speckit-flow-converge": "0.4.2", "speckit-flow-closeout": "0.6.0",
         }
         step_pattern = __import__("re").compile(r"^(\s*)- id: ([A-Za-z0-9_-]+)$")
         for workflow_id, expected_steps in expectations.items():

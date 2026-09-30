@@ -389,14 +389,9 @@ class BundleLifecycleTests(unittest.TestCase):
                 )
                 self.assertEqual("completed", json.loads(workflow_run)["status"])
 
-                closeout_run = self.run_specify(
-                    consumer, workflow_environment, "workflow", "run", "speckit-flow-closeout",
-                    "--input", "feature_context=disposable consumer fixture",
-                    "--input", "completion_operation_status=operation-missing", "--json",
-                )
-                self.assertEqual("completed", json.loads(closeout_run)["status"])
-                feature_files_after_closeout = set((consumer / "specs").rglob("*")) if (consumer / "specs").exists() else set()
-                self.assertEqual(feature_files_before, feature_files_after_closeout)
+                # Closeout requires attributable debrief and verification evidence; a no-op child cannot supply it.
+                # Deterministic direct-controller fixtures cover initial stops, correction, approval, and maintenance routing.
+
 
                 observation = {
                     "observation_id": "converge-terminal-prompt-001",
