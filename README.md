@@ -1,6 +1,6 @@
 # Spec Kit Flow
 
-Spec Kit Flow is a human-directed, merge-bounded flow-back workbench for Spec-Driven Development. It packages nine active reusable Spec Kit workflows, portable consumer feedback, and a version-pinned bundle that composes independently maintained roadmap and wiki extensions.
+Spec Kit Flow is a human-directed, merge-bounded flow-back workbench for Spec-Driven Development. It packages ten active reusable Spec Kit workflows, portable consumer feedback, and a version-pinned bundle that composes independently maintained roadmap and wiki extensions.
 
 This repository owns the generic workflow and feedback source. The repository and bundle ID are `spec-kit-flow`; its workflows use `speckit-flow-<purpose>` IDs, and the consumer feedback extension uses `flow-feedback`. The independent `spec-kit-flow-roadmap` and `spec-kit-flow-wiki` repositories publish the extension IDs `flow-roadmap` and `flow-wiki`.
 
@@ -13,7 +13,7 @@ This repository owns the generic workflow and feedback source. The repository an
 
 ## What the bundle installs
 
-The [bundle source manifest](bundles/spec-kit-flow/bundle.yml) is version `0.12.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The changed controller source is version `0.4.2`; the checked-in catalog still contains the earlier `0.4.1` bundle and `0.1.1` controller release. The bundle pins these extensions:
+The [bundle source manifest](bundles/spec-kit-flow/bundle.yml) is version `0.13.0` and targets Codex. It requires Specify `>=1.0.10.dev0` and Python 3. The changed controller source is version `0.5.0`; the checked-in catalog still contains the earlier `0.4.1` bundle and `0.1.1` controller release. The bundle pins these extensions:
 
 | Extension ID | Version | Purpose |
 | --- | --- | --- |
@@ -21,7 +21,7 @@ The [bundle source manifest](bundles/spec-kit-flow/bundle.yml) is version `0.12.
 | `flow-wiki` | `2.0.1` | Cited project context, ingestion, and linting; source: `spec-kit-flow-wiki` |
 | `flow-feedback` | `0.2.1` | Local observation capture and portable report export; source: this repository |
 
-It also installs the nine active workflows in [`workflows/`](workflows/README.md):
+It also installs the ten active workflows in [`workflows/`](workflows/README.md):
 
 | Workflow ID | Version | Role |
 | --- | --- | --- |
@@ -34,12 +34,13 @@ It also installs the nine active workflows in [`workflows/`](workflows/README.md
 | `speckit-flow-implement` | `0.4.2` | Implement eligible tasks within the selected agent's scope |
 | `speckit-flow-converge` | `0.4.2` | Compare implementation with the feature artifacts and close gaps |
 | `speckit-flow-closeout` | `0.6.0` | Review completion, approve roadmap verification, maintain wiki context, and report commit readiness |
+| `speckit-flow-wiki-lint-update` | `0.1.0` | Lint first, refresh stale registered sources, and report all unresolved wiki findings |
 
 The bundle does not include a preset or `speckit-flow-feedback-maintainer`. Maintainer intake belongs in this source environment, not a consumer project.
 
 ## Installation
 
-The checked-in catalog contains the locally built `0.4.1` release, including controller package `0.1.1` and the eight FlowKit controller skills. Current source bundle `0.12.0` and controller `0.4.2` are not released. The normal catalog installer verifies that release metadata matches source; it rejects the old catalog from this unreleased source checkout. Use a checkout matching the release for ordinary installation, or use a disposable initialized consumer and development-snapshot mode to validate current source. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. The catalog has not been published or pushed.
+The checked-in catalog contains the locally built `0.4.1` release, including controller package `0.1.1` and the eight FlowKit controller skills. Current source bundle `0.13.0` and controller `0.5.0` are not released. The normal catalog installer verifies that release metadata matches source; it rejects the old catalog from this unreleased source checkout. Use a checkout matching the release for ordinary installation, or use a disposable initialized consumer and development-snapshot mode to validate current source. A compatible Specify CLI must already be available; `mise.toml` records the tested fork version but this checkout does not distribute the CLI. The catalog has not been published or pushed.
 
 To install the checked-in release from a checkout matching that release, run `mise run catalog:install /path/to/my-project` after preparing the checkout. To validate source changes that have not reached the catalog, create and initialize a disposable consumer under the system temporary directory, then use development-snapshot mode:
 
@@ -70,7 +71,7 @@ The same task serves the temporary catalogs during refresh and verifies controll
 
 ## Using the workflows
 
-Prepare a project constitution, use `speckit.flow-roadmap.write` for an approved roadmap, then use `speckit.flow-wiki.init` and `speckit.flow-wiki.ingest` to establish cited project context. In a project installed through the FlowKit catalog route, invoke one named controller skill from the selected Codex task. The nine active picker names and skill IDs are:
+Prepare a project constitution, use `speckit.flow-roadmap.write` for an approved roadmap, then use `speckit.flow-wiki.init` and `speckit.flow-wiki.ingest` to establish cited project context. In a project installed through the FlowKit catalog route, invoke one named controller skill from the selected Codex task. The ten active picker names and skill IDs are:
 
 | Codex display name | Skill ID | Required input |
 | --- | --- | --- |
@@ -83,6 +84,7 @@ Prepare a project constitution, use `speckit.flow-roadmap.write` for an approved
 | FlowKit Implement | `flow-kit-implement` | `feature_context` |
 | FlowKit Converge | `flow-kit-converge` | `feature_context` |
 | FlowKit Close Out | `flow-kit-closeout` | `feature_context` |
+| FlowKit Wiki Lint Update | `flow-kit-wiki-lint-update` | optional `lint_scope`, `authorized_urls` |
 
 Use the `$skill-id key=value` form. For example, in the selected project's Codex task:
 

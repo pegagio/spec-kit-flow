@@ -3,7 +3,7 @@ schema_version: "1.0"
 bundle:
   id: "spec-kit-flow"
   name: "Spec Kit Flow"
-  version: "0.12.0"
+  version: "0.13.0"
   role: "developer"
   description: "Human-directed, merge-bounded flow-back workflows and portable feedback for Spec-Driven Development."
   author: "pegagio"
@@ -44,5 +44,7 @@ provides:
       version: "0.4.2"
     - id: "speckit-flow-closeout"
       version: "0.6.0"
+    - id: "speckit-flow-wiki-lint-update"
+      version: "0.1.0"
 
 tags: ["workflow", "spec-driven-development", "flow-back", "codex"]

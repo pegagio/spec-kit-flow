@@ -62,7 +62,7 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         projections = [self.inventory.project_workflow(item) for item in self.inventory.load_workflows()]
         expected = {
             "speckit-flow-start-feature", "speckit-flow-select-feature", "speckit-flow-specify", "speckit-flow-clarify", "speckit-flow-plan", "speckit-flow-tasks",
-            "speckit-flow-analyze-remediate", "speckit-flow-implement", "speckit-flow-converge", "speckit-flow-closeout",
+            "speckit-flow-analyze-remediate", "speckit-flow-implement", "speckit-flow-converge", "speckit-flow-closeout", "speckit-flow-wiki-lint-update",
         }
         self.assertEqual(expected, {item["workflow_id"] for item in projections})
         for projection in projections:
@@ -72,8 +72,8 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
                     self.assertFalse(projection["assignments"])
                     self.assertFalse(projection["branches"])
                     continue
-                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan", "speckit-flow-tasks", "speckit-flow-analyze-remediate", "speckit-flow-converge"}:
-                    if projection["workflow_id"] in {"speckit-flow-analyze-remediate", "speckit-flow-converge"}:
+                if projection["workflow_id"] in {"speckit-flow-clarify", "speckit-flow-implement", "speckit-flow-plan", "speckit-flow-tasks", "speckit-flow-analyze-remediate", "speckit-flow-converge", "speckit-flow-wiki-lint-update"}:
+                    if projection["workflow_id"] in {"speckit-flow-analyze-remediate", "speckit-flow-converge", "speckit-flow-wiki-lint-update"}:
                         self.assertTrue(projection["branches"])
                     else:
                         self.assertFalse(projection["branches"])
@@ -128,7 +128,7 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
 
     def testInventoryCLIListsAllWorkflows(self) -> None:
         projections = [self.inventory.project_workflow(item) for item in self.inventory.load_workflows()]
-        self.assertEqual(10, len(projections))
+        self.assertEqual(11, len(projections))
         self.assertTrue(all("continuation_edges" in item and "bounded_stops" in item for item in projections))
 
     def testSelectionAndSpecificationSeparateMutationAuthority(self) -> None:

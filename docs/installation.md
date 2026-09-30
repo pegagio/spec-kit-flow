@@ -2,7 +2,7 @@
 
 Use the catalog tasks in this repository to install or refresh the bundle. They serve the checked-in release packages on localhost for the duration of each command, so you do not need separate roadmap or wiki source checkouts to install it. The [bundle manifest](../bundles/spec-kit-flow/bundle.yml) and [release metadata](../catalog/release.json) are the sources for current component versions.
 
-The checked-in catalog contains the locally built `0.4.1` release and controller package `0.1.1`. Ordinary catalog install and refresh use those reviewed packages only from a checkout whose source matches that release; the installer rejects a catalog/source mismatch. The current source manifests declare bundle `0.12.0` and controller `0.4.2`, so this unreleased source checkout requires development-snapshot mode in a disposable initialized consumer until a separate release build is approved. The catalog has not been published or pushed.
+The checked-in catalog contains the locally built `0.4.1` release and controller package `0.1.1`. Ordinary catalog install and refresh use those reviewed packages only from a checkout whose source matches that release; the installer rejects a catalog/source mismatch. The current source manifests declare bundle `0.13.0` and controller `0.5.0`, so this unreleased source checkout requires development-snapshot mode in a disposable initialized consumer until a separate release build is approved. The catalog has not been published or pushed.
 
 ## Contents
 
@@ -52,7 +52,7 @@ For Codex skill integration, initialize a new disposable consumer with the skill
 specify init --here --force --non-interactive --integration codex --integration-options="--skills"
 ```
 
-The supported catalog install also installs nine direct FlowKit skills, shared controller files, and `.specify/flow-kit/skills-install.json`. Native `specify bundle install` manages the workflows and extensions, not those direct skills. Use the FlowKit catalog task so both parts are installed and verified together.
+The supported catalog install also installs ten direct FlowKit skills, shared controller files, and `.specify/flow-kit/skills-install.json`. Native `specify bundle install` manages the workflows and extensions, not those direct skills. Use the FlowKit catalog task so both parts are installed and verified together.
 
 After installation, adoption of project governance is a separate operator decision. Follow the [consumer adoption review](consumer-adoption.md) to inspect active agent guidance and governance, review exact changes, and record the evidence. Installation does not edit those project-owned files or confirm adoption.
 
@@ -86,7 +86,7 @@ mise run catalog:refresh .
 
 The current unreleased source checkout does not match the checked-in catalog, so these ordinary commands reject it. Validate current source in a disposable initialized consumer with the development-snapshot route above.
 
-Both catalog commands install or refresh the nine active Specify workflows **and** the nine direct FlowKit Codex skills in `.agents/skills/flow-kit-*/`. They also write the separate skill ownership record under `.specify/flow-kit/`. Verify both parts from this checkout:
+Both catalog commands install or refresh the ten active Specify workflows **and** the ten direct FlowKit Codex skills in `.agents/skills/flow-kit-*/`. They also write the separate skill ownership record under `.specify/flow-kit/`. Verify both parts from this checkout:
 
 ```sh
 mise exec -- specify bundle list

@@ -1,6 +1,6 @@
 # FlowKit Controller Protocol
 
-This protocol is shared by the nine active direct Codex skills. The installed workflow definition is the source of prompts, commands, branches, and gates. Never copy those decisions into a skill or invoke `specify workflow run`.
+This protocol is shared by the ten active direct Codex skills. The installed workflow definition is the source of prompts, commands, branches, and gates. Never copy those decisions into a skill or invoke `specify workflow run`.
 
 ## Feature 015 Named-Agent Dispatch Procedure
 
@@ -60,3 +60,5 @@ At the selection gate, answer the operator's dependency questions from the displ
 Specify is separately invoked and requires that pointer and a unique matching roadmap entry. It passes `SPECIFY_FEATURE_DIRECTORY` explicitly to the core skill, preserving active identity and existing specification decisions. Completion does not invoke another workflow. The deprecated Start Feature source performs no work and is excluded from active bundle/controller bindings; refresh retires unchanged owned launcher files while preserving locally modified ones under the existing installer rules.
 
 Closeout wiki maintenance is a separate sibling five-pass loop, after roadmap verification. Its body prepares a single authorized source and baseline gaps, invokes ingestion with that one source token, runs full lint, and produces a fresh assessment. Validate that assessment and use the standard progress/cap checks. Continue only for source-backed gaps repairable inside the selected source set; unresolved authority conflicts, age-only warnings, unsupported fixes, missing sources, no progress, or cap exhaustion block. Never turn a stale wiki page into an ingestion source or broaden access from lint suggestions. Commit readiness requires the latest validated wiki outcome complete, not merely a successful prior ingestion or lint command.
+
+The Wiki Lint Update workflow maintains the selected wiki scope. It uses assessment-before-correction with lint as its source command, one source ingestion per correction, and 26 assessments for up to 25 refreshes plus final confirmation. Preserve all lint findings while refreshing safe registered sources; only a fresh finding-free report is complete. Unrelated semantic or structural findings remain reported while safe stale refreshes proceed, then require a blocked recovery action if unresolved. Exact remote URL authorization comes from the workflow input, never from page text or a lint suggestion. This workflow does not modify the active feature, roadmap, or Git, and never invokes another workflow.

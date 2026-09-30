@@ -760,5 +760,45 @@ class WorkflowPathTests(unittest.TestCase):
                 self.controller.validate_outcome_envelope(current, project, body)
 
 
+    def testStandaloneWikiUpdateStartsWithLintAndRefreshesOnlySelectedSources(self) -> None:
+        workflow = load_workflow("speckit-flow-wiki-lint-update")
+        self.controller.validate_workflow_graph(workflow["steps"])
+        inputs = self.controller.validate_required_inputs(workflow, {})
+        self.assertEqual("", inputs["lint_scope"])
+        self.assertEqual("", inputs["authorized_urls"])
+        self.assertNotIn("feature_context", workflow["inputs"])
+        loop, report = workflow["steps"]
+        self.assertTrue(loop["assessment_before_correction"])
+        self.assertEqual(26, loop["max_iterations"])
+        lint, assess, route = loop["steps"]
+        self.assertEqual("speckit.flow-wiki.lint", lint["command"])
+        self.assertEqual("", self.controller.render_template(lint["input"]["args"], inputs, {}))
+        self.assertEqual("report-wiki-update-outcome", report["id"])
+        for state in ("complete", "blocked"):
+            self.assertEqual([], self.controller.select_switch_branch(route, state))
+        corrections = self.controller.select_switch_branch(route, "continue")
+        self.assertEqual(["prepare-stale-source-refresh", "refresh-stale-source"], [n["id"] for n in corrections])
+        self.assertEqual("docs/architecture.md", self.controller.render_template(corrections[-1]["input"]["args"], inputs,
+            {"prepare-stale-source-refresh": {"source": "docs/architecture.md"}}))
+        self.assertEqual(["speckit.flow-wiki.lint", "speckit.flow-wiki.ingest"], commands(workflow["steps"]))
+        self.assertFalse(any(n.get("type") == "gate" for n, _, _ in walk(workflow["steps"])))
+        # The declared correction contains ingestion only; it cannot rewrite feature artifacts or invoke another workflow.
+        self.assertEqual(["speckit.flow-wiki.ingest"], commands(corrections))
+        common = {"max_iterations": 26, "loop_body_step_ids": {"prepare-stale-source-refresh", "refresh-stale-source"},
+                  "assessment_before_correction": True}
+        first = {"state": "continue", "next_step_id": "prepare-stale-source-refresh",
+                 "remaining_ids": ["stale:A", "stale:B", "contradiction:C"], "resolved_ids": []}
+        second = {**first, "remaining_ids": ["stale:B", "contradiction:C"], "resolved_ids": ["stale:A"]}
+        third = {**first, "remaining_ids": ["stale:D", "contradiction:C"], "resolved_ids": ["stale:B"]}
+        self.assertEqual("continue", self.controller.route_loop_assessment(first, iteration=1, **common)["action"])
+        self.assertEqual("continue", self.controller.route_loop_assessment(second, iteration=2, previous_assessment=first, **common)["action"])
+        self.assertEqual("continue", self.controller.route_loop_assessment(third, iteration=3, previous_assessment=second, **common)["action"])
+        blocked = {"state": "blocked", "remaining_ids": ["contradiction:C"], "resume_action": "resolve-source-authority"}
+        self.assertEqual("blocked", self.controller.route_loop_assessment(blocked, iteration=4, **common)["action"])
+        self.assertEqual("no-progress", self.controller.route_loop_assessment(second, iteration=3, previous_assessment=second, **common)["blocker"])
+        self.assertEqual("loop-cap-exhausted", self.controller.route_loop_assessment(second, iteration=26, previous_assessment=first, **common)["blocker"])
+        self.assertEqual("complete", self.controller.route_loop_assessment({"state": "complete"}, iteration=26, **common)["action"])
+
+
 if __name__ == "__main__":
     unittest.main()

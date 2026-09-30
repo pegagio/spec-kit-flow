@@ -28,11 +28,11 @@ class CatalogReleaseTests(unittest.TestCase):
             self.assertEqual(0, catalog.main())
         remove.assert_called_once_with(Path("/consumer"))
 
-    def test_controllerManifest_hasNineStableBindingsAndDisplayNames(self) -> None:
+    def test_controllerManifest_hasTenStableBindingsAndDisplayNames(self) -> None:
         manifest = catalog.controller_manifest()
         self.assertEqual("flow-kit-controllers", manifest["package_id"])
         self.assertEqual("1.0.10.dev0+pegagio.2", manifest["specify_cli_version"])
-        self.assertEqual(9, len(manifest["controllers"]))
+        self.assertEqual(10, len(manifest["controllers"]))
         self.assertEqual(
             [
                 ("flow-kit-select-feature", "FlowKit Select Feature", "speckit-flow-select-feature"),
@@ -44,6 +44,7 @@ class CatalogReleaseTests(unittest.TestCase):
                 ("flow-kit-implement", "FlowKit Implement", "speckit-flow-implement"),
                 ("flow-kit-converge", "FlowKit Converge", "speckit-flow-converge"),
                 ("flow-kit-closeout", "FlowKit Close Out", "speckit-flow-closeout"),
+                ("flow-kit-wiki-lint-update", "FlowKit Wiki Lint Update", "speckit-flow-wiki-lint-update"),
             ],
             [(item["skill_id"], item["display_name"], item["workflow_id"]) for item in manifest["controllers"]],
         )
@@ -58,8 +59,8 @@ class CatalogReleaseTests(unittest.TestCase):
                 self.assertIn(".specify/flow-kit/manifest.yml", names)
                 self.assertIn(".specify/flow-kit/controller-protocol.md", names)
                 self.assertIn(".specify/flow-kit/scripts/python/controller.py", names)
-                self.assertEqual(9, sum(name.endswith("/SKILL.md") and name.startswith(".agents/skills/flow-kit-") for name in names))
-                self.assertEqual(9, sum(name.endswith("/agents/openai.yaml") and name.startswith(".agents/skills/flow-kit-") for name in names))
+                self.assertEqual(10, sum(name.endswith("/SKILL.md") and name.startswith(".agents/skills/flow-kit-") for name in names))
+                self.assertEqual(10, sum(name.endswith("/agents/openai.yaml") and name.startswith(".agents/skills/flow-kit-") for name in names))
                 for skill_id, display_name, _ in catalog.CONTROLLER_BINDINGS:
                     metadata = members[f".agents/skills/{skill_id}/agents/openai.yaml"]
                     self.assertIn(f'display_name: "{display_name}"', metadata)
@@ -110,7 +111,11 @@ class CatalogReleaseTests(unittest.TestCase):
                 "lint-wiki": "Verifier", "assess-wiki-maintenance": "Verifier", "verify-closeout-readiness": "Verifier",
             },
         }
+        expectations["speckit-flow-wiki-lint-update"] = {
+            "lint-wiki": "Verifier", "assess-wiki-findings": "Verifier", "refresh-stale-source": "Builder",
+        }
         expected_versions = {
+            "speckit-flow-wiki-lint-update": "0.1.0",
             "speckit-flow-start-feature": "0.6.0", "speckit-flow-select-feature": "0.1.0", "speckit-flow-specify": "0.1.0", "speckit-flow-clarify": "0.4.2",
             "speckit-flow-plan": "0.4.2", "speckit-flow-tasks": "0.4.2",
             "speckit-flow-analyze-remediate": "0.4.2", "speckit-flow-implement": "0.4.2",
@@ -166,7 +171,7 @@ class CatalogReleaseTests(unittest.TestCase):
             catalog.install_controller_package(project, archive, refresh=False, source_digest=catalog.digest(archive), catalog_status="snapshot")
             record = json.loads((project / ".specify/flow-kit/skills-install.json").read_text(encoding="utf-8"))
             self.assertEqual("installed", record["status"])
-            self.assertEqual(9, len(record["controllers"]))
+            self.assertEqual(10, len(record["controllers"]))
             catalog.remove_controller_package(project)
             self.assertTrue(recovery.is_file())
             self.assertTrue(feedback.is_file())
@@ -219,7 +224,7 @@ class CatalogReleaseTests(unittest.TestCase):
             catalog.install_controller_package(project, archive, refresh=True, source_digest=catalog.digest(archive), catalog_status="released")
             record = json.loads((project / ".specify/flow-kit/skills-install.json").read_text(encoding="utf-8"))
             self.assertEqual("installed", record["status"])
-            self.assertEqual(9, len(record["controllers"]))
+            self.assertEqual(10, len(record["controllers"]))
             self.assertTrue((project / ".agents/skills/flow-kit-tasks/SKILL.md").is_file())
 
     def test_controllerRefresh_legacyBundleRejectsConsumerSkillCollision(self) -> None:

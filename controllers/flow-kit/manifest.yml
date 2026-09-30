@@ -2,7 +2,7 @@ schema_version: "1.0"
 
 package:
   id: "flow-kit-controllers"
-  version: "0.4.2"
+  version: "0.5.0"
   compatible_codex: true
 
 requires:
@@ -36,3 +36,6 @@ controllers:
   - skill_id: "flow-kit-closeout"
     display_name: "FlowKit Close Out"
     workflow_id: "speckit-flow-closeout"
+  - skill_id: "flow-kit-wiki-lint-update"
+    display_name: "FlowKit Wiki Lint Update"
+    workflow_id: "speckit-flow-wiki-lint-update"

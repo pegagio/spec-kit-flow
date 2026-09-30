@@ -40,6 +40,7 @@ WORKFLOW_IDS = (
     "speckit-flow-implement",
     "speckit-flow-converge",
     "speckit-flow-closeout",
+    "speckit-flow-wiki-lint-update",
 )
 CONSUMER_FIXTURE = ROOT / "tests/consumer-fixtures/independent-workflow.yml"
 ROADMAP_ID = "flow-roadmap"

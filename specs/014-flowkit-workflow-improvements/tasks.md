@@ -201,6 +201,7 @@ Follow the phases in dependency order, then use the dependency and parallel-work
 - [X] T057 Collapse ungated needs-human outcomes into blocked across Clarify, Plan, Tasks, Implement, Analyze and Remediate, and Converge; preserve questions, recovery actions, completion/continuation distinctions, Closeout gates, and legacy controller compatibility; refresh diagrams, version pins, documentation, and focused tests.
 - [X] T058 [US6] Simplify Closeout to a shared bounded debrief/correction waterfall and one outcome report; remove stop-only gates, fix skipped-output and blocked-eligibility routing, verify exact approved roadmap patches, maintain wiki context for already-verified features, check lint before readiness review, and refresh diagram, docs, versions, and tests.
 - [X] T059 [US6] Add bounded single-source wiki refresh, lint, and evidence-assessment continuation in Closeout; preserve source authority and conflicts, reject timestamp-only progress, stop on unsupported remediation or no progress, and refresh diagrams, tests, and documentation.
+- [X] T060 Add independent Wiki Lint Update workflow, launcher, and chart; lint before refresh, map stale pages to registered sources, retain all other issues, support explicit URL authorization, enforce bounded progress, and update inventory and source packaging.
 
 **Checkpoint**: Automated evidence and documentation cover the delivered source; optional desktop observations are separate. Release, roadmap verification, Git integration, and feature acceptance retain their own explicit decisions.
 

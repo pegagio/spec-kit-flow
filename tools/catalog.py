@@ -42,6 +42,7 @@ CONTROLLER_BINDINGS = (
     ("flow-kit-implement", "FlowKit Implement", "speckit-flow-implement"),
     ("flow-kit-converge", "FlowKit Converge", "speckit-flow-converge"),
     ("flow-kit-closeout", "FlowKit Close Out", "speckit-flow-closeout"),
+    ("flow-kit-wiki-lint-update", "FlowKit Wiki Lint Update", "speckit-flow-wiki-lint-update"),
 )
 
 
