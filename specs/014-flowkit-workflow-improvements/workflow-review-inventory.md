@@ -1,6 +1,6 @@
-# F014 Current Workflow Review Inventory
+# F014 Historical Workflow Review Inventory
 
-**Evidence boundary**: Read-only inventory of the eight source `workflow.yml` files before F014 source edits. It records current behavior, not the approved target design.
+**Evidence boundary**: Historical review notes from the initial eight-workflow review, including intermediate Close Out observations. Preserve them as review provenance, not as a current graph or acceptance record. The source-current graph and assignments are in [current-workflow-inventory.md](current-workflow-inventory.md).
 
 **Source baseline**: [source-baseline.json](validation/source-baseline.json). The existing controller records workflow ID/version/digest, assignments, per-step status, changed relative paths, blocker, and timestamps in `.specify/flow-controllers/runs/<run-id>/summary.json`; repeated step IDs overwrite prior records, and summaries have no loop/iteration or safe-resumption-point field.
 

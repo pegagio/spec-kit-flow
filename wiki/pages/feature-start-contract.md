@@ -1,11 +1,15 @@
 ---
 title: Feature start contract
 type: concept
-sources: [S006]
-updated: 2026-09-24
+sources: [S006, S021]
+updated: 2026-09-30
 ---
 
 # Feature start contract
+
+## Earlier feature contracts
+
+The following cited contracts preserve earlier feature intent; Feature 014's prospective refinements are distinguished below. (S021)
 
 The operator names one roadmap feature. The start workflow assesses unique eligibility, dependencies, and governing context before it proposes any state change. An exact roadmap patch is shown for approval and only that reviewed patch may be applied. (S006)
 
@@ -14,6 +18,14 @@ After approval, the workflow retrieves cited governing decisions, constraints, d
 No eligible match, multiple plausible matches, unmet dependencies, or incomplete governing context stop the start without a roadmap change or feature specification. Partial and uncovered wiki context are reported rather than replaced with an invented rule. (S006)
 
 The operator may instead amend the roadmap, resolve context, or defer. After a successful brief, the next state is an explicit operator choice; the workflow does not launch clarification, planning, agent dispatch, Git integration, or acceptance. (S006)
+
+## Feature 014 selection and authoring
+
+Select Feature presents dependency-ready candidates, blocked unfinished features, actual dependency chains, immediate unlocks, and distinct downstream dependents. The operator may discuss prerequisites before choosing one exact entry. Exact approval activates a unique target through the roadmap and active pointer, preserving existing specification bytes and creating no directory or specification. (S021)
+
+Specify separately consumes the active target, retrieves cited context, authors only that directory, verifies unique roadmap linkage, and runs a shared brief. A linkage repair needs exact patch approval and fresh verification. Missing or competing ownership, pointer drift, insufficient context, or unsettled scope stops with recovery evidence. (S021)
+
+**Accepted supersession**: S006 describes one combined start-and-author workflow and a final next-action choice; S021 replaces it with separate selection/activation and specification authoring and a stop-only deprecated combined source. S006 is retained as verified historical intent, not the F014 target. (S006, S021)
 
 ## Related pages
 

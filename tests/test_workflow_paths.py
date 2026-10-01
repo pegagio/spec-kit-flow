@@ -166,7 +166,7 @@ class WorkflowPathTests(unittest.TestCase):
         workflow = load_workflow("speckit-flow-implement")
         steps = workflow["steps"]
         self.assertEqual(["assess-implementation-state", "implementation-continuation-loop", "report-implementation-outcome"], [step["id"] for step in steps])
-        self.assertEqual("Verifier", steps[0]["flow_kit"]["agent"])
+        self.assertEqual("Reviewer", steps[0]["flow_kit"]["agent"])
         self.assertIn("progress baseline", steps[0]["prompt"])
         loop = steps[1]
         self.assertEqual("do-while", loop["type"])
@@ -174,12 +174,14 @@ class WorkflowPathTests(unittest.TestCase):
         self.assertEqual(["implement-eligible-work", "assess-implementation-after-pass"], [step["id"] for step in loop["steps"]])
         self.assertEqual("{{ steps.assess-implementation-after-pass.output.state == 'continue' }}", loop["condition"])
         self.assertEqual(["speckit.implement"], commands(steps))
-        self.assertEqual("Builder", loop["steps"][0]["flow_kit"]["agent"])
-        self.assertEqual("Verifier", loop["steps"][1]["flow_kit"]["agent"])
+        self.assertEqual("Coder", loop["steps"][0]["flow_kit"]["agent"])
+        self.assertEqual("Code Reviewer", loop["steps"][1]["flow_kit"]["agent"])
         self.assertNotIn("implementation_decision", workflow["inputs"])
         self.assertIn("all remaining eligible tasks", loop["steps"][0]["input"]["args"])
         self.assertIn("operator input is required", loop["steps"][0]["input"]["args"])
         self.assertIn("another speckit.implement session can safely proceed", loop["steps"][1]["prompt"])
+        self.assertIn("Independently review the changed code", loop["steps"][1]["prompt"])
+        self.assertIn("no remaining eligible task", loop["steps"][1]["prompt"])
         self.assertIn("successful command alone is not completion evidence", loop["steps"][1]["prompt"])
         self.assertIn("no-progress or five-pass safety stop", steps[2]["prompt"])
 
@@ -468,12 +470,12 @@ class WorkflowPathTests(unittest.TestCase):
         self.assertEqual(["prepare-plan-request", "create-plan", "verify-plan-output"],
                          [step["id"] for step in loop["steps"]])
         self.assertEqual(["speckit.plan"], commands(steps))
-        self.assertEqual("Architect", create["flow_kit"]["agent"])
-        self.assertEqual("Verifier", verify["flow_kit"]["agent"])
+        self.assertEqual("Planner", create["flow_kit"]["agent"])
+        self.assertEqual("Reviewer", verify["flow_kit"]["agent"])
         self.assertEqual("{{ steps.prepare-plan-request.output.args }}", create["input"]["args"])
         self.assertIn("latest verify-plan-output remaining_ids", prepare["prompt"])
         self.assertIn("{{ steps.prepare-plan-request.output.remaining_ids }}", verify["prompt"])
-        self.assertIn("do not review technical design quality", verify["prompt"])
+        self.assertIn("Independently review the planning outputs", verify["prompt"])
         initial = {"state": "continue", "next_step_id": "prepare-plan-request",
                    "remaining_ids": ["plan.md:technical-context", "research.md"], "resolved_ids": []}
         repaired = {**initial, "remaining_ids": ["research.md"], "resolved_ids": ["plan.md:technical-context"]}
@@ -497,11 +499,14 @@ class WorkflowPathTests(unittest.TestCase):
         self.assertEqual(["prepare-task-request", "generate-tasks", "verify-task-output"],
                          [step["id"] for step in loop["steps"]])
         self.assertEqual(["speckit.tasks"], commands(workflow["steps"]))
+        self.assertEqual("Tasker", generate["flow_kit"]["agent"])
+        self.assertEqual("Reviewer", verify["flow_kit"]["agent"])
         self.assertEqual("{{ steps.prepare-task-request.output.args }}", generate["input"]["args"])
         self.assertIn("latest verify-task-output remaining_ids", prepare["prompt"])
         self.assertIn("{{ steps.prepare-task-request.output.remaining_ids }}", verify["prompt"])
         self.assertIn("{{ steps.prepare-task-request.output.task_history }}", verify["prompt"])
         self.assertIn("unchecked implementation tasks do not make task generation incomplete", verify["prompt"])
+        self.assertIn("Independently review tasks.md", verify["prompt"])
         self.assertIn("lost task history", verify["prompt"])
         self.assertNotIn("task_decision", workflow["inputs"])
         self.assertIn("Analyze, and implementation require separate operator action", report["prompt"])
@@ -558,6 +563,9 @@ class WorkflowPathTests(unittest.TestCase):
                     return observed
                 self.assertEqual(expected, selected_commands(loop["steps"]))
         assessor = loop["steps"][1]
+        self.assertEqual("Code Reviewer", assessor["flow_kit"]["agent"])
+        self.assertIn("independently review implementation changes", assessor["prompt"])
+        self.assertIn("otherwise return blocked", assessor["prompt"])
         with self.assertRaisesRegex(ValueError, "unresolved step output reference"):
             self.controller.render_template(assessor["prompt"], {"feature_context": "014"}, {})
         self.assertIn("fresh report", self.controller.render_template(assessor["prompt"], {"feature_context": "014"},
@@ -642,6 +650,9 @@ class WorkflowPathTests(unittest.TestCase):
         self.assertEqual(6, loop["max_iterations"])
         self.assertEqual(["debrief-roadmap", "assess-closeout-debrief", "route-closeout-correction"],
                          [n["id"] for n in loop["steps"]])
+        self.assertEqual("Code Reviewer", loop["steps"][1]["flow_kit"]["agent"])
+        self.assertIn("Independently review implementation changes", loop["steps"][1]["prompt"])
+        self.assertIn("otherwise return blocked", loop["steps"][1]["prompt"])
         route = find_step(steps, "route-closeout-correction")
         for state in ("complete", "blocked"):
             self.assertEqual([], self.controller.select_switch_branch(route, state))
@@ -798,6 +809,164 @@ class WorkflowPathTests(unittest.TestCase):
         self.assertEqual("no-progress", self.controller.route_loop_assessment(second, iteration=3, previous_assessment=second, **common)["blocker"])
         self.assertEqual("loop-cap-exhausted", self.controller.route_loop_assessment(second, iteration=26, previous_assessment=first, **common)["blocker"])
         self.assertEqual("complete", self.controller.route_loop_assessment({"state": "complete"}, iteration=26, **common)["action"])
+
+    def exercise_semantic_review_fixture(self, purpose: str) -> None:
+        """Execute scripted independent review/author handoffs, not LLM reasoning."""
+        workflow = load_workflow('speckit-flow-' + purpose)
+        loop = workflow['steps'][0]
+        prepare, author, review = loop['steps']
+        self.assertEqual('Reviewer', review['flow_kit']['agent'])
+        self.assertNotEqual(author['flow_kit']['agent'], review['flow_kit']['agent'])
+        body = {n['id'] for n in loop['steps']}
+        for required in ('findings verbatim in args', 'observed_deficiency', 'exact_correction', 'do not rename repeated findings'):
+            self.assertIn(required, prepare['prompt'])
+        for required in ('separate workflow-specific result', 'strict assessment envelope', 'Fresh review', 'new blocking findings', 'never infer its answer'):
+            self.assertIn(required, review['prompt'])
+        for fixture in sorted((ROOT / 'tests/consumer-fixtures' / (purpose + '-semantic-review')).glob('*.json')):
+            case = json.loads(fixture.read_text())
+            finding = case['finding']
+            self.assertEqual({'id', 'artifact_location', 'violated_requirement', 'observed_deficiency', 'exact_correction'}, set(finding))
+            with self.subTest(case=fixture.name), tempfile.TemporaryDirectory() as directory:
+                project = Path(directory)
+                artifact = project / (purpose + '.md')
+                artifact.write_text(case['before'])
+                def envelope(remaining, resolved, state='continue'):
+                    result = {'state': state, 'reason_code': 'semantic-review',
+                        'evidence': [{'path': artifact.name, 'sha256': hashlib.sha256(artifact.read_bytes()).hexdigest()}],
+                        'remaining_ids': remaining, 'resolved_ids': resolved}
+                    if state == 'continue':
+                        result['next_step_id'] = prepare['id']
+                    elif state == 'blocked':
+                        result['resume_action'] = 'answer-product-question'
+                    return self.controller.validate_outcome_envelope(result, project, body)
+                initial = envelope([finding['id']], [])
+                # Findings are a separate workflow-specific result, never envelope fields.
+                with self.assertRaisesRegex(ValueError, 'unsupported fields'):
+                    self.controller.validate_outcome_envelope({**initial, 'findings': [finding]}, project, body)
+                scripted_review = {'assessment': initial, 'findings': [finding]}
+                # Script the main-task preparer preserving the entire reviewer payload.
+                request = {'remaining_ids': initial['remaining_ids'], 'args': json.dumps(scripted_review['findings'])}
+                rendered = self.controller.render_template(author['input']['args'], {'feature_context': 'fixture'}, {prepare['id']: request})
+                self.assertEqual([finding], json.loads(rendered))
+                common = {'max_iterations': loop['max_iterations'], 'loop_body_step_ids': body,
+                          'previous_assessment': initial}
+                for mutation in ('digest-only', 'wording-only', 'repeated', 'renamed'):
+                    artifact.write_text(case['before'] + ('\nRephrased commentary.\n' if mutation != 'repeated' else ''))
+                    unchanged = envelope(['renamed-' + finding['id']] if mutation == 'renamed' else [finding['id']], [])
+                    self.assertEqual('no-progress', self.controller.route_loop_assessment(unchanged, iteration=2, **common)['blocker'])
+                stale = initial
+                with self.assertRaisesRegex(ValueError, 'does not match'):
+                    self.controller.validate_outcome_envelope(stale, project, body)
+                artifact.write_text(case['after'])
+                # Fresh scripted Reviewer confirms correction and retains a new blocker.
+                self.assertIn(finding['exact_correction'], artifact.read_text())
+                refreshed = envelope(['new-blocking-finding'], [finding['id']])
+                self.assertEqual('continue', self.controller.route_loop_assessment(refreshed, iteration=2, **common)['action'])
+                self.assertEqual('loop-cap-exhausted', self.controller.route_loop_assessment(refreshed, iteration=5, **common)['blocker'])
+                question = 'Which retention period does the product require?'
+                blocked_report = {'assessment': envelope(['product-question'], [], 'blocked'), 'question': question}
+                self.assertEqual(question, blocked_report['question'])
+                self.assertNotIn('answer', blocked_report)
+                self.assertEqual('blocked', self.controller.route_loop_assessment(blocked_report['assessment'], iteration=2, **common)['action'])
+                with self.assertRaisesRegex(ValueError, 'unresolved'):
+                    envelope([finding['id']], [], 'complete')
+                clean = envelope([], [finding['id']], 'complete')
+                self.assertEqual('complete', self.controller.route_loop_assessment(clean, iteration=2, **common)['action'])
+                if purpose == 'tasks':
+                    for line in case['before'].splitlines():
+                        if line.startswith('- ['):
+                            self.assertIn(line, artifact.read_text())
+        self.assertEqual(5, loop['max_iterations'])
+        self.assertEqual(['speckit.' + purpose], commands(workflow['steps']))
+
+    def test_planPopulatedSemanticDefects_preserveExactHandoffAndBoundedStops(self) -> None:
+        self.exercise_semantic_review_fixture('plan')
+
+
+    def test_tasksPopulatedSemanticDefects_preserveExactHandoffAndHistory(self) -> None:
+        self.exercise_semantic_review_fixture('tasks')
+
+    def test_codeReviewExactDelta_correctsEligibleTaskOrStopsWithoutAuthority(self) -> None:
+        """Script distinct Code Reviewer/Coder results through declared correction paths."""
+        configurations = (
+            ('implement', 'assess-implementation-after-pass', 'implement-eligible-work', None),
+            ('converge', 'assess-convergence', 'implement-remediation', 'prepare-convergence-flowback'),
+            ('closeout', 'assess-closeout-debrief', 'implement-closeout-eligible-tasks', 'prepare-closeout-flowback'),
+        )
+        for purpose, review_id, author_id, prepare_id in configurations:
+            workflow = load_workflow('speckit-flow-' + purpose)
+            review = find_step(workflow['steps'], review_id)
+            author = find_step(workflow['steps'], author_id)
+            self.assertEqual('Code Reviewer', review['flow_kit']['agent'])
+            self.assertEqual('Coder', author['flow_kit']['agent'])
+            self.assertIn('implementation delta', review['prompt'])
+            self.assertIn('separate workflow-specific result', review['prompt'])
+            self.assertIn('exact review findings', author['input']['args'])
+            body = {n['id'] for n, _, _ in walk(workflow['steps'])}
+            loop = find_step(workflow['steps'], {'implement': 'implementation-continuation-loop',
+                'converge': 'convergence-remediation-loop', 'closeout': 'closeout-debrief-loop'}[purpose])
+            with self.subTest(workflow=purpose), tempfile.TemporaryDirectory() as directory:
+                project = Path(directory)
+                source = project / 'feature.py'
+                before = 'def retain():\n    return True\n'
+                deficient = 'def retain():\n    return False\n'
+                source.write_text(deficient)
+                finding = {'id': 'CR-001', 'task_id': 'T002', 'artifact_location': 'feature.py:2',
+                    'violated_requirement': 'FR-001 retain data', 'observed_deficiency': 'returns False',
+                    'exact_correction': 'Restore return True',
+                    'delta': {'path': 'feature.py', 'before_sha256': hashlib.sha256(before.encode()).hexdigest(),
+                              'after_sha256': hashlib.sha256(source.read_bytes()).hexdigest()}}
+                (project / 'delta.json').write_text(json.dumps({'before': before, 'after': deficient, 'finding': finding}))
+                def outcome(state, remaining, resolved, reason='code-review'):
+                    result = {'state': state, 'reason_code': reason,
+                        'evidence': [{'path': p.name, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
+                                     for p in (source, project / 'delta.json')],
+                        'remaining_ids': remaining, 'resolved_ids': resolved}
+                    if state == 'continue': result['next_step_id'] = author_id
+                    if state == 'blocked': result['resume_action'] = 'record-or-reopen-task-and-reinvoke'
+                    return self.controller.validate_outcome_envelope(result, project, body)
+                baseline = outcome('continue', ['T001', 'T002'], [])
+                current = outcome('continue', ['T002'], ['T001'])
+                common = {'max_iterations': loop['max_iterations'], 'loop_body_step_ids': body,
+                    'previous_assessment': baseline,
+                    'assessment_before_correction': loop.get('assessment_before_correction', False)}
+                self.assertEqual('continue', self.controller.route_loop_assessment(current, iteration=2, **common)['action'])
+                if prepare_id:
+                    prepare = find_step(workflow['steps'], prepare_id)
+                    self.assertIn('implementation_args', prepare['prompt'])
+                    eligibility = 'assess-remediation-eligibility' if purpose == 'converge' else 'assess-closeout-task-eligibility'
+                    args = self.controller.render_template(author['input']['args'], {'feature_context': 'fixture'},
+                        {prepare_id: {'implementation_args': json.dumps([finding], indent=2)}, eligibility: {'remaining_ids': ['T002']}})
+                    self.assertIn(json.dumps([finding], indent=2), args)
+                else:
+                    self.assertIn('latest assess-implementation-after-pass', author['input']['args'])
+                # Coder applies only T002; a fresh scripted reviewer verifies the change.
+                source.write_text(before)
+                namespace = {}
+                exec(source.read_text(), namespace)
+                self.assertTrue(namespace['retain']())
+                fresh = outcome('complete', [], ['T002'])
+                self.assertEqual('complete', self.controller.route_loop_assessment(fresh, iteration=3, **common)['action'])
+                with self.assertRaisesRegex(ValueError, 'unresolved'):
+                    outcome('complete', ['CR-001'], ['T002'])
+                blocked = outcome('blocked', ['CR-001'], [], 'no-safe-eligible-correction')
+                self.assertEqual({'action': 'blocked', 'resume_action': 'record-or-reopen-task-and-reinvoke'},
+                    self.controller.route_loop_assessment(blocked, iteration=2, **common))
+                self.assertEqual('no-progress', self.controller.route_loop_assessment(
+                    baseline, iteration=2, **common)['blocker'])
+                self.assertEqual('loop-cap-exhausted', self.controller.route_loop_assessment(
+                    current, iteration=loop['max_iterations'], **common)['blocker'])
+                question = {'question': 'Which data retention rule is approved?', 'assessment': blocked}
+                self.assertNotIn('answer', question)
+                self.assertIn('never infer', review['prompt'])
+                self.assertIn('no safe eligible', review['prompt'])
+                self.assertIn('successful command', review['prompt'])
+                self.assertNotIn('speckit.flow-kit-', ' '.join(commands(workflow['steps'])))
+                # Existing Closeout roadmap approval remains outside the correction branch.
+                if purpose != 'implement':
+                    route = find_step(workflow['steps'], 'route-convergence-correction' if purpose == 'converge' else 'route-closeout-correction')
+                    self.assertEqual([], self.controller.select_switch_branch(route, 'blocked'))
+                    self.assertFalse(any('roadmap.write' in c for c in commands(route['cases']['continue'])))
 
 
 if __name__ == "__main__":

@@ -70,56 +70,56 @@ class CatalogReleaseTests(unittest.TestCase):
         expectations = {
             "speckit-flow-start-feature": {},
             "speckit-flow-select-feature": {
-                "list-roadmap-options": "Architect", "prepare-feature-selection": "Architect",
-                "verify-feature-selection": "Verifier",
+                "list-roadmap-options": "Roadmap Agent", "prepare-feature-selection": "Roadmap Agent",
+                "verify-feature-selection": "Reviewer",
             },
             "speckit-flow-specify": {
-                "inspect-active-feature": "Architect", "prepare-specification-request": "Architect",
-                "draft-specification": "Architect", "assess-created-spec-linkage": "Verifier",
-                "verify-repaired-spec-linkage": "Verifier", "brief-against-roadmap": "Verifier",
+                "inspect-active-feature": "Roadmap Agent", "prepare-specification-request": "Specifier",
+                "draft-specification": "Specifier", "assess-created-spec-linkage": "Reviewer",
+                "verify-repaired-spec-linkage": "Reviewer", "brief-against-roadmap": "Reviewer",
             },
             "speckit-flow-clarify": {
-                "clarify-session": "Architect", "assess-clarification-after-session": "Verifier",
+                "clarify-session": "Specifier", "assess-clarification-after-session": "Reviewer",
             },
             "speckit-flow-plan": {
-                "create-plan": "Architect", "verify-plan-output": "Verifier",
+                "create-plan": "Planner", "verify-plan-output": "Reviewer",
             },
             "speckit-flow-tasks": {
-                "generate-tasks": "Architect", "verify-task-output": "Verifier",
+                "generate-tasks": "Tasker", "verify-task-output": "Reviewer",
             },
             "speckit-flow-analyze-remediate": {
-                "remediate-specification": "Architect", "remediate-plan": "Architect",
-                "remediate-tasks": "Architect", "analyze-artifacts": "Verifier", "assess-analysis": "Verifier",
+                "remediate-specification": "Specifier", "remediate-plan": "Planner",
+                "remediate-tasks": "Tasker", "analyze-artifacts": "Reviewer", "assess-analysis": "Reviewer",
             },
             "speckit-flow-implement": {
-                "assess-implementation-state": "Verifier", "implement-eligible-work": "Builder",
-                "assess-implementation-after-pass": "Verifier",
+                "assess-implementation-state": "Reviewer", "implement-eligible-work": "Coder",
+                "assess-implementation-after-pass": "Code Reviewer",
             },
             "speckit-flow-converge": {
-                "append-task-remediation": "Architect", "reconcile-convergence-specification": "Architect",
-                "reconcile-convergence-plan": "Architect", "reconcile-convergence-tasks": "Architect",
-                "analyze-remediation-tasks": "Verifier", "assess-remediation-eligibility": "Verifier",
-                "implement-remediation": "Builder", "assess-convergence": "Verifier",
+                "append-task-remediation": "Tasker", "reconcile-convergence-specification": "Specifier",
+                "reconcile-convergence-plan": "Planner", "reconcile-convergence-tasks": "Tasker",
+                "analyze-remediation-tasks": "Reviewer", "assess-remediation-eligibility": "Reviewer",
+                "implement-remediation": "Coder", "assess-convergence": "Code Reviewer",
             },
             "speckit-flow-closeout": {
-                "assess-closeout-readiness": "Verifier", "mark-converged-specification-complete": "Architect",
-                "debrief-roadmap": "Verifier", "assess-closeout-debrief": "Verifier",
-                "reconcile-closeout-specification": "Architect", "reconcile-closeout-plan": "Architect",
-                "reconcile-closeout-tasks": "Architect", "analyze-closeout-artifacts": "Verifier",
-                "assess-closeout-task-eligibility": "Verifier", "implement-closeout-eligible-tasks": "Builder",
-                "prepare-wiki-maintenance": "Verifier", "ingest-curated-context": "Builder",
-                "lint-wiki": "Verifier", "assess-wiki-maintenance": "Verifier", "verify-closeout-readiness": "Verifier",
+                "assess-closeout-readiness": "Reviewer", "mark-converged-specification-complete": "Specifier",
+                "debrief-roadmap": "Reviewer", "assess-closeout-debrief": "Code Reviewer",
+                "reconcile-closeout-specification": "Specifier", "reconcile-closeout-plan": "Planner",
+                "reconcile-closeout-tasks": "Tasker", "analyze-closeout-artifacts": "Reviewer",
+                "assess-closeout-task-eligibility": "Reviewer", "implement-closeout-eligible-tasks": "Coder",
+                "prepare-wiki-maintenance": "Roadmap Agent", "ingest-curated-context": "Wiki Curator",
+                "lint-wiki": "Reviewer", "assess-wiki-maintenance": "Reviewer", "verify-closeout-readiness": "Reviewer",
             },
         }
         expectations["speckit-flow-wiki-lint-update"] = {
-            "lint-wiki": "Verifier", "assess-wiki-findings": "Verifier", "refresh-stale-source": "Builder",
+            "lint-wiki": "Reviewer", "assess-wiki-findings": "Reviewer", "refresh-stale-source": "Wiki Curator",
         }
         expected_versions = {
-            "speckit-flow-wiki-lint-update": "0.1.0",
-            "speckit-flow-start-feature": "0.6.0", "speckit-flow-select-feature": "0.1.0", "speckit-flow-specify": "0.1.0", "speckit-flow-clarify": "0.4.2",
-            "speckit-flow-plan": "0.4.2", "speckit-flow-tasks": "0.4.2",
-            "speckit-flow-analyze-remediate": "0.4.2", "speckit-flow-implement": "0.4.2",
-            "speckit-flow-converge": "0.4.2", "speckit-flow-closeout": "0.6.0",
+            "speckit-flow-wiki-lint-update": "0.1.2",
+            "speckit-flow-start-feature": "0.6.0", "speckit-flow-select-feature": "0.1.1", "speckit-flow-specify": "0.1.1", "speckit-flow-clarify": "0.4.4",
+            "speckit-flow-plan": "0.4.5", "speckit-flow-tasks": "0.4.5",
+            "speckit-flow-analyze-remediate": "0.4.5", "speckit-flow-implement": "0.4.5",
+            "speckit-flow-converge": "0.4.7", "speckit-flow-closeout": "0.6.3",
         }
         step_pattern = __import__("re").compile(r"^(\s*)- id: ([A-Za-z0-9_-]+)$")
         for workflow_id, expected_steps in expectations.items():

@@ -1,12 +1,12 @@
 # Feature 014 Workflow Review Baseline
 
-This is a read-only first pass over the eight source `workflow.yml` files. It records where the current graph reaches a conclusion, stops after one corrective step, or asks the operator to classify an outcome. It is evidence for the Feature 014 review, not an approved replacement design.
+This is the historical pre-change read-only first pass over the original eight source `workflow.yml` files. It records where the current graph reaches a conclusion, stops after one corrective step, or asks the operator to classify an outcome. It is evidence for the Feature 014 review, not an approved replacement design.
 
 ## Review lens
 
 For each workflow, verify the success condition, every branch, the evidence used to route routine outcomes, the exact human decision gates, the continuation path after changed evidence, and a bounded stop for repeated findings or lack of progress. Test both the manual path and the direct Codex controller path. A workflow may finish without starting the next separately invoked phase.
 
-## Current graph observations
+## Baseline graph observations
 
 | Workflow | Current route | Review target |
 |---|---|---|

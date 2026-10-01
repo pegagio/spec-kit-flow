@@ -8,20 +8,20 @@ The dark Start circle marks workflow entry. Rectangles are prompt steps, diamond
 flowchart TD
     start((Start))
     loop{{"convergence-remediation-loop<br/>condition: assess-convergence state == continue<br/>max_iterations: 6"}}
-    converge(["append-task-remediation<br/>(Architect)<br/>command: speckit.converge"])
-    assess["assess-convergence<br/>(Verifier)"]
+    converge(["append-task-remediation<br/>(Tasker)<br/>command: speckit.converge"])
+    assess["assess-convergence<br/>(Code Reviewer)"]
     correctionRoute@{ shape: diam, label: "route-convergence-correction" }
     prepare["prepare-convergence-flowback"]
     specRoute@{ shape: diam, label: "route-specification-remediation" }
-    spec(["reconcile-convergence-specification<br/>(Architect)<br/>command: speckit.specify"])
+    spec(["reconcile-convergence-specification<br/>(Specifier)<br/>command: speckit.specify"])
     planRoute@{ shape: diam, label: "route-plan-remediation" }
-    plan(["reconcile-convergence-plan<br/>(Architect)<br/>command: speckit.plan"])
+    plan(["reconcile-convergence-plan<br/>(Planner)<br/>command: speckit.plan"])
     tasksRoute@{ shape: diam, label: "route-task-remediation" }
-    tasks(["reconcile-convergence-tasks<br/>(Architect)<br/>command: speckit.tasks"])
-    analyze(["analyze-remediation-tasks<br/>(Verifier)<br/>command: speckit.analyze"])
-    eligibility["assess-remediation-eligibility<br/>(Verifier)"]
+    tasks(["reconcile-convergence-tasks<br/>(Tasker)<br/>command: speckit.tasks"])
+    analyze(["analyze-remediation-tasks<br/>(Reviewer)<br/>command: speckit.analyze"])
+    eligibility["assess-remediation-eligibility<br/>(Reviewer)"]
     implementRoute@{ shape: diam, label: "route-remediation-implementation" }
-    implement(["implement-remediation<br/>(Builder)<br/>command: speckit.implement"])
+    implement(["implement-remediation<br/>(Coder)<br/>command: speckit.implement"])
     report["report-convergence-outcome"]
 
     start --> loop
@@ -57,3 +57,5 @@ Every pass starts with `speckit.converge`. It checks current implementation and 
 Corrections enter the shared waterfall at specification, plan, or tasks as needed; implementation-only gaps skip all three stages. Fresh task analysis and eligibility verification precede implementation. Successful implementation returns directly to `speckit.converge`. Eligibility `complete` only means no eligible task work and still returns for fresh convergence; eligibility blockers or required operator decisions stop immediately through the outcome report. Failed commands, unresolved implementation blockers, invalid actions, and stale evidence also stop before further work.
 
 Six total passes allow five corrections and a final convergence check. A clean sixth check succeeds; unresolved findings at that check stop before a sixth correction. Empty top-level branches reach loop exit without another command invocation. The controller stop edges show its declared routing policy in addition to YAML branch joins. One final report handles all outcomes; Close Out remains separately invoked.
+
+Code Reviewer uses an attributable implementation delta and returns exact review findings separately from the strict envelope. Coder receives those findings through eligible existing task correction. Fresh review confirms resolution; absent a safe eligible route, the workflow reports a specific blocked recovery. Product questions retain operator ownership.

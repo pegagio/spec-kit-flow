@@ -1,11 +1,15 @@
 ---
 title: Bundle and workflow model
 type: concept
-sources: [S001, S002, S016, S017, S018, S019]
-updated: 2026-09-29
+sources: [S001, S002, S016, S017, S018, S019, S021]
+updated: 2026-09-30
 ---
 
 # Bundle and workflow model
+
+## Earlier source contracts
+
+The following records retain earlier source intent; the accepted Feature 014 refinements below govern the revised workflow design. (S021)
 
 The `spec-kit-flow` repository and bundle own generic workflow and feedback source. A bundle composes versioned components; each workflow remains an independently reviewable source package, and extensions retain their reviewed manifest IDs. (S001, S002)
 
@@ -26,6 +30,16 @@ Verified Feature 013 defines direct `flow-kit-*` Codex controller skills install
 Verified Feature 015 replaces concrete step-model declarations in updated workflow source with explicit delegation and reviewed native agent names. The checked-in catalog still represents the earlier release. (S018)
 
 The completed Feature 013 specification requires the FlowKit catalog route to manage the direct skills; native Specify bundle commands manage only their declared Specify components. (S019)
+
+## Feature 014 approved scope
+
+Feature 014's approved scope expands the reviewed design to ten active workflows and retains Start Feature as a stop-only deprecated definition excluded from active bundle and controller delivery. Select Feature and Specify replace the combined phase; Wiki Lint Update is separately invoked. The scope also includes a project-owned rendering skill and source-faithful diagrams. These roadmap requirements do not establish release or consumer adoption. (S018)
+
+**Accepted supersession**: S001/S002's earlier eight-workflow bundle description includes active Start Feature; the amended S018 scope replaces that phase and requires ten active workflows. The earlier description remains historical source evidence; the F014 design is the prospective refinement. (S001, S002, S018, S021)
+
+## Feature 014 workflow design
+
+The specification names ten active workflows: Select Feature, Specify, Clarify, Plan, Tasks, Analyze and Remediate, Implement, Converge, Close Out, and Wiki Lint Update. Deprecated Start Feature reports deprecation without work and is excluded from active bindings. Independent source review and manual paths remain required. This specification describes intended behavior and validation requirements, not publication or acceptance. (S021)
 
 ## Related pages
 

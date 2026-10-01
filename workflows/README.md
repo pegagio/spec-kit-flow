@@ -2,30 +2,30 @@
 
 These are the reviewed, versioned source packages for the human-directed Spec Kit Flow super-states. Install a package only from its reviewed directory, validate native list, information, resolution, registry attribution, and source-copy equality, and never edit an installed copy. The FlowKit catalog also installs a direct Codex skill for each workflow; these controller skills follow the installed YAML and keep its prompts, commands, gates, and branches authoritative.
 
-Each packaged workflow preserves its manual-prompt fallback and explicit human gates. Delegated executable steps name a reviewed Codex custom agent in `flow_kit.agent`; Codex loads that agent's consumer-owned configuration. FlowKit does not map roles to models or parse custom-agent TOML. Executable steps without delegation metadata, gates, branch decisions, and questions remain in the main Codex task.
+Each packaged workflow preserves its manual-prompt fallback and explicit human gates. Assessment envelopes in both the installed and manual paths require `reason_code` and any `resume_action` to match `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`: lowercase letters and digits joined by single hyphens, with no underscores or spaces. Delegated executable steps name a reviewed Codex custom agent in `flow_kit.agent`; Codex loads that agent's consumer-owned configuration. FlowKit does not map roles to models or parse custom-agent TOML. Executable steps without delegation metadata, gates, branch decisions, and questions remain in the main Codex task.
 
 Use the selected consumer project in the Codex task and invoke one skill at a time. Required inputs come from the installed workflow definition:
 
 | Workflow | Codex skill and display name | Required input | Delegated step agents |
 | --- | --- | --- | --- |
-| `speckit-flow-select-feature` | `$flow-kit-select-feature` — FlowKit Select Feature | optional `feature_request` | inventory and selection preparation: Architect; activation verification: Verifier |
-| `speckit-flow-specify` | `$flow-kit-specify` — FlowKit Specify | active `.specify/feature.json` | target inspection, request preparation, drafting: Architect; linkage and brief: Verifier |
-| `speckit-flow-clarify` | `$flow-kit-clarify` — FlowKit Clarify | `feature_context` | `clarify-session`: Architect; ambiguity assessments: Verifier |
-| `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`: Architect; `verify-plan-output`: Verifier |
-| `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`: Architect; `verify-task-output`: Verifier |
-| `speckit-flow-analyze-remediate` | `$flow-kit-analyze-remediate` — FlowKit Analyze | `feature_context` | `analyze-artifacts`, `assess-analysis`: Verifier; `remediate-specification`, `remediate-plan`, `remediate-tasks`: Architect |
-| `speckit-flow-implement` | `$flow-kit-implement` — FlowKit Implement | `feature_context` | task assessments: Verifier; `implement-eligible-work`: Builder |
-| `speckit-flow-converge` | `$flow-kit-converge` — FlowKit Converge | `feature_context` | task recording and shared waterfall stages: Architect; analysis, eligibility, and convergence assessment: Verifier; `implement-remediation`: Builder |
-| `speckit-flow-closeout` | `$flow-kit-closeout` — FlowKit Close Out | `feature_context` (exact repository-relative spec directory) | assessment, analysis, debrief, and lint: Verifier; spec/plan/tasks correction: Architect; eligible implementation and wiki ingest: Builder |
-| `speckit-flow-wiki-lint-update` | `$flow-kit-wiki-lint-update` — FlowKit Wiki Lint Update | optional `lint_scope`, `authorized_urls` | lint and assessment: Verifier; source refresh: Builder |
+| `speckit-flow-select-feature` | `$flow-kit-select-feature` — FlowKit Select Feature | optional `feature_request` | roadmap reading and selection preparation: Roadmap Agent; activation verification: Reviewer |
+| `speckit-flow-specify` | `$flow-kit-specify` — FlowKit Specify | active `.specify/feature.json` | target inspection: Roadmap Agent; request preparation and drafting: Specifier; linkage and brief: Reviewer |
+| `speckit-flow-clarify` | `$flow-kit-clarify` — FlowKit Clarify | `feature_context` | `clarify-session`: Specifier; ambiguity assessments: Reviewer |
+| `speckit-flow-plan` | `$flow-kit-plan` — FlowKit Plan | `feature_context` | `create-plan`: Planner; `verify-plan-output`: Reviewer |
+| `speckit-flow-tasks` | `$flow-kit-tasks` — FlowKit Tasks | `feature_context` | `generate-tasks`: Tasker; `verify-task-output`: Reviewer |
+| `speckit-flow-analyze-remediate` | `$flow-kit-analyze-remediate` — FlowKit Analyze | `feature_context` | `analyze-artifacts`, `assess-analysis`: Reviewer; artifact correction: Specifier, Planner, or Tasker by layer |
+| `speckit-flow-implement` | `$flow-kit-implement` — FlowKit Implement | `feature_context` | initial task assessment: Reviewer; implementation: Coder; post-pass assessment: Code Reviewer |
+| `speckit-flow-converge` | `$flow-kit-converge` — FlowKit Converge | `feature_context` | task recording and waterfall correction: Tasker, Specifier, Planner by layer; analysis and eligibility: Reviewer; implementation: Coder; convergence/code assessment: Code Reviewer |
+| `speckit-flow-closeout` | `$flow-kit-closeout` — FlowKit Close Out | `feature_context` (exact repository-relative spec directory) | readiness, debrief, analysis, eligibility, and lint: Reviewer; post-implementation debrief assessment: Code Reviewer; artifact correction: Specifier, Planner, or Tasker; implementation: Coder; wiki preparation: Roadmap Agent; wiki ingest: Wiki Curator |
+| `speckit-flow-wiki-lint-update` | `$flow-kit-wiki-lint-update` — FlowKit Wiki Lint Update | optional `lint_scope`, `authorized_urls` | lint and assessment: Reviewer; source refresh: Wiki Curator |
 
 For example: `$flow-kit-clarify feature_context=013`. The controller checks the selected compatible Specify runtime and installed workflow, then validates every named assignment across possible branches. It requests each native child with the exact reviewed `agent_type`. Codex's subagent activity shows each launch: probe labels include the agent name, and work-child labels include the agent name and step ID. Model and effort appear when Codex exposes them. The label provides launch visibility; the exact `agent_type` request establishes native selection. No run-time assignment override is available. Codex custom-agent configuration belongs to the consumer and is loaded by Codex itself. Clarification questions and review gates appear in the main task. A child question is answered there and relayed to the same child. The main task reports results and visible workspace diffs. Use the manual paths below if named-agent dispatch is unavailable.
 
-For a project-scoped agent, create a file such as `.codex/agents/architect.toml` in the consumer project:
+For a project-scoped agent, create a file such as `.codex/agents/reviewer.toml` in the consumer project:
 
 ```toml
-name = "Architect"
-description = "Plans and reviews workflow changes."
+name = "Reviewer"
+description = "Independently assesses workflow artifacts."
 developer_instructions = "Follow the task scope and return a concise result to the parent."
 ```
 
@@ -35,12 +35,12 @@ A delegated workflow step names the matching native agent directly:
 - id: analyze-artifacts
   flow_kit:
     delegated: true
-    agent: Verifier
+    agent: Reviewer
   command: "speckit.analyze"
   integration: "{{ inputs.integration }}"
 ```
 
-Codex owns optional `model` and `model_reasoning_effort` fields and their inheritance behavior. FlowKit does not read or change `.codex/agents/` files. Each delegated workflow step must use one of the reviewed names: Architect, Builder, Coder, or Verifier.
+Codex owns optional `model` and `model_reasoning_effort` fields and their inheritance behavior. FlowKit does not read or change consumer `.codex/agents/` files. The reviewed work-type names are Roadmap Agent, Specifier, Planner, Tasker, Reviewer, Coder, Code Reviewer, and Wiki Curator. Existing assessment nodes perform independent review; this assignment change adds no workflow nodes.
 
 | Workflow | Core or extension commands |
 | --- | --- |
@@ -83,13 +83,17 @@ Stop as clarified when no significant unresolved ambiguity remains, without invo
 
 When native planning dispatch is unavailable, record the missing required planning files or placeholder sections for the operator-selected reviewed specification, then invoke `speckit.plan`. Let the core skill perform research, constitutional gates, and design generation; keep technical work within the feature scope and ask the operator for substantive product decisions.
 
-Check that required and applicable outputs exist and contain substantive content, accepting justified not-applicable sections. This checks deliverable production, not design quality. If gaps remain and a prior output gap was filled, feed the exact missing files or sections back into `speckit.plan`, preserving completed design. Stop when outputs are populated, an operator answer or blocker prevents continuation, no progress occurs, or the five-pass safety limit is reached. Present artifacts and the exact outcome for review; task generation requires a separate operator instruction.
+Have an independent Reviewer perform structural and semantic assessment against the approved specification, repository constraints, and required and applicable outputs, accepting justified not-applicable sections. Check design consistency, stated tradeoffs and risks, and an actionable validation approach as well as substantive content and unresolved placeholders. Return exact located findings to Planner verbatim, with stable ID, artifact_location, violated_requirement or accepted decision, observed_deficiency, and exact_correction. Feed safely repairable findings back into `speckit.plan`, preserving completed design and existing decisions.
+
+Fresh review must confirm substantive resolution of prior findings and retain new blocking findings before retry or completion; required-file production alone does not establish completion. Wording-only or digest-only edits, renamed or repeated findings, and successful commands do not prove progress. Preserve the substantive product question verbatim, wait for the operator's answer, and never infer that answer. Stop when independent review finds no material gaps, an operator answer or blocker prevents continuation, no progress occurs, or the five-pass safety limit is reached. Present artifacts and the exact outcome for review; task generation requires a separate operator instruction.
 
 ## Manual task-generation path
 
 When native task workflow dispatch is unavailable, record exact missing task output or coverage gaps from the reviewed specification and design, then invoke `speckit.tasks` without a routine pre-generation question. Check that tasks.md is populated with correctly formatted tasks, applicable story phases, dependency coverage, independent test criteria, and the core skill's supporting sections. Unchecked implementation tasks are expected; completion here means generation is finished.
 
-If gaps remain and a prior gap was filled, feed the exact remaining gaps back into `speckit.tasks`, preserving task IDs, completion markers, approved decisions, and completed work. Stop with the exact material design gap, missing prerequisite, operator question, no-progress result, or five-pass safety limit. Present the task plan for review; the operator may separately invoke Analyze. Task generation does not change reviewed design or begin implementation.
+Have an independent Reviewer perform structural and semantic assessment against the approved requirements and reviewed design. Check necessary story and dependency coverage, contradictions, untestable tasks, unresolved placeholders, and unsupported scope. Return exact located findings to Tasker verbatim, with stable ID, artifact_location, violated_requirement or accepted decision, observed_deficiency, and exact_correction. Feed safely repairable findings back into `speckit.tasks`, preserving task IDs, completion markers, approved decisions, and completed work.
+
+Fresh review must confirm substantive resolution of prior findings and retain new blocking findings before retry or completion; required-file production alone does not establish completion. Wording-only or digest-only edits, renamed or repeated findings, and successful commands do not prove progress. Preserve the substantive product question verbatim, wait for the operator's answer, and never infer that answer. Stop with the exact material design gap, missing prerequisite, operator question, no-progress result, or five-pass safety limit. Complete only when independent review finds no material task-quality or coverage gaps. Present the task plan for review; the operator may separately invoke Analyze. Task generation does not change reviewed design or begin implementation.
 
 ## Manual analysis and remediation path
 
@@ -124,3 +128,9 @@ Present the exact roadmap verification patch for approval before running `specki
 Invoke `$flow-kit-wiki-lint-update` to maintain the project wiki; no active feature is required. Empty `lint_scope` runs full wiki lint. An optional exact page filename or supported check narrows the lint scope. Supply exact registered remote source URLs explicitly through `authorized_urls` (one URL per line) before permitting their refresh; registered local project sources identified by stale findings are within invocation scope.
 
 Start with lint, retain all findings, and map source-backed stale pages through cited S-ids to registered source identities. Deduplicate shared sources. Refresh one eligible source per pass, then rerun lint. Independent inconsistencies or other findings remain visible while safe stale sources are refreshed; conflicted authority, unsupported repairs, age-only warnings without substantive update evidence, and unavailable or unauthorized sources are reported for resolution. No timestamp-only refresh or arbitrary claim rewrite is allowed. Continue only when a prior finding is substantively resolved. Twenty-six lint assessments allow at most 25 single-source refreshes and final confirmation; exhausted capacity or no progress reports remaining sources and the smallest safe resumption action. Clean means the latest lint has no unresolved findings. The final report includes every remaining issue, suggested action, refreshed source, and partial update. Do not mutate feature artifacts, roadmap, or Git, and do not invoke another workflow.
+
+## Exact semantic review handoffs
+
+Plan and Tasks keep independent Reviewer findings separate from the strict assessment envelope. Each finding retains its stable ID, artifact location, violated requirement or accepted decision, observed deficiency, and exact correction. Request preparation forwards the full findings verbatim to Planner or Tasker. Fresh review confirms substantive resolution and retains new blocking findings; renamed findings, rewording, changed digests, or command success cannot prove progress. Preserve unanswered product questions for same-child operator relay or a specific blocked recovery. Existing topology and five-pass bounds apply; task history survives correction. Deterministic scripted-agent fixtures verify handoff and controller routing, not live reasoning.
+
+Implement, Converge, and Closeout require an attributable implementation delta for Code Reviewer findings. Retain stable finding IDs, affected locations, requirements, observed deficiencies, exact corrections, and eligible task mappings. Forward those exact findings to Coder through the existing correction path and use fresh independent review to confirm resolution. A finding without a safe eligible task route stops with a specific task-recording or reopening resumption action. Implement cannot invent or reopen tasks. These paths grant no product answer, later workflow invocation, roadmap write, Git integration, or acceptance.

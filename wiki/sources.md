@@ -5,7 +5,7 @@ Sources are immutable inputs — the wiki never edits them.
 
 | ID | Source | Type | First ingested | Last ingested | Pages touched |
 |----|--------|------|----------------|---------------|---------------|
-| S001 | `AGENTS.md` | file | 2026-09-24 | 2026-09-29 | `project-authority-and-review-gates.md` |
+| S001 | `AGENTS.md` | file | 2026-09-24 | 2026-09-30 | `consumer-feedback-boundary.md`, `diagram-adapter-boundary.md` |
 | S002 | `README.md` | file | 2026-09-24 | 2026-09-29 | `codex-workflow-controllers.md`, `installation-and-release-lifecycle.md`, `workflow-lifecycle.md` |
 | S003 | `docs/architecture.md` | file | 2026-09-24 | 2026-09-24 | `diagram-adapter-boundary.md`, `project-authority-and-review-gates.md` |
 | S004 | `docs/feedback.md` | file | 2026-09-24 | 2026-09-24 | `consumer-feedback-boundary.md` |
@@ -22,6 +22,7 @@ Sources are immutable inputs — the wiki never edits them.
 | S015 | `specs/010-maintainer-intake/spec.md` | file | 2026-09-24 | 2026-09-24 | `consumer-feedback-boundary.md` |
 | S016 | `specs/011-bundle-catalog/spec.md` | file | 2026-09-24 | 2026-09-24 | `bundle-and-workflow-model.md`, `installation-and-release-lifecycle.md` |
 | S017 | `.specify/memory/constitution.md` | file | 2026-09-26 | 2026-09-28 | `project-authority-and-review-gates.md` |
-| S018 | `.specify/memory/roadmap.md` | file | 2026-09-26 | 2026-09-29 | `agent-roles-and-inheritance.md`, `bundle-and-workflow-model.md`, `codex-workflow-controllers.md`, `workflow-lifecycle.md` |
+| S018 | `.specify/memory/roadmap.md` | file | 2026-09-26 | 2026-09-30 | `bundle-and-workflow-model.md`, `workflow-lifecycle.md`, `codex-workflow-controllers.md`, `agent-roles-and-inheritance.md` |
 | S019 | `specs/013-bundle-workflow-launchers/spec.md` | file | 2026-09-26 | 2026-09-28 | `codex-workflow-controllers.md`, `bundle-and-workflow-model.md` |
 | S020 | `specs/015-agent-roles-assignment-inheritance/spec.md` | file | 2026-09-29 | 2026-09-29 | `agent-roles-and-inheritance.md` |
+| S021 | `specs/014-flowkit-workflow-improvements/spec.md` | file | 2026-09-30 | 2026-09-30 | `artifact-flow-back-and-convergence.md`, `bundle-and-workflow-model.md`, `closeout-and-verification-boundary.md`, `feature-start-contract.md`, `preimplementation-review-gates.md`, `workflow-lifecycle.md` |

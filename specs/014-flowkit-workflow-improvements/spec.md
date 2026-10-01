@@ -6,9 +6,21 @@
 
 **Status**: Draft
 
-**Input**: Review all eight FlowKit workflows so each has the right gates, automation, continuation paths, and bounded stops to reach a sound conclusion; incorporate Feature 015's named-agent design, build usable agent configurations, and address the recorded workflow issues as symptoms of incomplete continuation.
+**Input**: Review the original eight FlowKit workflows so each has the right gates, automation, continuation paths, and bounded stops to reach a sound conclusion; incorporate Feature 015's named-agent design, build usable agent configurations, and address the recorded workflow issues as symptoms of incomplete continuation.
+
+## Contents
+
+This specification records accepted workflow intent and the requirements for completion.
+
+- [Clarifications](#clarifications)
+- [User Scenarios and Testing](#user-scenarios--testing)
+- [Requirements](#requirements)
+- [Success Criteria](#success-criteria)
+- [Assumptions](#assumptions)
 
 ## Clarifications
+
+The initial session established the continuation and authority boundaries retained by subsequent reviews.
 
 ### Session 2026-09-29
 
@@ -20,11 +32,11 @@
 
 ## User Scenarios & Testing
 
-The operator invokes each workflow separately. The primary delivery is a step-by-step review of all eight workflows as complete control loops. Routine evidence-backed work should continue within an invoked workflow until its defined success, human decision, or genuine blocker, subject to reviewed authority.
+The operator invokes each workflow separately. The delivered source has ten active workflows: Select Feature, Specify, Clarify, Plan, Tasks, Analyze and Remediate, Implement, Converge, Close Out, and Wiki Lint Update. Start Feature remains a stop-only deprecated source, excluded from active bundle and launcher bindings. The review began with eight workflows and incorporated the operator-approved replacements and additions. Routine evidence-backed work should continue within an invoked workflow until its defined success, human decision, or genuine blocker, subject to reviewed authority.
 
 ### User Story 1 - Review Every Workflow End to End (Priority: P1)
 
-A maintainer can trace each of the eight FlowKit workflows from invocation to every possible terminal result. Each routine outcome has evidence-based routing and a bounded continuation when further in-scope work is needed. A human gate appears where the operator must decide, and a stop explains what input or authority is missing.
+A maintainer can trace each of the ten active FlowKit workflows from invocation to every possible terminal result. Each routine outcome has evidence-based routing and a bounded continuation when further in-scope work is needed. A human gate appears where the operator must decide, and a stop explains what input or authority is missing.
 
 **Independent Test**: For each workflow, enumerate all branch outcomes and run representative successful, remediable, blocked, and consequential-decision cases against its manual and direct Codex paths.
 
@@ -39,30 +51,32 @@ A maintainer can trace each of the eight FlowKit workflows from invocation to ev
 
 The former Start Feature is split into Select Feature and Specify. Selection lists candidates, dependency chains, immediate unlocks, and downstream dependents; the human discusses and chooses one exact feature. Exact approval authorizes its roadmap delta and active `.specify/feature.json` pointer. It never creates a feature directory or writes a specification, and preserves existing spec bytes. Specify is separately invoked, consumes that pointer and unique roadmap mapping, retrieves context, authors the exact target, verifies linkage, and runs the shared brief. The combined workflow is deprecated and excluded from active bundle/controller bindings.
 
-**Independent Test**: Start a feature in a disposable project with a unique eligible entry, then repeat with absent, stale, and conflicting specification-directory mappings.
+**Independent Test**: Exercise selection and specification authoring separately in a disposable project with unique, absent, stale, and conflicting specification-directory mappings; verify selection never writes a specification.
 
 **Acceptance Scenarios**:
 
-1. **Given** an eligible entry and approved start patch, **when** the specification directory is known, **then** the brief resolves that specification to the intended entry.
-2. **Given** a missing mapping, **when** linkage is proposed, **then** the operator sees an exact roadmap patch and no mapping changes before approval.
-3. **Given** stale or conflicting mappings, **when** a unique link cannot be established, **then** the workflow stops with the evidence and a recoverable next action.
-4. **Given** several candidates or no eligible candidate, **when** Start begins, **then** it shows dependency readiness and downstream impact and waits for an exact human selection or deferral without choosing or changing roadmap state.
+1. **Given** a selected eligible entry and exactly approved activation patch, **when** Select Feature completes, **then** the roadmap and active pointer identify that unique target while existing specification bytes remain unchanged and no directory is created.
+2. **Given** that active pointer, **when** Specify is separately invoked, **then** it retrieves cited context, authors only the active target, verifies exact linkage, and runs its uniquely matched brief.
+3. **Given** a missing mapping, **when** linkage is proposed, **then** the operator sees an exact roadmap patch and no mapping changes before approval.
+4. **Given** stale or conflicting mappings, **when** a unique link cannot be established, **then** the workflow stops with the evidence and a recoverable next action.
+5. **Given** several candidates or no eligible candidate, **when** Select Feature begins, **then** it shows dependency readiness and downstream impact and waits for an exact human selection or deferral without choosing or changing roadmap state.
 
 ### User Story 3 - Assess Clarification and Planning Readiness (Priority: P1)
 
 After clarification, the operator receives an evidence-backed assessment of remaining significant ambiguity. A separate planning invocation delegates to the existing planning skill, which owns prerequisite checks, research, design generation, and constitutional gates.
 
-**Independent Test**: Exercise clarified, materially ambiguous, and missing-prerequisite specifications through separate Clarify and Plan runs.
+**Independent Test**: Exercise clarified, materially ambiguous, and missing-prerequisite specifications through separate Clarify and Plan runs; include populated planning artifacts with semantic deficiencies, exact independent findings returned to Planner, and bounded correction or stop.
 
 **Acceptance Scenarios**:
 
 1. **Given** a clarification session reaches its five-question limit, **when** significant ambiguity remains, **then** the workflow assesses the remaining questions and starts another bounded session within the current invocation; each substantive answer still comes from the operator.
 2. **Given** a reviewed specification without material product ambiguity, **when** the operator invokes Plan, **then** planning proceeds without a routine readiness confirmation.
 3. **Given** a missing prerequisite or material product ambiguity, **when** the core planning skill encounters it, **then** the workflow reports the exact blocker or operator question without choosing a product answer.
+4. **Given** populated planning artifacts with a contradiction or missing requirement coverage, **when** the existing independent assessment identifies the semantic deficiency, **then** its exact findings return to Planner through the existing correction path; fresh assessment confirms substantive resolution or reports a bounded stop.
 
 ### User Story 4 - Generate and Assess Tasks (Priority: P1)
 
-The operator invokes Tasks for a reviewed plan. The workflow invokes the core task skill, verifies generation output, and retries exact output or coverage gaps while progress is verified. The operator may review it and separately invoke Analyze.
+The operator invokes Tasks for a reviewed plan. The workflow invokes the core task skill, checks generation structure, independently assesses semantic coverage and consistency, and returns exact findings to Tasker while progress permits correction. The operator may review it and separately invoke Analyze.
 
 **Independent Test**: Run Tasks with complete design artifacts and with a material design gap; inspect generation, coverage, and the resulting stop or success.
 
@@ -70,7 +84,8 @@ The operator invokes Tasks for a reviewed plan. The workflow invokes the core ta
 
 1. **Given** reviewed design without a material gap, **when** the operator invokes Tasks, **then** generation begins without an extra routine pre-generation question.
 2. **Given** complete generated coverage, **when** the agent assesses tasks, **then** the workflow exits successfully without a routine post-generation human gate.
-3. **Given** missing coverage or a material design gap, **when** tasks are assessed, **then** the workflow reports the exact gap without beginning implementation.
+3. **Given** incomplete generated coverage that can be repaired within reviewed design, **when** Tasks assesses it, **then** exact gaps feed another core-skill pass while semantic progress and the cap permit.
+4. **Given** a material design gap or required product answer, **when** generation cannot safely proceed, **then** Tasks reports the exact blocker without beginning implementation.
 
 ### User Story 5 - Converge Through Bounded Remediation (Priority: P1)
 
@@ -103,16 +118,43 @@ The operator invokes Close Out for a converged feature. Clear completion evidenc
 
 ### User Story 7 - Assign Usable Agents to Delegated Steps (Priority: P1)
 
-The operator can inspect the agent selected for every delegated step and use each reviewed name in this repository's own Codex checkout. Assignments reflect the step's responsibility, while gates and main-task steps remain with the controller. The four Feature 015 names are the starting set; an additional name is proposed only when the review shows a distinct role that the four cannot express clearly.
+The operator can inspect the agent selected for every delegated step and use each reviewed name in this repository's own Codex checkout. Agent names identify the kind of work delegated, so each role can be tuned without changing unrelated step types. A work author and its reviewer are different agent types. Roadmap work uses a Roadmap Agent that can read or write when a workflow declares the task, while existing approval gates remain in the main task. Code review uses a separate Code Reviewer rather than the higher-level Reviewer used for specifications, plans, tasks, and roadmap alignment.
 
-**Independent Test**: Inventory all delegated steps and native agent files, review each assignment against its step purpose, then probe every distinct name used by every workflow branch in a disposable consumer and this source checkout.
+**Independent Test**: Inventory all delegated steps and native agent files, review each assignment against its step purpose, verify that authoring and review use different agent types, then probe every distinct name used by every workflow branch in a disposable consumer and this source checkout.
 
 **Acceptance Scenarios**:
 
 1. **Given** a delegated step, **when** its workflow is reviewed, **then** the step has one justified, exact reviewed agent name and can be dispatched without a fallback.
 2. **Given** a gate or main-task step, **when** assignments are reviewed, **then** it remains in the main task and receives no child assignment.
-3. **Given** a name beyond Architect, Builder, Coder, and Verifier is proposed, **when** it is reviewed, **then** its distinct purpose and configuration are approved before the name appears in workflow source.
-4. **Given** this repository's Codex checkout, **when** each used agent is probed, **then** its native configuration is usable; temporary probe instructions are not mistaken for production behavior.
+3. **Given** a specification, plan, or task list is authored, **when** an existing workflow assessment reviews its output, **then** the review uses a different agent type; Plan and Tasks return actionable findings through their existing repair loops.
+4. **Given** implementation code is produced, **when** an existing post-implementation assessment reviews it, **then** a Code Reviewer distinct from Coder checks the changes and routes findings through the existing correction path or reports a bounded stop.
+5. **Given** a workflow delegates roadmap work, **when** it reads or prepares roadmap changes, **then** it uses the Roadmap Agent and preserves every exact human approval gate before a consequential write.
+6. **Given** this repository's Codex checkout, **when** each used agent is probed, **then** its native configuration is usable; temporary probe instructions are not mistaken for production behavior.
+
+### User Story 8 - Refresh Wiki Sources and Report Every Finding (Priority: P1)
+
+The operator invokes Wiki Lint Update with a full or narrowed lint scope. It starts with lint, maps source-backed stale findings through citations to registered sources, refreshes one authorized source at a time, and re-lints. Independent safe refreshes proceed while other findings remain visible. Source authority conflicts and unsupported repairs are reported for operator resolution.
+
+**Independent Test**: Exercise multiple stale pages sharing a source, multiple independent stale sources, non-stale findings, unauthorized URLs, no progress, and capacity exhaustion without requiring an active feature.
+
+**Acceptance Scenarios**:
+
+1. **Given** stale pages with registered citations, **when** lint identifies them, **then** shared sources are deduplicated and each selected ingestion receives exactly one source token before fresh lint.
+2. **Given** contradictions or other findings alongside safely refreshable sources, **when** refresh proceeds, **then** every finding remains recorded and conflicted authority is not silently resolved.
+3. **Given** unavailable or unauthorized sources, no progress, or the 25-refresh bound, **when** updates stop, **then** the report preserves pending sources and the smallest safe resumption action.
+4. **Given** the final successful lint has no unresolved findings, **when** the workflow concludes, **then** it reports clean without changing feature artifacts, roadmap state, or Git.
+
+### User Story 9 - Inspect Workflow Diagrams (Priority: P2)
+
+The operator can render a selected source workflow into a project-local flowchart whose nodes and transitions can be reconciled directly with the definition.
+
+**Independent Test**: Render a selected definition and compare all declared step IDs, branches, types, delegation, and the entry edge with the source.
+
+**Acceptance Scenarios**:
+
+1. **Given** a selected workflow, **when** the project rendering skill runs, **then** its adjacent diagram has one Start marker connected to the first declared step and every source step appears exactly once.
+2. **Given** a node, **when** the operator reads it, **then** its exact ID, parenthesized agent when present, and nonblank command are visible; type and delegation use shapes and outlines without redundant labels or placeholders.
+3. **Given** collapsed paths or loop guards, **when** the diagram is rendered, **then** descriptive declared transition labels and the actual branches, joins, conditions, and bounds preserve source semantics.
 
 ### Edge Cases
 
@@ -136,9 +178,9 @@ Constitution 6.0.0 prospectively permits declared, bounded correction and reasse
 - **FR-002**: Select Feature MUST present candidates and dependency impact, allow discussion before an explicit human choice, and activate only the exactly approved unique roadmap target through `.specify/feature.json` without creating or modifying a specification. Specify MUST consume that active target, pass `SPECIFY_FEATURE_DIRECTORY` explicitly, author or revise only its specification, and establish a uniquely matched roadmap brief or report a specific linkage blocker. Mapping and lifecycle changes require exact roadmap patch approval. The combined Start Feature MUST be deprecated and perform no work.
 - **FR-003**: Clarify MUST assess remaining significant ambiguity from current specification evidence after each bounded session, explain its findings, and continue with another bounded session in the same invocation when specific significant questions remain. The five-question command cap remains per session, substantive answers remain operator-provided, and the workflow MUST stop on a reviewed safety bound, lack of progress, or a consequential decision rather than equating the cap or an empty question set with readiness.
 - **FR-004**: Clarify MUST keep substantive operator questions and routing in the main task and MUST NOT launch Plan.
-- **FR-005**: Plan MUST invoke `speckit.plan` for the selected reviewed specification and present the resulting design artifacts or exact blocker. The core skill owns prerequisite checks, research, design generation, and constitutional gates. The wrapper MUST check that required and applicable output artifacts are present and populated, then feed exact missing files or placeholder sections back into the core skill while output gaps are being resolved. It MUST preserve completed design, accept justified not-applicable sections, and stop for operator input, blockers, no progress, or the reviewed safety bound. This is output verification, not design review. Substantive product decisions remain operator-provided and Tasks remains separately invoked.
+- **FR-005**: Plan MUST invoke `speckit.plan` for the selected reviewed specification and present the resulting design artifacts or exact blocker. The core skill owns prerequisite checks, research, design generation, and constitutional gates. The wrapper MUST check that required and applicable output artifacts are present and populated, then feed exact missing files or placeholder sections back into the core skill while output gaps are being resolved. It MUST preserve completed design, accept justified not-applicable sections, and stop for operator input, blockers, no progress, or the reviewed safety bound. Structural output checks MUST be accompanied by independent semantic assessment in the existing assessment step, as required by FR-028. Exact actionable findings MUST return to Planner through the existing bounded correction path; populated artifacts alone MUST NOT establish satisfactory output. Substantive product decisions remain operator-provided and Tasks remains separately invoked.
 - **FR-006**: Tasks MUST treat invocation as authorization to generate from reviewed design without a routine pre-generation confirmation; a material design gap MUST cause a specific stop.
-- **FR-007**: Tasks MUST wrap `speckit.tasks` in a bounded output-verification loop: prepare exact gaps, invoke the core skill, verify tasks.md is populated with required format, sections, and story/dependency coverage, then retry remaining gaps while progress is verified. Retries MUST preserve existing task IDs, completion markers, completed work, and reviewed design. Unchecked implementation tasks MUST NOT count as incomplete generation. Operator input, material design gaps, missing prerequisites, no progress, or the reviewed cap cause a specific stop. Task review, Analyze, and implementation remain separate operator actions.
+- **FR-007**: Tasks MUST wrap `speckit.tasks` in a bounded output-verification loop: prepare exact gaps, invoke the core skill, verify tasks.md is populated with required format, sections, and story/dependency coverage, then independently assess semantic consistency and coverage and return exact actionable findings to Tasker through the existing bounded correction path while progress is verified. Retries MUST preserve existing task IDs, completion markers, completed work, and reviewed design. Unchecked implementation tasks MUST NOT count as incomplete generation. Operator input, material design gaps, missing prerequisites, no progress, or the reviewed cap cause a specific stop. Additional operator review, Analyze, and implementation remain separate operator actions.
 - **FR-008**: Converge MUST classify clean, remediable, and blocked outcomes from inspectable current evidence without asking the operator to classify routine results.
 - **FR-009**: An invoked Converge run MUST stay within selected feature and task scope, append bounded remediation tasks, reconcile accepted changes through affected spec, plan, and task artifacts, analyze changed tasks, implement eligible fixes, and reassess until clean or a bounded stop.
 - **FR-010**: Converge MUST stop on consequential decisions, ambiguous recovery, failed prerequisites, repeated findings, lack of progress, or an exhausted reviewed iteration bound; preserve partial work and explain the blocker. Successful commands alone MUST NOT establish a clean result.
@@ -149,14 +191,20 @@ Constitution 6.0.0 prospectively permits declared, bounded correction and reasse
 - **FR-015**: Close Out MUST retain explicit approval of the exact roadmap verification patch and separate authority for Git integration and acceptance. Both approved fresh verification and current trusted existing verification MUST reach shared curated wiki ingestion, lint, and coverage checks before the commit-readiness report. Required operator decisions MUST stop as blocked questions with recovery actions rather than stop-only defer/abort gates. Wiki maintenance MUST reconcile specific source-backed findings through a five-pass single-source ingestion, lint, and assessment loop, repeating only with substantive prior-gap resolution inside the authorized source set. It MUST preserve conflicting claims and block for required authority decisions, unavailable sources, age-only stale warnings without substantive update evidence, unsupported repairs, scope expansion, stale evidence, no progress, or cap exhaustion. The workflow MUST use one final report and preserve partial approved changes when later maintenance fails.
 - **FR-016**: Changed workflow definitions MUST preserve reviewed named-agent assignments, main-task human gates, source-package authority, and bounded recovery. Independent extension behavior requires separate review.
 - **FR-017**: Validation MUST cover success and stop paths, human gates, evidence classification, artifact order, loop termination, and manual and direct Codex paths in disposable consumers. Records MUST identify component IDs, versions, digests, tested CLI version, source coordinates, and observed limits.
-- **FR-018**: The feature MUST review the original eight source workflows and the separately invoked Select Feature and Specify replacements—Start Feature, Clarify, Plan, Tasks, Analyze and Remediate, Implement, Converge, and Close Out—step by step. For each, it MUST record the intended success result, branch outcomes, human gates, routine automation, continuation or loop edges, termination rules, and resumption evidence before selecting source changes.
+- **FR-018**: The feature MUST review all ten active source workflows step by step and retain the original eight-workflow baseline as historical evidence. Start Feature MUST remain a stop-only deprecated definition excluded from active delivery. For each, it MUST record the intended success result, branch outcomes, human gates, routine automation, continuation or loop edges, termination rules, and resumption evidence before selecting source changes.
 - **FR-019**: Analyze and Remediate MUST explicitly invoke fresh `speckit.analyze` in its initial read-only loop pass and after every shared specification → plan → tasks correction, using one analyzer and one assessment step. It MUST use the latest completed analyzer report as the authoritative finding source for correction decisions; missing, failed, or stale analysis MUST cause a specific stop. Each invoked workflow MUST use inspectable, current evidence to classify routine outcomes and continue through its own reviewed, bounded work until a defined success, required human decision, or bounded stop. Implement MUST run `speckit.implement` against the existing eligible task plan, reassess the task checklist after each session, and repeat while eligible work remains and progress is verified. Its wrapper MUST NOT re-specify, re-plan, re-task, or re-analyze. No workflow may invoke another FlowKit workflow, ask the operator to classify a routine machine-observable result, exit after one session while known in-scope work remains eligible, or infer success from command completion alone.
 - **FR-020**: Every loop MUST use a reviewed, inspectable progress measure and continue while each correction pass makes measurable progress within a finite safety cap. An explicitly declared first baseline assessment may establish prior finding IDs without claiming a finding resolved; it counts toward the total loop cap. It MUST stop immediately for repeated findings without material change, no progress, stale evidence, failed prerequisites, or an exhausted cap. A stop MUST identify the smallest safe resumption action and preserve completed work. Planning MUST set the cap and progress evidence for each loop.
 - **FR-021**: Human gates MUST remain at exact roadmap patches, constitutional or authority changes, material scope, ambiguous recovery, substantive product answers, Git integration, and acceptance. Routine evidence-based routing MUST not add a redundant confirmation gate. Completing one workflow MUST not invoke the next workflow without distinct authority.
-- **FR-022**: The feature MUST inventory every delegated step across all eight workflows, review whether its exact agent name fits the step's purpose, and keep gates and undelegated steps in the main task. The starting reviewed names are Architect, Builder, Coder, and Verifier; any additional name MUST have a distinct reviewed purpose and approval before use in source.
-- **FR-023**: This repository, as a FlowKit consumer, MUST have usable native Codex configurations for every name its reviewed workflows require. F014 MUST deliver those files only in this repository; the existing Coder launch-probe configuration MUST be replaced or explicitly retired from ordinary workflow use, and missing agents MUST not receive a silent fallback. Bundle installation, refresh, and removal MUST continue to leave consumer-owned agent files untouched. A later feature MAY separately propose installing agent files into consumer projects.
-- **FR-024**: Validation MUST exercise every reviewed branch or demonstrate why a branch cannot be safely executed, check all used names in full-graph preflight, and compare manual and direct Codex paths. Evidence MUST distinguish structural checks, no-op dispatch, and live named-agent behavior.
+- **FR-022**: The feature MUST inventory every delegated step across all ten active workflows, assign a task-specific reviewed name, and keep gates and undelegated steps in the main task. The role set MUST distinguish Roadmap Agent, Specifier, Planner, Tasker, Reviewer, Coder, Code Reviewer, and Wiki Curator. A Roadmap Agent MAY read or prepare roadmap writes in a workflow; exact roadmap approval and mutation authority MUST remain with the main task. Existing artifact-assessment steps MUST independently review the outputs they are assigned to assess, using Reviewer for specifications, plans, tasks, and roadmap alignment. Existing post-implementation assessment steps MUST inspect implementation changes using Code Reviewer before the workflow reports completion. Findings MUST use the workflow's existing correction route or produce a specific bounded stop. Code Reviewer MUST remain distinct from Reviewer. This agent-assignment change MUST NOT add workflow steps.
+- **FR-023**: This repository, as a FlowKit consumer, MUST have usable native Codex configurations for every role required by its reviewed workflows. F014 MUST deliver those files only in this repository; the existing Coder launch-probe configuration MUST be replaced with ordinary Coder responsibilities, and missing agents MUST not receive a silent fallback. Bundle installation, refresh, and removal MUST continue to leave consumer-owned agent files untouched. A later feature MAY separately propose installing agent files into consumer projects.
+- **FR-024**: Validation MUST exercise every reviewed branch or demonstrate why a branch cannot be safely executed, check all used names in full-graph preflight, verify author/reviewer separation and code-review routing, and compare manual and direct Codex paths. Evidence MUST distinguish structural checks, no-op dispatch, and live named-agent behavior.
 - **FR-025**: The separately invoked Wiki Lint Update workflow MUST start with fresh lint, map all source-backed stale findings to registered source identities, refresh them individually with bounded progress checks, and retain every other unresolved lint finding in its report. Safe independent refreshes MAY continue while unrelated semantic or structural findings remain; authority-conflicted claims, unavailable sources, age-only timestamp updates, and unsupported repairs MUST remain reported for resolution. Exact URL refresh authorization MUST come from operator input. This workflow MUST NOT invoke another workflow or change feature artifacts, roadmap state, or Git.
+
+- **FR-026**: A project-owned workflow rendering skill MUST derive diagrams from the selected source definition, include an entry marker, exact step IDs, assigned agents and nonblank commands, distinct type shapes, and delegated outlines. It MUST preserve all branches, joins, loop conditions and caps, and declared descriptive transition labels without inventing steps or printing absent-field placeholders.
+- **FR-027**: Routine outcomes requiring operator input MUST use `blocked` with the exact question and resumption action. Distinct outcome keys MAY share a path only when completed evidence still determines all downstream authorization. Collapsing paths MUST NOT collapse exact human choices or permit an unverified success path. Legacy `needs-human` remains controller compatibility for explicitly declared gates.
+- **FR-028**: Plan and Tasks output-verification loops MUST independently review the content produced by Planner and Tasker, respectively, and return exact actionable findings to the corresponding authoring step. Required-file and placeholder checks alone MUST NOT count as review. Specify MUST retain its existing independent roadmap brief after specification authoring; that brief verifies roadmap alignment and MUST NOT be described as a general content-review loop. Reviewers MUST NOT edit the artifacts they review; corrections remain with the authoring agent through an existing bounded path when available. Semantic assessment MUST check applicable accepted requirements, internal and cross-artifact consistency, and required coverage even when every required file and section is populated. Findings MUST identify the affected artifact or section, the applicable requirement or accepted decision, the observed deficiency, and the correction needed within approved scope. Across fresh assessments, stable finding identities and evidence of substantive resolution MUST establish progress; changed wording, populated placeholders, or renamed findings alone MUST NOT establish progress. The first assessment establishes a baseline under FR-020, and subsequent correction passes MUST resolve prior deficiencies without leaving new blocking findings unreported. Repeated findings without material change, no substantive resolution, stale evidence, or the reviewed cap MUST cause a specific bounded stop. If a finding requires a substantive product answer or material scope decision, the workflow MUST present the exact question to the operator instead of allowing Reviewer or author to infer an answer. This contract uses existing assessment and correction steps and adds no workflow nodes.
+
+- **FR-029**: Assessment `reason_code` values and any `resume_action` values MUST match the controller grammar `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`: lowercase letters and digits joined by single hyphens, with no spaces or underscores. Assessment prompts that may return either field MUST state this syntax explicitly. The controller MUST reject malformed values before routing.
 
 ### Key Entities
 
@@ -180,17 +228,21 @@ These outcomes are measured in disposable initialized consumers and reviewed wor
 - **SC-005**: Every tested Close Out case with clear completion evidence avoids a redundant availability question; routine correctable findings are reassessed against refreshed evidence before a patch proposal.
 - **SC-006**: All tested consequential decisions, untrustworthy evidence, repeated findings, and nonprogress cases stop without silent roadmap mutation, Git integration, acceptance, or launching a later workflow.
 - **SC-007**: Each changed workflow has a usable manual path and validation record with component version, digest, CLI version, source coordinates, and observed outcome.
-- **SC-008**: All eight workflows have a reviewed branch-and-gate inventory with explicit success, continuation, human-decision, and stop routes; no reviewed branch has an unexplained terminal state or unbounded retry.
+- **SC-008**: All ten active workflows and the deprecated source have a current branch-and-gate inventory with explicit success, continuation, human-decision, and stop routes; no reviewed branch has an unexplained terminal state or unbounded retry.
 - **SC-009**: Every tested routine remediable outcome continues from fresh evidence while measurable progress occurs, reaches a defined conclusion or bounded stop, and stops on repeated findings or no progress; every tested consequential decision waits for the operator in the main task.
-- **SC-010**: Every delegated step in all eight workflows has a justified reviewed agent name, and every distinct name used in the source checkout has a working native Codex configuration and full-graph preflight evidence; no probe-only instruction is used for normal workflow work.
+- **SC-010**: Every delegated step in all ten active workflows has a justified task-specific agent name and working native configuration; existing assessment steps review author outputs independently and review implementation changes using a distinct Code Reviewer before reporting completion, without adding workflow nodes.
+
+- **SC-011**: Every tested wiki refresh uses a registered authorized source, retains all unresolved findings, and completes only from a fresh finding-free lint report; no timestamp-only update proves progress.
+- **SC-012**: Diagrams cover every source step exactly once with an explicit Start edge, matching labels, shapes, delegation, and transition semantics.
+- **SC-013**: Every tested independent review either accepts the artifact against its applicable requirements or returns exact findings through an existing correction path; populated but semantically deficient Plan and Tasks artifacts receive independent findings returned to Planner and Tasker, respectively, and fresh assessments demonstrate substantive finding resolution or a specific progress/cap stop; code-review findings use the current workflow's existing task or implementation correction path, or produce a specific bounded stop. Review assignments never authorize roadmap writes, Git integration, or feature acceptance. The reviewed change adds no workflow nodes.
 
 ## Assumptions
 
 - Roadmap Feature 014 defines the authorized scope for this draft; dependencies 001, 002, 003, 004, 007, 008, and 013 are verified. Feature 012 is not a dependency.
-- Starting F014 permits this draft and the requested lifecycle transition, but does not authorize an exact `Spec dir` patch, workflow source change, implementation, or acceptance. The separately approved Constitution 6.0.0 amendment is now part of F014's governing context.
+- The initial F014 invocation authorized the draft and requested lifecycle transition. Subsequent operator approvals authorize the documented source changes; exact roadmap patches and acceptance retain their separate decision requirements. The separately approved Constitution 6.0.0 amendment is now part of F014's governing context.
 - The existing five-question clarification limit remains a per-session command boundary. The operator explicitly selected bounded repeated sessions within one Clarify invocation for F014; a reusable custom preset, if later proposed, still needs its own review and approval.
-- Accepted feedback is evidence for prospective design, not direct source-change authority. Additional feedback requires a roadmap amendment.
+- Accepted feedback is evidence for prospective design, not direct source-change authority. Additional feedback outside the approved change set requires a roadmap amendment. The approved replacement workflows, wiki maintenance workflow, and rendering skill are recorded in this specification; the exact F014 roadmap reconciliation patch was approved and applied on 2026-09-30.
 - The operator selected progress-based continuation with a finite safety cap for corrective loops. Planning must define each loop's observable progress measure and exact cap; repeated findings without material change and no progress stop immediately.
-- The operator chose Feature 015's Architect, Builder, Coder, and Verifier as the initial assignment vocabulary. More names may be proposed by the F014 review only when a distinct responsibility warrants them, with explicit review before workflow source uses them.
-- The source checkout is also a FlowKit consumer. Its tracked `.codex/agents/coder.toml` is currently a temporary launch probe, and no Architect, Builder, or Verifier file is present here. The operator selected repository-local configurations for F014; consumer bundle installation of agent files remains a possible later feature, not part of this delivery.
+- Agent names identify task responsibilities: Roadmap Agent, Specifier, Planner, Tasker, Reviewer, Coder, Code Reviewer, and Wiki Curator. Use existing assessment nodes for review and add no workflow nodes as part of this assignment change.
+- The source checkout is also a FlowKit consumer. F014 supplies repository-local agent configurations for dogfooding; consumer bundle installation of agent files remains a possible later feature.
 - The operator selected evidence-backed in-place Draft-to-Complete editing within an invoked Close Out run; F014 must prospectively reconcile this with verified Feature 008 and retain a separate exact roadmap verification patch gate.

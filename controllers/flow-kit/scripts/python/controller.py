@@ -23,7 +23,10 @@ except ImportError:  # The controller is executed with the selected Specify runt
     WorkflowEngine = None  # type: ignore[assignment,misc]
 
 
-REVIEWED_AGENT_NAMES = {"Architect", "Builder", "Coder", "Verifier"}
+REVIEWED_AGENT_NAMES = {
+    "Roadmap Agent", "Specifier", "Planner", "Tasker", "Reviewer",
+    "Coder", "Code Reviewer", "Wiki Curator",
+}
 INPUT_REFERENCE = re.compile(r"\{\{\s*inputs\.([A-Za-z0-9_-]+)\s*\}\}")
 STEP_REFERENCE = re.compile(r"\{\{\s*steps\.([A-Za-z0-9_-]+)\.output\.([A-Za-z0-9_.-]+)\s*\}\}")
 LOOP_CONDITION = re.compile(

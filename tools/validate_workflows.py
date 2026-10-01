@@ -150,6 +150,10 @@ def project_workflow(definition: dict[str, Any]) -> dict[str, Any]:
         "human_decisions": gates,
         "bounded_stops": stops,
         "assignments": assignments,
+        "native_agent_selection": {
+            "status": "unverified",
+            "reason": "Static workflow validation does not request native Codex subagents.",
+        },
         "unexplained_terminal_paths": unexplained,
     }
 
@@ -181,7 +185,8 @@ def main() -> int:
         for item in projections:
             print(f"{item['workflow_id']}@{item['version']}: {len(item['nodes'])} nodes, {len(item['branches'])} branches, "
                   f"{len(item['human_decisions'])} human gates, {len(item['continuation_edges'])} loops, "
-                  f"{len(item['assignments'])} assignments, {len(item['unexplained_terminal_paths'])} unexplained terminals")
+                  f"{len(item['assignments'])} assignments, native-agent-selection={item['native_agent_selection']['status']}, "
+                  f"{len(item['unexplained_terminal_paths'])} unexplained terminals")
     return int(args.fail_on_unexplained and any(item["unexplained_terminal_paths"] for item in projections))
 
 

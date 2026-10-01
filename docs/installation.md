@@ -133,15 +133,15 @@ For example, enter `$flow-kit-tasks feature_context=013` in the selected project
 
 Before workflow work, the FlowKit controller validates every delegated step name, including untaken branches, and probes each distinct native agent with that exact name as the Codex `agent_type`. Codex's native subagent activity shows each launched child. Probe labels include the agent name; work-child labels include the agent name and step ID, while the pane may also show model and reasoning effort. The task label helps the operator see what was launched; the exact `agent_type` request establishes native selection. FlowKit does not require a separate launch message or a per-run agent, model, or effort override. Each delegated step uses a bounded child; steps without explicit delegation metadata and all gates stay in the main task. The main task presents child questions as numbered options plus a custom answer when allowed and relays the response to the same child.
 
-Codex custom-agent files are consumer-owned. For example, save this as `.codex/agents/architect.toml` in the consumer project:
+Codex custom-agent files are consumer-owned. For example, save this as `.codex/agents/reviewer.toml` in the consumer project:
 
 ```toml
-name = "Architect"
-description = "Plans and reviews workflow changes."
+name = "Reviewer"
+description = "Independently assesses workflow artifacts."
 developer_instructions = "Follow the task scope and return a concise result to the parent."
 ```
 
-Use the exact reviewed name declared by the workflow step. Codex loads the matching custom-agent configuration and owns optional model and reasoning-effort settings, including inheritance. FlowKit neither parses these files nor modifies them during install, refresh, or removal. A successful workflow loader check does not establish that native `specify workflow run` performs FlowKit's named-agent dispatch procedure; use the direct FlowKit Codex skill for that behavior and retain the manual workflow path as fallback.
+Use the exact reviewed work-type name declared by the workflow step. The source checkout includes local definitions for Roadmap Agent, Specifier, Planner, Tasker, Reviewer, Coder, Code Reviewer, and Wiki Curator; these do not install into other consumer projects. Codex loads the matching custom-agent configuration and owns optional model and reasoning-effort settings, including inheritance. FlowKit neither parses these files nor modifies them during install, refresh, or removal. A successful workflow loader check does not establish that native `specify workflow run` performs FlowKit's named-agent dispatch procedure; use the direct FlowKit Codex skill for that behavior and retain the manual workflow path as fallback.
 
 ## Refresh or remove the bundle
 

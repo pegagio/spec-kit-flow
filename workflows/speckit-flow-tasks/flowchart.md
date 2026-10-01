@@ -9,13 +9,13 @@ flowchart TD
     start((Start))
     loop{{"tasks-output-loop<br/>condition: verify-task-output state == continue<br/>max_iterations: 5"}}
     prepare["prepare-task-request"]
-    generate(["generate-tasks<br/>(Architect)<br/>command: speckit.tasks"])
-    verify["verify-task-output<br/>(Verifier)"]
+    generate(["generate-tasks<br/>(Tasker)<br/>command: speckit.tasks"])
+    verify["verify-task-output<br/>(Reviewer)"]
     report["report-task-outcome"]
 
     start --> loop
     loop -- first pass or retry with progress --> prepare
-    prepare -- exact output gaps --> generate
+    prepare -- exact structural and semantic findings --> generate
     generate --> verify --> loop
     loop -- complete, blocked, no progress, or cap --> report
 

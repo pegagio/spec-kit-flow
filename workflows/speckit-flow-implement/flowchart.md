@@ -7,10 +7,10 @@ The dark Start circle marks workflow entry. The hexagon is a `do-while` step, th
 ```mermaid
 flowchart TD
     start((Start))
-    initial["assess-implementation-state<br/>(Verifier)"]
+    initial["assess-implementation-state<br/>(Reviewer)"]
     loop{{"implementation-continuation-loop<br/>condition: assess-implementation-after-pass state == continue<br/>max_iterations: 5"}}
-    implement(["implement-eligible-work<br/>(Builder)<br/>command: speckit.implement"])
-    assess["assess-implementation-after-pass<br/>(Verifier)"]
+    implement(["implement-eligible-work<br/>(Coder)<br/>command: speckit.implement"])
+    assess["assess-implementation-after-pass<br/>(Code Reviewer)"]
     report["report-implementation-outcome"]
 
     start --> initial
@@ -26,3 +26,5 @@ flowchart TD
 ```
 
 The initial assessment records unfinished tasks before any implementation session. Each pass runs the existing implementation skill and checks current task and validation evidence against that baseline. Another pass starts only when eligible tasks remain and progress is verified. The workflow stops for completion, operator input, a concrete blocker, no progress, or the five-pass safety cap; Converge remains a separate operator invocation.
+
+Code Reviewer uses an attributable implementation delta and returns exact review findings separately from the strict envelope. Coder receives those findings through eligible existing task correction. Fresh review confirms resolution; absent a safe eligible route, the workflow reports a specific blocked recovery. Product questions retain operator ownership.

@@ -1,11 +1,15 @@
 ---
 title: Workflow lifecycle
 type: concept
-sources: [S002, S006, S007, S010, S013, S017, S018, S019]
-updated: 2026-09-29
+sources: [S002, S006, S007, S010, S013, S017, S018, S019, S021]
+updated: 2026-09-30
 ---
 
 # Workflow lifecycle
+
+## Earlier source contracts
+
+The following records retain earlier source intent; the accepted Feature 014 refinements below govern the revised workflow design. (S021)
 
 An operator prepares a constitution and approved roadmap, establishes cited wiki context, chooses an eligible feature, and invokes each workflow deliberately. The documented route is start-feature, optional clarify, plan, tasks, analyze-remediate, implement, converge, and closeout. (S002)
 
@@ -27,6 +31,18 @@ Read-only analysis precedes any artifact remediation, and routine corrections re
 
 Closeout requires a separately approved completion operation, an exact roadmap verification patch approved by the operator, curated wiki maintenance, and a separate commit-readiness decision. (S013)
 
+## Feature 014 approved scope
+
+Feature 014's approved scope separates read-only candidate/dependency discussion and exact human selection/activation from same-target specification authoring. Selection updates only approved roadmap state and the active pointer; specification authoring is separately invoked. It also adds independent wiki maintenance while retaining separate planning and task generation. (S018)
+
+**Accepted supersession**: S002 documents the earlier combined start-feature route; S018 now specifies separate Select Feature and Specify workflows and a stop-only deprecated combined source. This is a prospective F014 replacement, not a rewrite of verified earlier feature history. (S002, S018, S021)
+
+## Feature 014 phase boundaries
+
+Feature 014 requires separate Select Feature and Specify invocations before optional Clarify, Plan, Tasks, Analyze and Remediate, Implement, Converge, and Close Out. Wiki Lint Update is separately selected for wiki maintenance and needs no active feature. No successful phase silently starts another. (S021)
+
+Clarify assesses residual ambiguity after each operator-answered bounded session. Plan and Tasks verify populated outputs and retry exact gaps; Implement repeats existing eligible work while progress is evidenced. Routine required input becomes blocked with a preserved question and resumption action. (S021)
+
 ## Related pages
 
 - [Codex workflow controller design](./codex-workflow-controllers.md)
@@ -38,3 +54,4 @@ Closeout requires a separately approved completion operation, an exact roadmap v
 - [Preimplementation review gates](./preimplementation-review-gates.md)
 - [Artifact flow-back and convergence](./artifact-flow-back-and-convergence.md)
 - [Closeout and verification boundary](./closeout-and-verification-boundary.md)
+- [Wiki source maintenance](./wiki-source-maintenance.md)

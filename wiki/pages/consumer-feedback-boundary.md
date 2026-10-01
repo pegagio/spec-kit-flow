@@ -2,7 +2,7 @@
 title: Consumer feedback boundary
 type: concept
 sources: [S001, S002, S004, S014, S015]
-updated: 2026-09-28
+updated: 2026-09-30
 ---
 
 # Consumer feedback boundary
@@ -22,6 +22,8 @@ Portability validation rejects raw transcripts, sensitive values, and absolute h
 Maintainer intake is a separate component outside the consumer bundle. It checks report schema, digest, observation IDs, component provenance, evidence references, and redaction before recording a canonical inbox copy and bounded triage proposal. Invalid or nonportable reports create no records. (S015)
 
 A repeated report digest creates a duplicate triage relationship without another inbox copy or source proposal. A disposition and rationale remain a proposal for review, not approval to change source. (S015)
+
+Maintainer triage and package-change evidence must retain component IDs, versions, source digests, and observed results. Portable reports exclude raw transcripts, secrets, and absolute host paths. A local test result alone cannot establish publication, stock compatibility, or consumer adoption. (S001)
 
 ## Related pages
 

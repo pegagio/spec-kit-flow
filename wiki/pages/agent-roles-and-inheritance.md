@@ -1,8 +1,8 @@
 ---
 title: Named agents for delegated steps
 type: concept
-sources: [S018, S020]
-updated: 2026-09-29
+sources: [S018, S020, S021]
+updated: 2026-09-30
 ---
 
 # Named agents for delegated steps
@@ -20,6 +20,14 @@ Before workflow work, the controller validates every possible delegated assignme
 Updated workflow source uses explicit delegation and agent names instead of Feature 013's concrete step-model declarations. A Feature 015 controller rejects a legacy concrete declaration with a migration reason. Native `specify workflow run` behavior must be checked separately; loader acceptance alone does not establish matching named-agent behavior. (S020)
 
 The constitution amendment requiring reviewed agent names was approved and applied before workflow or controller source changes. (S020)
+
+## Feature 014 approved scope
+
+Feature 014 depends on verified Feature 015 and reviews the exact native name on every delegated branch. Its delivery boundary adds usable configurations only in this repository's consumer checkout; installing or modifying agent files in other consumers is excluded. The roadmap scope preserves consumer ownership and requires responsibility-fit review, not merely agent availability. (S018)
+
+## Feature 014 assignment requirements
+
+The specification extends assignment review across all ten active workflows, including every delegated branch. Architect, Builder, Coder, and Verifier remain the starting vocabulary; another name needs a distinct reviewed purpose and prior approval. Native configurations are a repository-local F014 deliverable, and the temporary Coder probe must be replaced or explicitly retired from ordinary workflow use. Source names and successful structural checks do not prove usable native instructions or live selection. (S021)
 
 ## Related pages
 

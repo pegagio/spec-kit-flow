@@ -5,39 +5,39 @@ This diagram maps all 34 step IDs in [workflow.yml](./workflow.yml). The dark St
 ```mermaid
 flowchart TD
     start((Start))
-    n01["assess-closeout-readiness<br/>(Verifier)"]
+    n01["assess-closeout-readiness<br/>(Reviewer)"]
     n02@{ shape: diam, label: "route-initial-closeout" }
     n03["prepare-closeout-status"]
     n04@{ shape: diam, label: "route-closeout-status" }
-    n05(["mark-converged-specification-complete<br/>(Architect)<br/>command: speckit.specify"])
+    n05(["mark-converged-specification-complete<br/>(Specifier)<br/>command: speckit.specify"])
     n06{{"closeout-debrief-loop<br/>condition: assess-closeout-debrief state == continue<br/>max_iterations: 6"}}
-    n07(["debrief-roadmap<br/>(Verifier)<br/>command: speckit.flow-roadmap.debrief"])
-    n08["assess-closeout-debrief<br/>(Verifier)"]
+    n07(["debrief-roadmap<br/>(Reviewer)<br/>command: speckit.flow-roadmap.debrief"])
+    n08["assess-closeout-debrief<br/>(Code Reviewer)"]
     n09@{ shape: diam, label: "route-closeout-correction" }
     n10["prepare-closeout-flowback"]
     n11@{ shape: diam, label: "route-closeout-specification-remediation" }
-    n12(["reconcile-closeout-specification<br/>(Architect)<br/>command: speckit.specify"])
+    n12(["reconcile-closeout-specification<br/>(Specifier)<br/>command: speckit.specify"])
     n13@{ shape: diam, label: "route-closeout-plan-remediation" }
-    n14(["reconcile-closeout-plan<br/>(Architect)<br/>command: speckit.plan"])
+    n14(["reconcile-closeout-plan<br/>(Planner)<br/>command: speckit.plan"])
     n15@{ shape: diam, label: "route-closeout-tasks-remediation" }
-    n16(["reconcile-closeout-tasks<br/>(Architect)<br/>command: speckit.tasks"])
-    n17(["analyze-closeout-artifacts<br/>(Verifier)<br/>command: speckit.analyze"])
-    n18["assess-closeout-task-eligibility<br/>(Verifier)"]
+    n16(["reconcile-closeout-tasks<br/>(Tasker)<br/>command: speckit.tasks"])
+    n17(["analyze-closeout-artifacts<br/>(Reviewer)<br/>command: speckit.analyze"])
+    n18["assess-closeout-task-eligibility<br/>(Reviewer)"]
     n19@{ shape: diam, label: "route-closeout-implementation" }
-    n20(["implement-closeout-eligible-tasks<br/>(Builder)<br/>command: speckit.implement"])
+    n20(["implement-closeout-eligible-tasks<br/>(Coder)<br/>command: speckit.implement"])
     n21["prepare-roadmap-verification"]
     n22@{ shape: diam, label: "route-roadmap-verification" }
     n23[/"approve-roadmap-transition"/]
     n24@{ shape: diam, label: "route-roadmap-transition" }
     n25(["apply-approved-roadmap-verification<br/>command: speckit.flow-roadmap.write"])
-    n26["prepare-wiki-maintenance<br/>(Verifier)"]
+    n26["prepare-wiki-maintenance<br/>(Roadmap Agent)"]
     n27@{ shape: diam, label: "route-wiki-maintenance" }
     n28{{"wiki-reconciliation-loop<br/>condition: assess-wiki-maintenance state == continue<br/>max_iterations: 5"}}
     n29["prepare-wiki-refresh"]
-    n30(["ingest-curated-context<br/>(Builder)<br/>command: speckit.flow-wiki.ingest"])
-    n31(["lint-wiki<br/>(Verifier)<br/>command: speckit.flow-wiki.lint"])
-    n32["assess-wiki-maintenance<br/>(Verifier)"]
-    n33["verify-closeout-readiness<br/>(Verifier)"]
+    n30(["ingest-curated-context<br/>(Wiki Curator)<br/>command: speckit.flow-wiki.ingest"])
+    n31(["lint-wiki<br/>(Reviewer)<br/>command: speckit.flow-wiki.lint"])
+    n32["assess-wiki-maintenance<br/>(Reviewer)"]
+    n33["verify-closeout-readiness<br/>(Reviewer)"]
     n34["report-closeout-outcome"]
 
     start --> n01
@@ -113,3 +113,5 @@ Initial readiness can stop without a loop output, or use current trusted already
 An eligibility `complete` result means no eligible implementation work and returns to a fresh debrief. `blocked` eligibility and unresolved implementation blockers stop directly at the shared report under the [controller protocol](../../controllers/flow-kit/controller-protocol.md), before another debrief. The controller checks progress, evidence, and the cap before entering corrections. Explicit controller stop edges show this declared runtime policy in addition to ordinary YAML branch joins; native CLI execution does not establish these controller guarantees.
 
 Outcome preparation uses only completed initial or loop evidence. An exact verification patch requires human approval, then a fresh roadmap check. Returning or deferring preserves the original choice and skips maintenance. Newly verified and already-verified features both enter shared wiki ingestion and lint checks. Wiki maintenance has its own sibling five-pass loop: select one authorized source, ingest, lint, and assess. Continue only when a prior source-coverage or stale-claim gap is substantively resolved; do not treat timestamps or successful commands as progress. Stale pages map through citations to sources. Conflicting authority, age-only warnings, unavailable sources, unsupported repairs, scope expansion, no progress, and cap exhaustion block. Only the latest validated complete maintenance assessment permits a readiness recommendation. The final report presents verified commit readiness automatically; only the exact roadmap-patch gate requires human approval, and an actual commit requires a subsequent explicit operator request; this workflow never commits, integrates Git, invokes another workflow, or accepts the feature. Partial approved changes are preserved and reported when later steps fail.
+
+Code Reviewer uses an attributable implementation delta and returns exact review findings separately from the strict envelope. Coder receives those findings through eligible existing task correction. Fresh review confirms resolution; absent a safe eligible route, the workflow reports a specific blocked recovery. Product questions retain operator ownership.

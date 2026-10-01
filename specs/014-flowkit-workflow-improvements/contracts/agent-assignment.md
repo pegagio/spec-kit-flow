@@ -1,6 +1,6 @@
 # Contract: Agent Assignment Review
 
-F014 reviews the agent on every delegated executable step in all eight source workflows, including branches that are not taken in a particular run and steps inside future `do-while` bodies. The four reviewed starting names are Architect, Builder, Coder, and Verifier. A new name is a proposal until its distinct responsibility and configuration are reviewed; no workflow source may use it early.
+F014 reviews the agent on every delegated executable step in all ten active source workflows, including branches that are not taken in a particular run and steps inside future `do-while` bodies. The reviewed work-type names are Roadmap Agent, Specifier, Planner, Tasker, Reviewer, Coder, Code Reviewer, and Wiki Curator. Author and reviewer roles remain distinct. This assignment change reuses existing workflow assessment nodes and MUST NOT add nodes.
 
 ## Assignment record
 
@@ -8,7 +8,7 @@ The step inventory records one row per executable node:
 
 | Field | Meaning |
 |---|---|
-| `workflow_id` | One of the eight reviewed `speckit-flow-*` IDs. |
+| `workflow_id` | One of the ten active reviewed `speckit-flow-*` IDs. |
 | `step_id` | Globally unique ID within the workflow definition. |
 | `step_type` | `prompt` or `command`; gates, switches, and loop containers remain in the main task. |
 | `responsibility` | Concrete work and output expected from this step. |
@@ -19,18 +19,22 @@ The step inventory records one row per executable node:
 
 An assignment is valid only when `flow_kit.delegated: true` and `flow_kit.agent` appear together on an executable child node, the name is reviewed, and full-graph preflight can launch that native agent. A name alone does not delegate. No workflow-level default, per-run agent/model/effort override, or fallback is allowed. Human gates, switches, and loop containers remain in the main task.
 
-## Initial role heuristic
+## Reviewed role responsibilities
 
 Use the following as a review starting point, not as an automatic rewrite:
 
-| Responsibility | Starting name | Review concern |
+| Responsibility | Name | Review boundary |
 |---|---|---|
-| Specification, design, task decomposition, bounded artifact reconciliation | Architect | Check that work is design or artifact synthesis rather than verification. |
-| Eligible implementation and code correction | Builder or Coder | Define a distinct purpose if both remain; do not assign by name alone. |
-| Independent analysis, convergence assessment, roadmap brief/debrief, wiki lint | Verifier | Keep the assessor separate from the correction where practical. |
-| Curated wiki ingestion and other specialized work | Review against the four names | Propose a fifth name only if none has a clear, maintainable responsibility fit. |
+| Read or perform roadmap operations | Roadmap Agent | May apply only an exact change supplied by a declared workflow after the main task records required operator approval; the agent never approves or broadens it. |
+| Author or clarify feature specifications | Specifier | Does not review its own specification. |
+| Create or reconcile technical plans | Planner | Does not review its own plan. |
+| Decompose or reconcile implementation tasks | Tasker | Does not review its own task list. |
+| Review specifications, plans, tasks, and roadmap alignment | Reviewer | Existing assessments return findings through their current correction path or report a precise bounded stop. |
+| Implement code | Coder | Implementation progress is reviewed by a separate Code Reviewer assignment at the existing assessment point. |
+| Review implementation changes | Code Reviewer | Distinct from Coder and from the higher-level Reviewer. Uses only an existing workflow assessment node. |
+| Ingest and maintain cited wiki pages | Wiki Curator | Remains within selected and authorized source scope. |
 
-The current source has one `speckit.analyze` return step named Architect while other analysis steps use Verifier. Close Out's wiki ingest uses Builder. Those are review candidates, not preapproved changes.
+Exact source assignments and current correction routes appear in the agent-assignment inventory. A report-only or linkage node must not be described as a retry loop; it returns material findings as blocked with a resumption action when no existing correction route is available.
 
 ## Repository-local native files
 

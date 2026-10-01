@@ -1,8 +1,8 @@
 ---
 title: Project authority and review gates
 type: decision
-sources: [S001, S002, S003, S017, S019, S020]
-updated: 2026-09-29
+sources: [S001, S002, S003, S017, S019, S020, S021]
+updated: 2026-09-30
 ---
 
 # Project authority and review gates
@@ -20,6 +20,12 @@ The controller keeps clarification questions and consequential gates in the main
 Roadmap patches, constitutional amendments, material scope or authority changes, ambiguous recovery, Git integration, and acceptance retain explicit human gates. Routine remediation may flow back through the smallest relevant spec, plan, or task artifact within the operator-issued controller scope. (S001, S002)
 
 Local validation should record tested CLI versions, component IDs, source coordinates, digests, and observed results. Bundle installation or native dispatch with a no-op Codex executable does not establish live-agent behavior, stock Spec Kit compatibility, publication, or consumer adoption. (S001, S002)
+
+## Feature 014 routine and consequential decisions
+
+F014 permits only declared, bounded core-command correction and reassessment inside the operator-selected workflow and scope. Exact roadmap patches, constitutional or authority changes, material scope, ambiguous recovery, substantive product answers, Git integration, and acceptance remain explicit operator decisions. Routine classification needs no redundant confirmation gate. (S021)
+
+Required input is a blocked reason with the exact question and recovery action. Equivalent outcome keys may share a path only when completed evidence still checks every downstream prerequisite; a shared transition never infers approval. Legacy needs-human remains controller compatibility for declared human gates. (S021)
 
 ## Related pages
 

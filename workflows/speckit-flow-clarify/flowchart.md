@@ -8,8 +8,8 @@ The dark Start circle marks workflow entry. Rectangles are `prompt` steps, the h
 flowchart TD
     start((Start))
     sessionLoop{{"clarification-session-loop<br/>condition: after-session state == continue<br/>max_iterations: 5"}}
-    clarify(["clarify-session<br/>(Architect)<br/>command: speckit.clarify"])
-    after["assess-clarification-after-session<br/>(Verifier)"]
+    clarify(["clarify-session<br/>(Specifier)<br/>command: speckit.clarify"])
+    after["assess-clarification-after-session<br/>(Reviewer)"]
 
     outcome["clarification-outcome-stop"]
 

@@ -165,14 +165,14 @@ class NamedAgentAssignmentTests(unittest.TestCase):
     def test_collectAgentAssignments_preservesDistinctNamesPerStep(self) -> None:
         steps = [
             {"id": "edit", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Coder"}},
-            {"id": "review", "type": "command", "flow_kit": {"delegated": True, "agent": "Verifier"}},
+            {"id": "review", "type": "command", "flow_kit": {"delegated": True, "agent": "Reviewer"}},
             {"id": "summary", "type": "prompt", "prompt": "Summarize in the main task."},
         ]
         assignments = self.controller.collect_agent_assignments(steps)
         self.assertEqual(
             [
                 self.controller.StepAssignmentIntent("edit", "Coder"),
-                self.controller.StepAssignmentIntent("review", "Verifier"),
+                self.controller.StepAssignmentIntent("review", "Reviewer"),
             ],
             assignments,
         )
@@ -182,13 +182,13 @@ class NamedAgentAssignmentTests(unittest.TestCase):
             {
                 "id": "route",
                 "type": "switch",
-                "cases": {"review": [{"id": "verify", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Verifier"}}]},
-                "default": [{"id": "build", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Builder"}}],
+                "cases": {"review": [{"id": "verify", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Reviewer"}}]},
+                "default": [{"id": "build", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Code Reviewer"}}],
             }
         ]
         assignments = self.controller.collect_agent_assignments(steps)
         self.assertEqual(
-            [("verify", "Verifier"), ("build", "Builder")],
+            [("verify", "Reviewer"), ("build", "Code Reviewer")],
             [(row.step_id, row.agent_name) for row in assignments],
         )
 
@@ -221,9 +221,9 @@ class GraphPreflightTests(unittest.TestCase):
                 {"id": "delegated-prompt", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Coder"}},
                 {"id": "review-verdict", "type": "gate", "options": ["approve", "defer"]},
                 {"id": "route-result", "type": "switch", "cases": {"primary": [
-                    {"id": "nested-delegated-command", "command": "speckit.fixture", "flow_kit": {"delegated": True, "agent": "Verifier"}}
+                    {"id": "nested-delegated-command", "command": "speckit.fixture", "flow_kit": {"delegated": True, "agent": "Reviewer"}}
                 ]}, "default": [
-                    {"id": "alternate-agent", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Builder"}}
+                    {"id": "alternate-agent", "type": "prompt", "flow_kit": {"delegated": True, "agent": "Code Reviewer"}}
                 ]},
             ],
         }
@@ -231,7 +231,7 @@ class GraphPreflightTests(unittest.TestCase):
     def test_collectAgentAssignments_includesUntakenNestedBranches(self) -> None:
         assignments = self.controller.collect_agent_assignments(self.workflow["steps"])
         self.assertEqual(
-            [("delegated-prompt", "Coder"), ("nested-delegated-command", "Verifier"), ("alternate-agent", "Builder")],
+            [("delegated-prompt", "Coder"), ("nested-delegated-command", "Reviewer"), ("alternate-agent", "Code Reviewer")],
             [(item.step_id, item.agent_name) for item in assignments],
         )
 
@@ -307,8 +307,8 @@ class GraphPreflightTests(unittest.TestCase):
     def test_delegationBoundary_rejectsAgentOnNonDelegatedStepAndDelegatedGate(self) -> None:
         for graph in (
             [{"id": "main-work", "type": "prompt", "agent": "Coder"}],
-            [{"id": "human-review", "type": "gate", "flow_kit": {"delegated": True, "agent": "Verifier"}}],
-            [{"id": "route", "type": "switch", "flow_kit": {"delegated": True, "agent": "Verifier"}, "cases": {}}],
+            [{"id": "human-review", "type": "gate", "flow_kit": {"delegated": True, "agent": "Reviewer"}}],
+            [{"id": "route", "type": "switch", "flow_kit": {"delegated": True, "agent": "Reviewer"}, "cases": {}}],
         ):
             with self.subTest(graph=graph), self.assertRaises(ValueError):
                 self.controller.validate_workflow_graph(graph)
@@ -331,7 +331,7 @@ class GraphPreflightTests(unittest.TestCase):
                 self.controller.collect_agent_assignments(graph)
 
     def test_agentPreflight_rejectsWorkflowLevelDefault(self) -> None:
-        definition = {"workflow": {"id": "test", "version": "1.0", "agent": "Architect"}, "steps": []}
+        definition = {"workflow": {"id": "test", "version": "1.0", "agent": "Tasker"}, "steps": []}
         with self.assertRaisesRegex(ValueError, "workflow-level agent"):
             self.controller.validate_workflow_definition(definition)
 
@@ -343,14 +343,14 @@ class GraphPreflightTests(unittest.TestCase):
             "max_iterations": 5,
             "steps": [
                 {"id": "correct", "type": "command", "command": "speckit.tasks",
-                 "flow_kit": {"delegated": True, "agent": "Architect"}},
+                 "flow_kit": {"delegated": True, "agent": "Tasker"}},
                 {"id": "assess", "type": "prompt",
-                 "flow_kit": {"delegated": True, "agent": "Verifier"}},
+                 "flow_kit": {"delegated": True, "agent": "Reviewer"}},
             ],
         }]
         self.controller.validate_workflow_graph(graph)
         self.assertEqual(
-            [("correct", "Architect"), ("assess", "Verifier")],
+            [("correct", "Tasker"), ("assess", "Reviewer")],
             [(item.step_id, item.agent_name) for item in self.controller.collect_agent_assignments(graph)],
         )
 
@@ -462,6 +462,23 @@ class GraphPreflightTests(unittest.TestCase):
             complete_with_remaining.update({"state": "complete", "remaining_ids": ["T001"]})
             with self.assertRaisesRegex(ValueError, "unresolved"):
                 self.controller.validate_outcome_envelope(complete_with_remaining, project, {"correct", "assess"})
+
+    def test_assessmentIdentifiersRejectUnderscoresAndSpaces(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            evidence = project / "tasks.md"
+            evidence.write_text("T001", encoding="utf-8")
+            digest = __import__("hashlib").sha256(evidence.read_bytes()).hexdigest()
+            valid = {
+                "state": "blocked", "reason_code": "missing-prerequisite",
+                "evidence": [{"path": "tasks.md", "sha256": digest}],
+                "remaining_ids": ["T001"], "resolved_ids": [], "resume_action": "restore-plan",
+            }
+            self.assertEqual(valid, self.controller.validate_outcome_envelope(valid, project, {"correct"}))
+            for field in ("reason_code", "resume_action"):
+                for invalid in ("restore_plan", "restore plan"):
+                    with self.subTest(field=field, value=invalid), self.assertRaisesRegex(ValueError, "reason_code" if field == "reason_code" else "stable resume action"):
+                        self.controller.validate_outcome_envelope({**valid, field: invalid}, project, {"correct"})
 
     def test_assessmentProgressNeedsResolvedPriorWorkNotOnlyChangedDigest(self) -> None:
         previous = {"state": "continue", "remaining_ids": ["T001", "T002"], "resolved_ids": [],
@@ -607,7 +624,7 @@ class RecoveryTests(unittest.TestCase):
                 project,
                 {"workflow": {"id": "speckit-flow-tasks", "version": "0.2.0"}, "sha256": "a" * 64},
                 {"bundle_record": {"sha256": "b" * 64, "device": 1, "inode": 2}, "skill_record": {"sha256": "c" * 64, "device": 1, "inode": 3}},
-                [{"step_id": "generate-tasks", "agent_name": "Architect"}],
+                [{"step_id": "generate-tasks", "agent_name": "Tasker"}],
                 preflight_passed=True,
             )
             path = project / ".specify/flow-controllers/runs" / summary["run_id"] / "summary.json"

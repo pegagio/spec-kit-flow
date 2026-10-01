@@ -1,54 +1,58 @@
-# Quickstart: Validate F014 Workflow Continuation
+# Quickstart: Validate F014 Workflow Improvements
 
-Use this guide after implementation artifacts exist. The operator-approved roadmap amendment authorizes the all-eight-workflow review, and Constitution 6.0.0 supplies the approved in-workflow authority. Validation is executed by tests and disposable-consumer scripts, with a generated evidence report. Consequential workflow decisions still use the prescribed human gates. At the end, the operator may check one or two visible Codex desktop behaviors; routine validation does not depend on those checks.
+The source contains ten active workflows and one deprecated stop-only definition. Use this guide for current static and fixture validation. The recorded snapshot-consumer and consolidated automated checks are complete for their tested source; live native-agent selection remains unverified. T066–T069 add deterministic semantic-review correction coverage recorded separately in the validation report.
 
-## Prepare the source checkout
+## Run available checks
 
-From this repository, install its pinned tools explicitly and record the selected Specify version. The current source differs from the checked-in release catalog, so use a disposable development snapshot for consumer validation.
+Use the prescribed skill-tools Python environment from the source checkout:
 
 ```sh
-mise trust
-mise install
-mise exec -- specify --version
+~/.codex/venvs/skill-tools/bin/python -m unittest discover -s tests
+~/.codex/venvs/skill-tools/bin/python tools/validate_workflows.py --fail-on-unexplained
+~/.codex/venvs/skill-tools/bin/python tools/validate_workflows.py --json
 git diff --check
 ```
 
-The validation script records the Git revision, each changed workflow and controller component ID/version/source digest, the Specify CLI version, and the source coordinates used for the run. It reports these with test results; a successful local run does not imply release or consumer adoption.
+The source inventory checks all eleven definitions; active bundle and launcher bindings include only ten. Fixture suites test routing, progress and cap stops, exact human choices, task history, active target identity, joined branches, and selected-source wiki ingestion. A passing projection is structural evidence, not live controller or named-agent execution.
 
-## Validate definitions and controller behavior
+## Check the delivered workflow contracts
 
-Automated graph checks must cover all eight installed workflow definitions: unique step IDs, supported expressions, positive finite loop caps, a fresh assessment in each loop, explicit terminal states, and exact agent names on every delegated executable branch. Preflight must fail before workflow work when an assignment, route, condition, or native agent is missing or invalid.
+Use [the current inventory](current-workflow-inventory.md) and [continuation contract](contracts/workflow-continuation.md) to compare declared IDs, assignments, branches, gates, and loops with the YAML and adjacent diagrams.
 
-After implementation, run the existing and new suites with the prescribed skill-validation Python environment:
-
-```sh
-~/.codex/venvs/skill-tools/bin/python -m unittest tests.test_controller tests.test_catalog tests.test_bundle_lifecycle tests.test_workflow_paths tests.test_workflow_graph tests.test_agent_configs tests.test_snapshot_validation
-```
-
-Focused fixtures must demonstrate the following for each of the eight workflows:
-
-| Evidence path | Expected result |
+| Workflow group | Required fixture evidence |
 |---|---|
-| Clean initial assessment | Route before entering any corrective `do-while` body and reach that workflow's evidenced conclusion without an unnecessary correction. |
-| Routine correctable finding | Execute the reviewed correction, reassess current evidence, and continue within the same invocation while progress is confirmed. |
-| Finding resolved after a later pass | Report success only after refreshed evidence proves the workflow's success condition. |
-| Repeated finding, no progress, stale or contradictory evidence | Stop promptly with a specific reason and preserved resumption evidence. |
-| Continued progress at the fifth body pass | Stop at the safety cap with `continue` evidence, never a clean verdict. |
-| Consequential decision or substantive question | Stop at the reviewed main-task gate and use the operator's answer; do not infer approval. |
-| Interruption or changed installation | Stop at the next safe boundary with distinct records for completed loop passes. |
+| Select Feature and Specify | Candidate/dependency presentation, explicit choice, exact patch approval, pointer-only activation, unchanged existing spec bytes, same-target authoring, verified linkage and shared brief. |
+| Deprecated Start Feature | Stops without mutation, dispatch, or automatic replacement invocation; excluded from active packaging. |
+| Clarify | Core session first, operator-provided answers, five questions per session, fresh residual ambiguity assessment, progress and five-session bound. |
+| Plan and Tasks | Structural checks plus independent Reviewer semantic assessment of populated but deficient artifacts; exact located findings handed to Planner/Tasker through existing author-owned correction paths; fresh confirmation of prior finding resolution, preserved design/task history, no-progress and cap stops, operator-owned product answers, unchanged topology and five-pass bound. |
+| Implement | Repeated core implementation of existing eligible tasks, checklist progress, complete or blocked stop, no wrapper re-spec/plan/task/analyze or goal dependency. |
+| Analyze and Remediate | Read-only baseline, shared waterfall and analyzer, five corrections plus final assessment, no-progress and blocked stop. |
+| Converge | Fresh core command every pass, mandatory task recording on correction, shared waterfall, analysis and eligibility before implementation, five corrections plus final confirmation. |
+| Close Out | Evidence-backed existing-spec completion, shared debrief waterfall, exact verification gate, sibling five-pass wiki loop, fresh lint before automatic readiness report. |
+| Wiki Lint Update | Initial lint, cited registered-source deduplication, single-source refresh, all findings retained, exact URL authorization, 25 refreshes plus final lint confirmation. |
+| Rendering skill | Exact source IDs, one Start edge, node kind shapes, delegated outlines, optional labels without placeholders, declared branches and loop guards. |
 
-The test matrix exercises the recorded Start Feature, Clarify, Plan, Tasks, Analyze, Implement, Converge, and Close Out return paths. Clarify must preserve the command's five-question cap per session while allowing another bounded session only under its approved continuation rule. Close Out may update an evidenced clean Draft spec to Complete only under its approved authority rule; roadmap verification remains a separate exact human decision. Gate fixtures inject explicit decisions or assert that execution pauses for one; they never treat fixture answers as live approval.
+## Distinguish recorded consumer checks and remaining agent evidence
 
-## Validate the disposable consumer
+The current [validation report](validation/report.json) records 116 automated tests with zero failures/errors and snapshot install/refresh/remove passing for source revision `c34ea2aa2fa23e131d796be39343064f0a93a652` with working-tree changes under Specify `1.0.10.dev0+pegagio.2`. This is attributable recorded evidence, not a rerun after artifact correction. T044 and the T046 consolidated report are delivered within those limits.
 
-Automate the [installation guide's development-snapshot procedure](../../docs/installation.md#install-in-another-project) in an initialized temporary consumer. The script verifies installed workflow definitions and direct FlowKit skills, executes selected branches through native Specify loading and the direct Codex controller, and checks each package's manual prompt path using fixtures. A no-op Codex dispatch check validates structure only; capture live named-agent execution separately when the supported client exposes machine-readable evidence.
+`tests/test_snapshot_validation.py` initializes a temporary consumer and installs, refreshes, and removes the local bundle snapshot. It uses checksum-pinned roadmap, wiki, and feedback release packages from `catalog/packages`, recording their versions, digests, source coordinates, the Specify CLI version, result, and test limits. No live checkouts of other projects are required. The distinct source-checkout lifecycle suite in `tests/test_bundle_lifecycle.py` remains skipped unless its roadmap and wiki source paths are configured. Source bundle 0.13.5 and controller 0.5.1 differ from the published catalog; no release claim follows from these checks.
 
-For every selected native agent name, automated checks parse the repository-local `.codex/agents/<name>.toml` file and verify exact Codex selection when observable. Disposable-consumer tests assert that bundle install, refresh, and removal preserve consumer agent files and unrelated components. If the client does not expose selection evidence, the report marks live selection unverified. F014 does not install agent files into other projects.
+The snapshot lifecycle test verifies consumer-owned files and an unrelated workflow survive install, refresh, and removal. The source-checkout lifecycle test additionally exercises current external component working trees; it can be enabled with `SPEC_KIT_FLOW_TEST_ROADMAP_SOURCE` and `SPEC_KIT_FLOW_TEST_WIKI_SOURCE`, but is not required for T044. `tests/test_agent_configs.py` parses all eight repository-local agent definitions and checks all 49 active assignments. These checks do not prove live Codex agent selection. `tools/validate_workflows.py` reports native selection as unverified because it does not launch Codex subagents.
 
-## Final Codex desktop check
+## Record outcomes and review
 
-After the automated report is complete, offer the operator no more than two short, concrete checks in a prepared disposable consumer: confirm that one representative workflow visibly continues after a routine correction, and confirm that a named agent and a consequential gate appear as intended in the Codex desktop task. Supply the exact action and expected visible result for each check. Record the operator's observation as desktop experience evidence, separate from automated test results. These checks do not replace branch coverage, component provenance, or an explicit approval decision.
+The [reconciliation record](validation/artifact-reconciliation.md), [machine evidence](validation/artifact-reconciliation.json), and [current validation report](validation/report.json) identify the scope, provenance, observed checks, and remaining work. [Optional desktop checks](validation/desktop-checks.md) are prepared but not run. Historical baseline and per-increment records retain their original evidence boundaries. The independent-source consumer lifecycle suite is a separate skipped check, not an open T044 requirement; earlier skipped observations remain historical. Native-agent selection remains unverified in the recorded automated report, optional desktop observations remain not run, and T066–T069 now cover the semantic-review correction scenarios above through deterministic scripted-agent fixtures, source prompt assertions, and exact topology checks; live reasoning remains unverified. Recommend separately invoking Analyze and Remediate after artifact reconciliation and Converge after implementation; this guide does not invoke them. Roadmap patch approval, release, Git integration, and feature acceptance remain separate operator decisions.
 
-## Validation report
+## Semantic-review follow-up evidence
 
-The generated report identifies each workflow and branch tested, observed terminal state, passes completed, remaining findings, fixture gate decisions, agent assignment evidence, and any untested path. Automated assertions compare results with [the continuation contract](contracts/workflow-continuation.md) and [the assignment contract](contracts/agent-assignment.md). The report distinguishes passing checks from unverified claims, records any final desktop observations separately, and identifies the governing decisions needed for source changes. Feature acceptance remains a separate operator decision.
+The `semantic_review_follow_up` entry in [validation/report.json](validation/report.json) records 26 path tests, 11 graph tests, 4 agent tests, source validation, exact changed-source digests, and limits for T066–T069. The source versions are Plan and Tasks 0.4.4, Implement 0.4.4, Converge 0.4.5, Closeout 0.6.2, and bundle 0.13.3. Earlier snapshot provenance remains historical; this follow-up did not refresh installed copies or rerun the lifecycle suites. The shared T065/T071/T073/T075/T076/T077 evidence obligation is now delivered once in `source_current_reconciliation`; independent Converge run `0a87d86f-bb0a-4189-b692-b0367e434624` confirmed the correction.
+
+
+## Source-current evidence reconciliation
+
+The `source_current_reconciliation` entry in [the validation report](validation/report.json) records bundle 0.13.5, controller 0.5.1, all eleven source workflow versions and digests, active bundle pin verification, the independently verified post-Implement syntax-fix boundary, and clean analysis before the shared evidence correction. Historical 116-test/snapshot, 41 semantic-review, and 50 controller/12 graph results remain separate observations; this evidence-only pass reran the static workflow validator, which passed eleven definitions with zero unexplained terminals. Fresh independent Converge run `0a87d86f-bb0a-4189-b692-b0367e434624` confirmed resolution with no remaining findings. External-working-tree lifecycle remains skipped, live reasoning/native selection unverified, optional desktop checks unrun, and feature Draft/roadmap in-progress with release, Git, and acceptance authority separate.
+
+## Incorporated source validation
+
+After incorporation and T078/T079 corrections, the full suite ran 126 tests with zero failures or errors; the optional external-working-tree lifecycle suite was skipped. The checksum-pinned consumer snapshot install/refresh/remove and all eleven workflow definitions passed. All eight source-identical native role configurations passed exact-name readiness probes. Current results and source digests are recorded in `final_source_validation` and `native_role_availability` in [the validation report](validation/report.json). Native identity/model introspection, general live semantic correctness and optional desktop observations remain outside that evidence. Feature acceptance, roadmap verification, release and Git integration remain separately controlled.

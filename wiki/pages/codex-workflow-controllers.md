@@ -1,8 +1,8 @@
 ---
 title: Codex workflow controller design
 type: concept
-sources: [S002, S018, S019, S020]
-updated: 2026-09-29
+sources: [S002, S018, S019, S020, S021]
+updated: 2026-09-30
 ---
 
 # Codex workflow controller design
@@ -33,8 +33,19 @@ After execution starts, a compact local record keeps workflow identity and versi
 
 The FlowKit catalog route installs, refreshes, and removes its direct controller skills alongside pinned Specify workflows while preserving consumer-owned state. Native Specify bundle commands manage only their declared Specify components. Skill-name collisions or locally changed owned files stop unsafe replacement or removal. These are the completed specification's delivery and ownership contracts. (S019)
 
+## Feature 014 approved scope
+
+Feature 014's approved controller scope supports fresh evidence-based reassessment, semantic progress checks, finite loop caps, and attributable interruption/recovery evidence. Analyze reconciles affected spec→plan→tasks layers; Implement continues existing eligible tasks without wrapper re-specification, re-planning, re-tasking, or analysis. Each workflow reaches its own evidenced conclusion or a specific bounded stop without invoking another workflow. (S018)
+
+## Feature 014 continuation and rendering
+
+F014 rejects command-success or digest-only completion; human answers and consequential choices remain operator-owned. (S021)
+
+Source-faithful diagrams expose exact IDs, optional agents/commands, type shapes, delegated outlines, Start, and presentation-only declared transition labels. (S021)
+
 ## Related pages
 
 - [Agent roles and assignment inheritance](./agent-roles-and-inheritance.md)
 - [Bundle and workflow model](./bundle-and-workflow-model.md)
 - [Workflow lifecycle](./workflow-lifecycle.md)
+- [Workflow diagram conventions](./workflow-diagram-conventions.md)

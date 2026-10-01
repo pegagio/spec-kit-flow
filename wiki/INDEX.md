@@ -15,6 +15,8 @@ page files, not here.
 - [Artifact flow-back and convergence](pages/artifact-flow-back-and-convergence.md)
 - [Workflow lifecycle](pages/workflow-lifecycle.md)
 
+- [Wiki source maintenance](pages/wiki-source-maintenance.md)
+
 ## Decision
 
 - [Diagram adapter boundary](pages/diagram-adapter-boundary.md)
@@ -24,3 +26,4 @@ page files, not here.
 ## Howto
 
 - [Installation and release lifecycle](pages/installation-and-release-lifecycle.md)
+- [Workflow diagram conventions](pages/workflow-diagram-conventions.md)

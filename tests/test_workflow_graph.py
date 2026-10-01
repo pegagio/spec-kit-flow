@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -68,6 +69,8 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         for projection in projections:
             with self.subTest(workflow=projection["workflow_id"]):
                 self.assertTrue(projection["entry_step_id"])
+                self.assertEqual("unverified", projection["native_agent_selection"]["status"])
+                self.assertIn("does not request native Codex subagents", projection["native_agent_selection"]["reason"])
                 if projection["workflow_id"] == "speckit-flow-start-feature":
                     self.assertFalse(projection["assignments"])
                     self.assertFalse(projection["branches"])
@@ -238,6 +241,147 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
         for phrase in ("in-place Draft-to-Complete", "rerun debrief", "exact roadmap verification patch", "does not commit"):
             self.assertIn(phrase, manual)
 
+
+
+    def assert_diagram_metadata(self, workflow: dict, diagram: str) -> None:
+        """Compare reviewed Mermaid declarations with actual source nodes."""
+        block = diagram.split("```mermaid\n", 1)[1].split("```", 1)[0]
+        declarations = {}
+        aliases = {}
+        shapes = {"do-while": ('{{"', '"}}'), "prompt": ('["', '"]'),
+                  "gate": ('[/"', '"/]'), "command": ('(["', '"])')}
+        for line in block.splitlines():
+            match = re.fullmatch(r'\s*(\w+)(.*"([^"\n]+)".*)\s*', line)
+            if not match:
+                continue
+            alias, notation, label = match.groups()
+            step_id = label.split('<br/>', 1)[0]
+            self.assertNotIn(step_id, declarations, "duplicate diagram step")
+            declarations[step_id] = (notation.strip(), label)
+            aliases[step_id] = alias
+        nodes = {node['id']: node for node, _, _ in self.inventory._walk(workflow['steps'])}
+        self.assertEqual(set(nodes), set(declarations), "diagram step IDs differ from source")
+        delegated = set()
+        for match in re.finditer(r'^\s*class ([\w,]+) delegated\s*$', block, re.MULTILINE):
+            delegated.update(match.group(1).split(','))
+        expected_delegated = set()
+        for step_id, node in nodes.items():
+            notation, label = declarations[step_id]
+            assigned = node.get('flow_kit', {}).get('agent')
+            agents = re.findall(r'\(([^()]*)\)', label)
+            self.assertEqual([assigned] if assigned else [], agents,
+                             f"{step_id}: agent label differs from source")
+            self.assertEqual([node['command']] if 'command' in node else [],
+                             re.findall(r'command: ([^<]+)', label),
+                             f"{step_id}: command differs from source")
+            kind = 'command' if 'command' in node else node['type']
+            if kind == 'switch':
+                self.assertRegex(notation, r'^@\{ shape: diam, label: ".*" \}$')
+            else:
+                opening, closing = shapes[kind]
+                self.assertTrue(notation.startswith(opening) and notation.endswith(closing),
+                                f"{step_id}: wrong {kind} shape")
+            if node.get('flow_kit', {}).get('delegated') is True:
+                expected_delegated.add(aliases[step_id])
+            if kind == 'do-while':
+                self.assertIn(f"max_iterations: {node['max_iterations']}", label)
+                self.assertIn('condition:', label)
+        self.assertEqual(expected_delegated, delegated, "delegation outlines differ from source")
+        if delegated:
+            self.assertRegex(block, r'classDef delegated [^\n]*stroke-dasharray:6 4')
+        self.assertEqual(['start((Start))'], re.findall(r'^\s*(start\(\(Start\)\))\s*$', block, re.MULTILINE))
+        entries = re.findall(r'^\s*start --> (\w+)\s*$', block, re.MULTILINE)
+        self.assertEqual([aliases[workflow['steps'][0]['id']]], entries, "wrong Start edge")
+        self.assertIn('style start fill:#111827,stroke:#111827,color:#ffffff', block)
+
+    def test_diagramsMatchSourceStepMetadataIncludingUnassignedLoops(self) -> None:
+        for workflow in self.inventory.load_workflows():
+            workflow_id = workflow['workflow']['id']
+            with self.subTest(workflow=workflow_id):
+                diagram = (ROOT / 'workflows' / workflow_id / 'flowchart.md').read_text()
+                self.assert_diagram_metadata(workflow, diagram)
+
+    def test_diagramMetadataRejectsPhantomMissingAndIncorrectDeclarations(self) -> None:
+        workflow = next(w for w in self.inventory.load_workflows()
+                        if w['workflow']['id'] == 'speckit-flow-plan')
+        original = (ROOT / 'workflows/speckit-flow-plan/flowchart.md').read_text()
+        mutations = {
+            'phantom-loop-agent': ('plan-output-loop<br/>condition:', 'plan-output-loop<br/>(Reviewer)condition:'),
+            'missing-agent': ('<br/>(Planner)', ''),
+            'wrong-agent': ('(Planner)', '(Tasker)'),
+            'wrong-command': ('command: speckit.plan', 'command: speckit.tasks'),
+            'wrong-id': ('prepare-plan-request', 'prepare-other-request'),
+            'wrong-shape': ('prepare["prepare-plan-request"]', 'prepare(["prepare-plan-request"])'),
+            'missing-outline': ('class create,verify delegated', 'class verify delegated'),
+            'phantom-outline': ('class create,verify delegated', 'class loop,create,verify delegated'),
+            'wrong-entry': ('start --> loop', 'start --> create'),
+            'wrong-cap': ('max_iterations: 5', 'max_iterations: 6'),
+        }
+        for defect, (before, after) in mutations.items():
+            with self.subTest(defect=defect):
+                self.assertIn(before, original)
+                with self.assertRaises(AssertionError):
+                    self.assert_diagram_metadata(workflow, original.replace(before, after))
+
+    def test_manualPlanAndTasksPreserveIndependentSemanticReviewContract(self) -> None:
+        readme = (ROOT / 'workflows/README.md').read_text()
+        for purpose, heading, following, author, review_id in (
+            ('plan', 'planning', 'task-generation', 'Planner', 'verify-plan-output'),
+            ('tasks', 'task-generation', 'analysis and remediation', 'Tasker', 'verify-task-output'),
+        ):
+            with self.subTest(workflow=purpose):
+                manual = readme.split('## Manual ' + heading + ' path', 1)[1].split(
+                    '## Manual ' + following + ' path', 1)[0]
+                workflow = next(w for w in self.inventory.load_workflows()
+                                if w['workflow']['id'] == 'speckit-flow-' + purpose)
+                review = find_step(workflow['steps'], review_id)
+                prepare = workflow['steps'][0]['steps'][0]
+                self.assertEqual('Reviewer', review['flow_kit']['agent'])
+                self.assertEqual(author, workflow['steps'][0]['steps'][1]['flow_kit']['agent'])
+                self.assertEqual(5, workflow['steps'][0]['max_iterations'])
+                for field in ('artifact_location', 'violated_requirement', 'observed_deficiency', 'exact_correction'):
+                    self.assertIn(field, manual)
+                    self.assertIn(field, review['prompt'])
+                    self.assertIn(field, prepare['prompt'])
+                for phrase in ('independent Reviewer', 'structural and semantic', author,
+                               'verbatim', 'Fresh review', 'substantive resolution',
+                               'new blocking findings', 'Wording-only or digest-only',
+                               'renamed or repeated findings', 'successful commands',
+                               "operator's answer", 'never infer', 'five-pass safety limit'):
+                    self.assertIn(phrase, manual)
+                self.assertNotIn('not design quality', manual)
+                self.assertIn('required-file production alone', manual)
+                self.assertIn('preserving completed design' if purpose == 'plan' else
+                              'preserving task IDs, completion markers', manual)
+
+    def test_assessmentPromptsDeclareBothIdentifierGrammars(self) -> None:
+        grammar = "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        assessed = set()
+        for workflow in self.inventory.load_workflows():
+            for node, _, _ in self.inventory._walk(workflow["steps"]):
+                prompt = node.get("prompt", "")
+                if node.get("type") != "prompt" or "reason_code" not in prompt:
+                    continue
+                with self.subTest(workflow=workflow["workflow"]["id"], step=node["id"]):
+                    self.assertIn(f"Both `reason_code` and `resume_action` must match `{grammar}`", prompt)
+                    self.assertIn("never use underscores or spaces", prompt)
+                    assessed.add(workflow["workflow"]["id"])
+        self.assertEqual({"speckit-flow-" + purpose for purpose in (
+            "analyze-remediate", "clarify", "closeout", "converge", "implement",
+            "plan", "tasks", "wiki-lint-update")}, assessed)
+
+    def test_semanticReviewChanges_preserveReviewedExactTopologyAndBounds(self) -> None:
+        baseline = json.loads((ROOT / 'tests/consumer-fixtures/semantic-review-topology.json').read_text())
+        def topology(nodes):
+            return [{k: topology(v) if k in ('steps', 'default') else
+                {b: topology(c) for b, c in v.items()} if k == 'cases' else v
+                for k, v in n.items() if k in ('id', 'type', 'command', 'condition',
+                    'max_iterations', 'assessment_before_correction', 'assessment_only_first_pass',
+                    'expression', 'cases', 'default', 'steps', 'flow_kit')} for n in nodes]
+        for purpose, expected in baseline.items():
+            workflow = yaml.safe_load((ROOT / 'workflows' / ('speckit-flow-' + purpose) / 'workflow.yml').read_text())
+            with self.subTest(workflow=purpose):
+                self.assertEqual(expected, topology(workflow['steps']))
 
 if __name__ == "__main__":
     unittest.main()
