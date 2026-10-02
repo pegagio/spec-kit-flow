@@ -688,8 +688,8 @@ def install(project: Path, refresh: bool, development_snapshot: bool = False) ->
     release_path = RELEASE
     if development_snapshot:
         temporary_root = Path(tempfile.gettempdir()).resolve()
-        if temporary_root not in project.parents:
-            fail("development snapshots may only be installed into a disposable consumer under the system temporary directory")
+        if project != ROOT.resolve() and temporary_root not in project.parents:
+            fail("development snapshots require the source checkout root or a disposable consumer under the system temporary directory")
         if not (project / ".specify").is_dir():
             fail("development snapshot target must already be initialized as a Specify consumer")
         snapshot_directory = tempfile.TemporaryDirectory(prefix="flowkit-snapshot-catalog-")
@@ -703,7 +703,7 @@ def install(project: Path, refresh: bool, development_snapshot: bool = False) ->
     else:
         release = verified_release(catalog_dir, release_path)
         if release["status"] != "released":
-            fail("catalog is a development snapshot; use --development-snapshot only with a disposable initialized consumer")
+            fail("catalog is a development snapshot; use --development-snapshot with the initialized source checkout root or a disposable consumer")
     expected_specify = tomllib.loads((ROOT / "mise.toml").read_text(encoding="utf-8"))["tools"]["pipx:specify-cli"]
     specify = selected_specify(project)
     if specify is None:
@@ -783,7 +783,7 @@ def main() -> int:
     for name in ("install", "refresh"):
         consumer = commands.add_parser(name, help=f"{name} the bundle in a consumer project")
         consumer.add_argument("project", type=Path)
-        consumer.add_argument("--development-snapshot", action="store_true", help="build and use an unreleased snapshot only in a disposable initialized consumer")
+        consumer.add_argument("--development-snapshot", action="store_true", help="build and use an unreleased snapshot in the initialized source checkout root or a disposable consumer")
     remover = commands.add_parser("remove", help="remove the bundle and unchanged FlowKit-owned controllers")
     remover.add_argument("project", type=Path)
     arguments = parser.parse_args()

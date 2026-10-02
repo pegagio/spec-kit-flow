@@ -2,7 +2,7 @@
 
 Use the catalog tasks in this repository to install or refresh the bundle. They serve the checked-in release packages on localhost for the duration of each command, so you do not need separate roadmap or wiki source checkouts to install it. The [bundle manifest](../bundles/spec-kit-flow/bundle.yml) and [release metadata](../catalog/release.json) are the sources for current component versions.
 
-The checked-in catalog contains the locally built `0.4.1` release and controller package `0.1.1`. Ordinary catalog install and refresh use those reviewed packages only from a checkout whose source matches that release; the installer rejects a catalog/source mismatch. The current source manifests declare bundle `0.13.0` and controller `0.5.0`, so this unreleased source checkout requires development-snapshot mode in a disposable initialized consumer until a separate release build is approved. The catalog has not been published or pushed.
+Ordinary catalog install and refresh use the checked-in release packages only from a checkout whose source matches that release; the installer rejects a catalog/source mismatch. To dogfood uncommitted source changes, use explicit development-snapshot mode in this repository’s initialized root or a disposable initialized consumer under the system temporary directory. Snapshot installation records unreleased provenance and does not change the checked-in catalog. Local packaging and installation do not imply publication.
 
 ## Contents
 
@@ -68,7 +68,7 @@ specify_bin="$(mise which specify)"
 PATH="$(dirname "$specify_bin"):$PATH" python3 tools/catalog.py install "$consumer_dir" --development-snapshot
 ```
 
-Snapshot mode builds a temporary catalog from current source and the checked-in extension packages. It is restricted to initialized temporary consumers, reports itself as unreleased in the ownership record, and does not change checked-in release metadata. The normal install and refresh routes continue to reject snapshots.
+Snapshot mode builds a temporary catalog from current source and the checked-in extension packages. It is restricted to this repository’s initialized root or initialized temporary consumers, reports itself as unreleased in the ownership record, and does not change checked-in release metadata. Nested source-checkout targets and other persistent consumers are rejected. The normal install and refresh routes continue to reject snapshots.
 
 ## Dogfood this repository
 
@@ -84,7 +84,13 @@ If `specify bundle list` already shows `spec-kit-flow`, refresh the existing ins
 mise run catalog:refresh .
 ```
 
-The current unreleased source checkout does not match the checked-in catalog, so these ordinary commands reject it. Validate current source in a disposable initialized consumer with the development-snapshot route above.
+When this checkout has uncommitted workflow or controller changes, use the explicit snapshot route to rebuild current source in a temporary catalog and refresh this initialized checkout:
+
+```sh
+mise run catalog:refresh . --development-snapshot
+```
+
+For an initialized checkout with no bundle installed, use `mise run catalog:install . --development-snapshot`. These commands preserve project-owned agents, governance, feature artifacts, wiki content, and controller run history under the same installation ownership checks. They do not commit, publish, or invoke a workflow. Normal release installation continues to require matching release metadata.
 
 Both catalog commands install or refresh the ten active Specify workflows **and** the ten direct FlowKit Codex skills in `.agents/skills/flow-kit-*/`. They also write the separate skill ownership record under `.specify/flow-kit/`. Verify both parts from this checkout:
 

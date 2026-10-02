@@ -1,8 +1,8 @@
 ---
 title: Feature start contract
 type: concept
-sources: [S006, S021]
-updated: 2026-09-30
+sources: [S006, S021, S022]
+updated: 2026-10-02
 ---
 
 # Feature start contract
@@ -22,6 +22,8 @@ The operator may instead amend the roadmap, resolve context, or defer. After a s
 ## Feature 014 selection and authoring
 
 Select Feature presents dependency-ready candidates, blocked unfinished features, actual dependency chains, immediate unlocks, and distinct downstream dependents. The operator may discuss prerequisites before choosing one exact entry. Exact approval activates a unique target through the roadmap and active pointer, preserving existing specification bytes and creating no directory or specification. (S021)
+
+If an approved roadmap write succeeds but active-pointer activation fails, report the result as partial state and preserve the approved work rather than claiming selection completed. Selection creates no target directory or specification; specification authoring remains a separate invocation against the active target. (S022)
 
 Specify separately consumes the active target, retrieves cited context, authors only that directory, verifies unique roadmap linkage, and runs a shared brief. A linkage repair needs exact patch approval and fresh verification. Missing or competing ownership, pointer drift, insufficient context, or unsettled scope stops with recovery evidence. (S021)
 

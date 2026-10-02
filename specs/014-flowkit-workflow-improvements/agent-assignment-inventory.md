@@ -9,6 +9,7 @@ This inventory groups every delegated node in the ten active workflow definition
 - Use task-specific names to identify the kind of work at a glance: **Roadmap Agent**, **Specifier**, **Planner**, **Tasker**, **Reviewer**, **Coder**, **Code Reviewer**, and **Wiki Curator**.
 - A named agent describes work delegated to that child. Main-task gates, switches, loop control, and operator decisions remain in the main task.
 - The Roadmap Agent may read, prepare, or apply exact roadmap changes when a future workflow declares the step. Exact-patch approval remains with the main task; the agent cannot approve or broaden a change.
+- Authors complete the invoked command's mandatory self-checks and quality checklists. Those checks do not replace independent review and do not authorize an author to act as its own independent Reviewer.
 - A Reviewer must not be the same agent type that authored the specification, plan, task list, or roadmap-aligned artifact it reviews. A Code Reviewer is separate from the higher-level Reviewer and inspects implementation changes.
 - Reviewing an artifact means assessing its content against its source requirements and identifying actionable gaps. Existence and non-placeholder checks remain useful evidence, but do not alone establish an independent review.
 - Reuse existing assessment nodes for review. Do not add workflow nodes as part of this assignment change; if a current node has no safe correction route for a finding, it returns a specific blocked outcome for operator resumption.

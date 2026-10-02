@@ -2,7 +2,7 @@
 title: Workflow diagram conventions
 type: howto
 sources: [S021]
-updated: 2026-09-30
+updated: 2026-10-02
 ---
 
 # Workflow diagram conventions

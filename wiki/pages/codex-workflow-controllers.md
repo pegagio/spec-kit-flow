@@ -2,7 +2,7 @@
 title: Codex workflow controller design
 type: concept
 sources: [S002, S018, S019, S020, S021]
-updated: 2026-09-30
+updated: 2026-10-02
 ---
 
 # Codex workflow controller design
@@ -39,7 +39,7 @@ Feature 014's approved controller scope supports fresh evidence-based reassessme
 
 ## Feature 014 continuation and rendering
 
-F014 rejects command-success or digest-only completion; human answers and consequential choices remain operator-owned. (S021)
+F014 rejects command-success or digest-only completion; its [assessment contract](./controller-assessment-contract.md) governs routing. Human answers and consequential choices remain operator-owned. (S021)
 
 Source-faithful diagrams expose exact IDs, optional agents/commands, type shapes, delegated outlines, Start, and presentation-only declared transition labels. (S021)
 

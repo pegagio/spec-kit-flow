@@ -20,9 +20,11 @@ The mutually exclusive boolean `assessment_before_correction` selects a source c
 
 `AssessmentOutcome` is the validated result used for routine routing. Required fields are `state` (`complete`, `continue`, `needs-human`, or `blocked`), a stable `reason_code`, a non-empty array of repository-relative evidence references, and arrays of remaining and resolved finding/work IDs. The generic envelope permits only `state`, `reason_code`, `evidence`, `remaining_ids`, `resolved_ids`, `next_step_id`, `gate_step_id`, and `resume_action`. Workflow-specific affected-layer and exact-patch outputs belong to separate step results; they are not extra envelope fields and never grant authority. Missing, contradictory, stale, or uninspectable evidence produces a blocked result, never an assumed clean result.
 
-The assessment step is a fresh reading of current artifacts and command outputs. A command's exit status, a changed file digest, or a child assertion alone does not prove `complete`. A routine `continue` must identify the next in-scope correction. Current routine loop outcomes use `complete`, `continue`, and `blocked`; required input is a blocked reason with the exact question and smallest safe resumption action. Legacy `needs-human` remains supported for declared gates.
+The assessment step is a fresh reading of current artifacts and command outputs. A command's exit status, a changed file digest, or a child assertion alone does not prove `complete`. A routine `continue` must identify actual unresolved in-scope work and the next declared action; clean implementation can still leave lifecycle or maintenance work pending. Current routine loop outcomes use `complete`, `continue`, and `blocked`; required input is a blocked reason with the exact question and smallest safe resumption action. Legacy `needs-human` remains supported for declared gates.
 
 For Plan and Tasks, a semantic finding has a stable ID, affected artifact location, violated specification/design constraint, and exact required correction. These fields belong to workflow-specific handoff results, not new generic envelope fields. Reviewer may detect substantive deficiencies in populated artifacts; exact findings return to Planner or Tasker through existing author-owned paths. Only fresh independent assessment confirming prior finding resolution counts as progress. Operator-owned product questions stop or relay to the same active child; review never supplies product answers.
+
+Assessment routing follows the controller schema exactly. A `complete` envelope omits `next_step_id`, `gate_step_id`, and `resume_action`; a `continue` envelope includes only `next_step_id` targeting the declared loop body and requires nonempty `remaining_ids` for actual pending work; a `blocked` envelope includes only a stable `resume_action`. Clean findings do not excuse an invalid terminal envelope. Live verification must record the rejected run, correct ambiguous source guidance, and retry against refreshed source before claiming workflow success.
 
 ## Progress snapshot and state transitions
 
@@ -44,6 +46,8 @@ continue + no progress/repeated finding/stale evidence/cap → bounded stop
 ## Agent assignment and native configuration
 
 `StepAssignmentIntent` is the existing `(step_id, agent_name)` pair for every possible delegated branch, including loop bodies. The reviewed work-type names are Roadmap Agent, Specifier, Planner, Tasker, Reviewer, Coder, Code Reviewer, and Wiki Curator. Authoring and review responsibilities remain separate; existing assessment nodes perform review, with no workflow-node additions. Each selected name has a native Codex TOML file in this repository's `.codex/agents/` for local dogfooding. Codex owns optional model and effort settings. F014 does not install these files into other consumer projects.
+
+Authoring roles complete command-required self-checks, prerequisite checks, and quality checklists. Such checks do not replace independent assessment by the separately assigned Reviewer or Code Reviewer. The prohibition is against acting as the independent reviewer of their own output, not against satisfying the invoked core command. This clarification changes no workflow steps, assignments, or review scope; Specify linkage and roadmap checks remain their existing distinct responsibilities.
 
 ## Run evidence
 

@@ -115,11 +115,11 @@ class CatalogReleaseTests(unittest.TestCase):
             "lint-wiki": "Reviewer", "assess-wiki-findings": "Reviewer", "refresh-stale-source": "Wiki Curator",
         }
         expected_versions = {
-            "speckit-flow-wiki-lint-update": "0.1.2",
-            "speckit-flow-start-feature": "0.6.0", "speckit-flow-select-feature": "0.1.1", "speckit-flow-specify": "0.1.1", "speckit-flow-clarify": "0.4.4",
-            "speckit-flow-plan": "0.4.5", "speckit-flow-tasks": "0.4.5",
-            "speckit-flow-analyze-remediate": "0.4.5", "speckit-flow-implement": "0.4.5",
-            "speckit-flow-converge": "0.4.7", "speckit-flow-closeout": "0.6.3",
+            "speckit-flow-wiki-lint-update": "0.1.3",
+            "speckit-flow-start-feature": "0.6.0", "speckit-flow-select-feature": "0.1.1", "speckit-flow-specify": "0.1.1", "speckit-flow-clarify": "0.4.5",
+            "speckit-flow-plan": "0.4.6", "speckit-flow-tasks": "0.4.6",
+            "speckit-flow-analyze-remediate": "0.4.6", "speckit-flow-implement": "0.4.6",
+            "speckit-flow-converge": "0.4.8", "speckit-flow-closeout": "0.6.6",
         }
         step_pattern = __import__("re").compile(r"^(\s*)- id: ([A-Za-z0-9_-]+)$")
         for workflow_id, expected_steps in expectations.items():
@@ -345,6 +345,39 @@ class CatalogReleaseTests(unittest.TestCase):
             with patch.object(catalog, "build_development_snapshot", side_effect=ValueError("snapshot built")):
                 with self.assertRaisesRegex(ValueError, "snapshot built"):
                     catalog.install(Path(project), True, True)
+
+    def test_snapshotDogfood_allowsOnlyInitializedRootOrTemporaryConsumers(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="spec-kit-flow-dogfood-") as temporary:
+            root = Path(temporary).resolve() / "source"
+            root.mkdir()
+            other = Path(temporary).resolve() / "other"
+            other.mkdir()
+            (root / "temp").mkdir()
+            with patch.object(catalog, "ROOT", root), patch.object(catalog.tempfile, "gettempdir", return_value=str(root / "temp")), patch.object(catalog, "build_development_snapshot", side_effect=ValueError("snapshot build reached")) as build:
+                with self.assertRaisesRegex(ValueError, "already be initialized"):
+                    catalog.install(root, True, True)
+                build.assert_not_called()
+                (root / ".specify").mkdir()
+                with self.assertRaisesRegex(ValueError, "snapshot build reached"):
+                    catalog.install(root, True, True)
+                build.reset_mock()
+                nested = root / "nested"
+                nested.mkdir()
+                (nested / ".specify").mkdir()
+                with self.assertRaisesRegex(ValueError, "must not be nested"):
+                    catalog.install(nested, True, True)
+                build.assert_not_called()
+                (other / ".specify").mkdir()
+                with self.assertRaisesRegex(ValueError, "source checkout root or a disposable"):
+                    catalog.install(other, True, True)
+                build.assert_not_called()
+                disposable = root / "temp" / "consumer"
+                disposable.mkdir(parents=True, exist_ok=True)
+                (disposable / ".specify").mkdir()
+                # Real temporary consumers are outside ROOT, not nested source trees.
+                with patch.object(catalog, "ROOT", root / "checkout"):
+                    with self.assertRaisesRegex(ValueError, "snapshot build reached"):
+                        catalog.install(disposable, True, True)
 
     def test_releaseTag_requiresAnnotatedTagAtCheckedOutCommit(self) -> None:
         with tempfile.TemporaryDirectory(prefix="spec-kit-flow-release-tag-") as temporary:

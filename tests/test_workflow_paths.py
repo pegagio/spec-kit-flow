@@ -744,6 +744,10 @@ class WorkflowPathTests(unittest.TestCase):
                          [n["id"] for n in loop["steps"]])
         self.assertEqual("{{ steps.assess-wiki-maintenance.output.state == 'continue' }}", loop["condition"])
         self.assertEqual("{{ steps.prepare-wiki-refresh.output.source }}", loop["steps"][1]["input"]["args"])
+        lint = loop["steps"][2]
+        self.assertEqual("speckit.flow-wiki.lint", lint["command"])
+        # Core lint interprets arguments as a page/check scope; empty runs every check.
+        self.assertEqual("", self.controller.render_template(lint["input"]["args"], {}, {}))
         self.assertIn("already-authorized", loop["steps"][0]["prompt"])
         self.assertIn("baseline_remaining_ids", loop["steps"][-1]["prompt"])
         with tempfile.TemporaryDirectory() as directory:
@@ -770,6 +774,76 @@ class WorkflowPathTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "does not match"):
                 self.controller.validate_outcome_envelope(current, project, body)
 
+
+    def testCloseoutTracksResolvedClaimsWhileSameSourceCoverageRemains(self) -> None:
+        steps = load_workflow("speckit-flow-closeout")["steps"]
+        loop = find_step(steps, "wiki-reconciliation-loop")
+        body = {n["id"] for n in loop["steps"]}
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            page = project / "wiki-plan.md"
+            page.write_text("Plan loop limits represented; partial activation recovery missing")
+            evidence = [{"path": page.name, "sha256": hashlib.sha256(page.read_bytes()).hexdigest()}]
+            baseline = {
+                "state": "continue", "reason_code": "plan-claims-missing", "evidence": evidence,
+                "remaining_ids": ["plan-loop-limits", "plan-partial-activation", "inventory-graph-boundaries"],
+                "resolved_ids": [], "next_step_id": "prepare-wiki-refresh",
+            }
+            partial_source = {**baseline,
+                "remaining_ids": ["plan-partial-activation", "inventory-graph-boundaries"],
+                "resolved_ids": ["plan-loop-limits"]}
+            assessed = self.controller.validate_outcome_envelope(partial_source, project, body)
+            common = {"max_iterations": loop["max_iterations"], "loop_body_step_ids": body}
+            self.assertEqual("continue", self.controller.route_loop_assessment(
+                assessed, iteration=3, previous_assessment=baseline, **common)["action"])
+            # A date-only change cannot replace verified prior-claim resolution.
+            page.write_text(page.read_text() + "\nFreshness date revalidated")
+            dates_only = {**assessed, "resolved_ids": [], "evidence": [
+                {"path": page.name, "sha256": hashlib.sha256(page.read_bytes()).hexdigest()}]}
+            dates_only = self.controller.validate_outcome_envelope(dates_only, project, body)
+            self.assertEqual("no-progress", self.controller.route_loop_assessment(
+                dates_only, iteration=4, previous_assessment=partial_source, **common)["blocker"])
+            self.assertEqual("loop-cap-exhausted", self.controller.route_loop_assessment(
+                assessed, iteration=5, previous_assessment=baseline, **common)["blocker"])
+            complete = {**dates_only, "state": "complete", "remaining_ids": [],
+                        "resolved_ids": baseline["remaining_ids"]}
+            complete.pop("next_step_id")
+            complete = self.controller.validate_outcome_envelope(complete, project, body)
+            self.assertEqual("complete", self.controller.route_loop_assessment(
+                complete, iteration=5, previous_assessment=baseline, **common)["action"])
+
+    def testCloseoutDispatchCarriesCorrectionsAndRevalidationWithoutExtraGates(self) -> None:
+        steps = load_workflow("speckit-flow-closeout")["steps"]
+        prepare = find_step(steps, "prepare-wiki-refresh")
+        assess = find_step(steps, "assess-wiki-maintenance")
+        outputs = {
+            "prepare-wiki-refresh": {
+                "baseline_remaining_ids": ["plan-partial-activation"],
+                "refresh_findings": "plan section: report successful roadmap write and failed activation as partial state",
+                "freshness_revalidations": "claims supported; source/page digests recorded; zero progress credit",
+            },
+            "ingest-curated-context": {"report": "partial state contract cited"},
+            "lint-wiki": {"report": "six checks clean"},
+        }
+        rendered = self.controller.render_template(assess["prompt"], {}, outputs)
+        self.assertIn(outputs["prepare-wiki-refresh"]["refresh_findings"], rendered)
+        self.assertIn(outputs["prepare-wiki-refresh"]["freshness_revalidations"], rendered)
+        protocol = (ROOT / "controllers/flow-kit/controller-protocol.md").read_text()
+        self.assertIn("prepare-wiki-refresh.refresh_findings", protocol)
+        self.assertIn("alongside the unchanged single source token", prepare["prompt"])
+        self.assertIn("every affected claim and citation", prepare["prompt"])
+        self.assertIn("do not ask for a freshness exception", prepare["prompt"])
+        self.assertIn("earns no substantive progress credit", prepare["prompt"])
+        self.assertIn("outside the frozen scope", prepare["prompt"])
+        curation = find_step(steps, "prepare-wiki-maintenance")["prompt"]
+        self.assertIn("readable registered local sources", curation)
+        self.assertIn("do not add unrelated sources, external paths, or remote urls", curation.lower())
+        self.assertEqual(["approve-roadmap-transition"],
+                         [n["id"] for n, _, _ in walk(steps) if n.get("type") == "gate"])
+        # Core ingestion still receives one source token, not the checklist as arguments.
+        ingest = find_step(steps, "ingest-curated-context")
+        self.assertEqual("specs/example/plan.md", self.controller.render_template(
+            ingest["input"]["args"], {}, {"prepare-wiki-refresh": {"source": "specs/example/plan.md"}}))
 
     def testStandaloneWikiUpdateStartsWithLintAndRefreshesOnlySelectedSources(self) -> None:
         workflow = load_workflow("speckit-flow-wiki-lint-update")

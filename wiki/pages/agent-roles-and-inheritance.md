@@ -1,15 +1,15 @@
 ---
 title: Named agents for delegated steps
 type: concept
-sources: [S018, S020, S021]
-updated: 2026-09-30
+sources: [S018, S020, S021, S023]
+updated: 2026-10-02
 ---
 
 # Named agents for delegated steps
 
 Verified Feature 015 requires a reviewed Codex custom-agent name on each explicitly delegated FlowKit step. It depends on verified Feature 013 and has no dependency on Feature 014. The verification rests on the completed spec, convergence, tests, and bounded native Codex observations; it does not claim publication or native Specify runner parity. (S018, S020)
 
-The reviewed names are Architect, Builder, Coder, and Verifier. A workflow step must use the exact native Codex `name`; adding another name requires a later reviewed change. An agent name grants no approval authority. (S020)
+Feature 015's earlier reviewed vocabulary was Architect, Builder, Coder, and Verifier; its exact-name rule required a reviewed change for additions. Feature 014's approved role set below supersedes that vocabulary without granting approval authority. (S020, S021)
 
 Each consumer owns its native Codex custom-agent TOML files. Codex resolves optional model and reasoning-effort settings, including inheritance. FlowKit does not maintain a role map or alter consumer agent files during install, refresh, or removal. (S020)
 
@@ -27,7 +27,11 @@ Feature 014 depends on verified Feature 015 and reviews the exact native name on
 
 ## Feature 014 assignment requirements
 
-The specification extends assignment review across all ten active workflows, including every delegated branch. Architect, Builder, Coder, and Verifier remain the starting vocabulary; another name needs a distinct reviewed purpose and prior approval. Native configurations are a repository-local F014 deliverable, and the temporary Coder probe must be replaced or explicitly retired from ordinary workflow use. Source names and successful structural checks do not prove usable native instructions or live selection. (S021)
+Feature 014 requires Roadmap Agent, Specifier, Planner, Tasker, Reviewer, Coder, Code Reviewer, and Wiki Curator across ten active workflows. Reviewer independently assesses specifications, plans, tasks, and roadmap alignment; Code Reviewer independently inspects implementation changes. Authors and independent reviewers use different agent types, with findings following existing correction paths or bounded stops; this assignment change adds no nodes. (S021)
+
+Native configurations are repository-local; the temporary Coder probe is replaced with ordinary responsibilities. Authoring agents still perform command-required self-checks, prerequisites, and quality checklists, which cannot replace independent assessment. Exact roadmap approval and mutation authority remain in the main task. Structural checks and no-op dispatch are distinguished from live named-agent evidence. (S021)
+
+The inventory distinguishes exact graph responsibilities from native dispatch and model evidence; see [workflow graph responsibility boundaries](./workflow-graph-responsibility-boundaries.md). (S023)
 
 ## Related pages
 

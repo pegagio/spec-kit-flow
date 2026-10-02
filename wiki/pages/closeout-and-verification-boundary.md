@@ -2,7 +2,7 @@
 title: Closeout and verification boundary
 type: decision
 sources: [S013, S021]
-updated: 2026-09-30
+updated: 2026-10-02
 ---
 
 # Closeout and verification boundary
@@ -21,7 +21,11 @@ After an approved roadmap patch, the operator selects durable sources for wiki i
 
 Close Out assesses selected-feature convergence and completion evidence. A clearly converged existing Draft specification may be changed in place to Complete and debriefed without a redundant operation-availability or status-edit gate; ambiguous evidence or authority blocks. Routine debrief corrections flow through affected artifact layers and fresh reassessment until an exact patch is supported or a bounded stop occurs. (S021)
 
-The exact roadmap verification patch still needs explicit approval. Newly approved and already verified entries both receive curated single-source wiki ingestion, lint, and coverage checks before automatic commit-readiness reporting. Source-backed wiki findings may trigger another bounded pass only when prior gaps are substantively resolved within the authorized source set; conflicts, unsupported repair, unavailable sources, age-only warnings, no progress, or exhausted capacity block. (S021)
+The exact roadmap verification patch still needs explicit approval. Newly approved and currently trusted already verified entries both receive curated single-source ingestion, lint, and coverage checks before automatic commit-readiness reporting. Initial curation includes feature-relevant registered local supporting sources within operator-issued project scope without another confirmation; unavailable or unauthorized sources and scope expansion remain blockers. (S021)
+
+The wiki loop permits five single-source ingestion, lint, and assessment passes. Baseline findings identify independently verifiable missing contracts or stale claims before correction. Source coverage groups findings; each fully corrected prior claim earns substantive progress even when other claims remain. Assessments retain remaining and newly found claims rather than requiring whole-source completion for progress. Conflicts, required authority decisions, unsupported repairs, stale evidence, no progress, and cap exhaustion block. (S021)
+
+Close Out may clear date-only warnings by revalidating claims and citations against current authorized sources, recording source and page before/after digests, and setting freshness metadata to the actual validation date. This requires no separate freshness exception and earns no substantive progress credit; unverified date-only warnings remain blockers. The separately invoked Wiki Lint Update retains its FR-025 policy: age-only timestamp changes remain reported for resolution. (S021)
 
 One final report preserves completed evidence, questions, original gate choices, and partial changes. Readiness does not commit, integrate Git, or accept the feature. (S021)
 
@@ -30,3 +34,4 @@ One final report preserves completed evidence, questions, original gate choices,
 ## Related pages
 
 - [Workflow lifecycle](./workflow-lifecycle.md)
+- [Controller assessment contract](./controller-assessment-contract.md)

@@ -355,6 +355,9 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
                               'preserving task IDs, completion markers', manual)
 
     def test_assessmentPromptsDeclareBothIdentifierGrammars(self) -> None:
+        protocol = (ROOT / "controllers/flow-kit/controller-protocol.md").read_text()
+        self.assertIn("must omit `next_step_id`, `gate_step_id`, and `resume_action`", protocol)
+        self.assertNotIn("exactly one route field", protocol)
         grammar = "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
         assessed = set()
         for workflow in self.inventory.load_workflows():
@@ -365,6 +368,10 @@ class WorkflowGraphInventoryTests(unittest.TestCase):
                 with self.subTest(workflow=workflow["workflow"]["id"], step=node["id"]):
                     self.assertIn(f"Both `reason_code` and `resume_action` must match `{grammar}`", prompt)
                     self.assertIn("never use underscores or spaces", prompt)
+                    self.assertIn("For `complete`, omit `next_step_id`, `gate_step_id`, and `resume_action`", prompt)
+                    self.assertIn("for `continue`, include only `next_step_id` targeting a declared loop-body step", prompt)
+                    self.assertIn("for `blocked`, include only a stable `resume_action`", prompt)
+                    self.assertNotIn("exactly one state-appropriate route", prompt)
                     assessed.add(workflow["workflow"]["id"])
         self.assertEqual({"speckit-flow-" + purpose for purpose in (
             "analyze-remediate", "clarify", "closeout", "converge", "implement",

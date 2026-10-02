@@ -2,7 +2,7 @@
 title: Project authority and review gates
 type: decision
 sources: [S001, S002, S003, S017, S019, S020, S021]
-updated: 2026-09-30
+updated: 2026-10-02
 ---
 
 # Project authority and review gates

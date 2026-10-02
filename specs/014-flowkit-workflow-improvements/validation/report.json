@@ -1468,5 +1468,141 @@
       "scenario": "interactive desktop continuation and gate presentation",
       "status": "not-run"
     }
-  ]
+  ],
+  "live_workflow_verification": {
+    "status": "passed-defined-live-verification",
+    "tasks": [
+      "T080",
+      "T081",
+      "T082",
+      "T083",
+      "T084",
+      "T085",
+      "T086",
+      "T087",
+      "T088",
+      "T089"
+    ],
+    "required_scenarios": 23,
+    "passing_live_scenarios": 23,
+    "runbook": "specs/014-flowkit-workflow-improvements/validation/live-workflows/runbook.md",
+    "baseline": "specs/014-flowkit-workflow-improvements/validation/live-workflows/baseline.json",
+    "ledger": "specs/014-flowkit-workflow-improvements/validation/live-workflows/ledger.json",
+    "source_revision": "4e442bd",
+    "limits": [
+      "Defined synthetic success/correction/negative cases only; no exhaustive runtime branch or product-domain claim.",
+      "Named-role invocations and source continuity observed; native loaded-model/effort identity and optional visual desktop checks remain unavailable or unrun.",
+      "Four Wiki Lint Update runs omit per-run raw role snapshots; unchanged initial Reviewer/Wiki Curator baseline hashes and actual native execution are explicitly distinguished.",
+      "Long-chat compaction required coordinator scope recovery. The extra interrupted Analyze child in the final wiki case is excluded; all 1220 recorded historical parent files were unchanged. These results do not prove unattended native-chat reliability.",
+      "External-working-tree lifecycle suite was skipped because its optional source settings were unset; checksum-pinned initialized-consumer install/refresh/remove passed.",
+      "Deprecated Start Feature was not installed or invoked. Manual prompt paths and every workflow branch were not independently executed.",
+      "Standalone constitution, custom checklist, tasks-to-issues, roadmap-sync, wiki-init/query/status, feedback capture/report, and Mermaid rendering commands were not demonstrated as live skill invocations in T080\u2013T089. No claim about earlier unrelated invocations follows.",
+      "Feature014 remains Draft and its roadmap remains in-progress; no main commit, push, release, real roadmap verification or acceptance occurred."
+    ],
+    "preparation_findings": [
+      {
+        "id": "F014-LIVE-SETUP-001",
+        "description": "Synthetic newline rules contradicted preservation of trailing blank lines.",
+        "status": "corrected-and-verified"
+      },
+      {
+        "id": "F014-LIVE-SETUP-002",
+        "description": "Synthetic roadmap omitted explicit readiness and lifecycle rules required by selection.",
+        "status": "corrected-and-verified"
+      }
+    ],
+    "setup": "specs/014-flowkit-workflow-improvements/validation/live-workflows/setup.md",
+    "operator_decisions": "specs/014-flowkit-workflow-improvements/validation/live-workflows/operator-decisions.json",
+    "initial_full_suite": {
+      "tests_run": 126,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "limit": "Optional external-working-tree lifecycle suite skipped; this baseline is not live execution evidence."
+    },
+    "coverage": "specs/014-flowkit-workflow-improvements/validation/live-workflows/coverage.md",
+    "failed_live_attempts": 12,
+    "setup_status": "corrected-and-live-verified",
+    "schema_repair_patches": "specs/014-flowkit-workflow-improvements/validation/live-workflows/approval-packet/schema-repair",
+    "current_retry": "All 23 required scenarios and final independent audit passed. Failed attempts and excluded scope recoveries are retained.",
+    "terminal_routing_correction": "specs/014-flowkit-workflow-improvements/validation/live-workflows/terminal-routing-correction.json",
+    "historical_passing_live_runs": [
+      {
+        "run_id": "6976b99f-3d1d-4937-ada4-c6ab35093211",
+        "scenario": "T088-multiple-source-refresh",
+        "workflow_version": "0.1.3",
+        "controller_version": "0.5.1",
+        "assertions_passed": 17,
+        "current_package_retest": "passed: f149074d-d0d1-49f8-a8cf-cb94071c9a59"
+      }
+    ],
+    "completed_tasks": [
+      "T080",
+      "T081",
+      "T082",
+      "T083",
+      "T084",
+      "T085",
+      "T086",
+      "T087",
+      "T088",
+      "T089"
+    ],
+    "author_self_check_correction": "specs/014-flowkit-workflow-improvements/validation/live-workflows/author-self-check-correction.json",
+    "current_regression_validation": {
+      "tests_run": 127,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "limit": "Optional external working-tree lifecycle skipped; pinned snapshot lifecycle passed.",
+      "evidence": "specs/014-flowkit-workflow-improvements/validation/live-workflows/automated-validation/validation.json",
+      "source_revision": "4e442bd79158e3447d14cb8b77180b4af3b16acf"
+    },
+    "closeout_lint_scope_correction": "specs/014-flowkit-workflow-improvements/validation/live-workflows/closeout-lint-scope-correction.json",
+    "current_source_versions": {
+      "bundle": "0.13.7",
+      "closeout": "0.6.5",
+      "controller": "0.5.2"
+    },
+    "prerequisite_analyze_run": "b5abbbe4-6122-45bc-8112-57cc3fd412b7",
+    "supplemental_approval": "specs/014-flowkit-workflow-improvements/validation/live-workflows/operator-decisions.json",
+    "initial_closeout_baseline": "specs/014-flowkit-workflow-improvements/validation/live-workflows/closeout/prerequisites/baseline/manifest.json",
+    "prerequisite_implement_run": "35c54d0a-163a-4757-8d62-2fb236c52207",
+    "prerequisite_converge_run": "685a06c1-5bec-4342-b845-8e1d6aff6685",
+    "current_prerequisite_converge_run": "6de0565b-96cf-4984-b673-18194a14cdd5",
+    "closeout_success_run": "2ebe14c7-cd9c-431f-bfcf-06a5b172bba4",
+    "verification_rejected_run": "3ea837b5-c48b-4f79-91e5-7d0082ea4071",
+    "debrief_correction_run": "4b58e4bb-b407-4a13-8786-3df623ff0d6e",
+    "wiki_reconciliation_run": "997401a4-e585-4924-8207-aaa714ee35b5",
+    "final_audit": "specs/014-flowkit-workflow-improvements/validation/live-workflows/completion-audit.json"
+  },
+  "historical_baseline_scope": "Top-level automated_tests, generated_from, runtime, component snapshot and static coverage retain their original baseline coordinates; current validation is recorded separately.",
+  "current_validation": {
+    "status": "passed-defined-live-verification",
+    "source_revision": "4e442bd79158e3447d14cb8b77180b4af3b16acf",
+    "source_state": "working-tree changes; uncommitted",
+    "bundle_version": "0.13.7",
+    "controller_version": "0.5.2",
+    "automated_tests": {
+      "run": 127,
+      "failures": 0,
+      "errors": 0,
+      "skipped_optional_suites": 1
+    },
+    "live_required_scenarios": 23,
+    "all_ten_active_workflows_have_live_scenario_or_prerequisite_evidence": true,
+    "native_named_role_invocations": "observed in scoped actual execution",
+    "native_model_effort_identity": "unverified",
+    "evidence": "specs/014-flowkit-workflow-improvements/validation/live-workflows/completion-audit.json",
+    "limits": [
+      "Defined synthetic success/correction/negative cases only; no exhaustive runtime branch or product-domain claim.",
+      "Named-role invocations and source continuity observed; native loaded-model/effort identity and optional visual desktop checks remain unavailable or unrun.",
+      "Four Wiki Lint Update runs omit per-run raw role snapshots; unchanged initial Reviewer/Wiki Curator baseline hashes and actual native execution are explicitly distinguished.",
+      "Long-chat compaction required coordinator scope recovery. The extra interrupted Analyze child in the final wiki case is excluded; all 1220 recorded historical parent files were unchanged. These results do not prove unattended native-chat reliability.",
+      "External-working-tree lifecycle suite was skipped because its optional source settings were unset; checksum-pinned initialized-consumer install/refresh/remove passed.",
+      "Deprecated Start Feature was not installed or invoked. Manual prompt paths and every workflow branch were not independently executed.",
+      "Standalone constitution, custom checklist, tasks-to-issues, roadmap-sync, wiki-init/query/status, feedback capture/report, and Mermaid rendering commands were not demonstrated as live skill invocations in T080\u2013T089. No claim about earlier unrelated invocations follows.",
+      "Feature014 remains Draft and its roadmap remains in-progress; no main commit, push, release, real roadmap verification or acceptance occurred."
+    ]
+  }
 }

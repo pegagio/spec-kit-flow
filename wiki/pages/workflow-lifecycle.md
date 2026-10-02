@@ -2,7 +2,7 @@
 title: Workflow lifecycle
 type: concept
 sources: [S002, S006, S007, S010, S013, S017, S018, S019, S021]
-updated: 2026-09-30
+updated: 2026-10-02
 ---
 
 # Workflow lifecycle
@@ -41,7 +41,7 @@ Feature 014's approved scope separates read-only candidate/dependency discussion
 
 Feature 014 requires separate Select Feature and Specify invocations before optional Clarify, Plan, Tasks, Analyze and Remediate, Implement, Converge, and Close Out. Wiki Lint Update is separately selected for wiki maintenance and needs no active feature. No successful phase silently starts another. (S021)
 
-Clarify assesses residual ambiguity after each operator-answered bounded session. Plan and Tasks verify populated outputs and retry exact gaps; Implement repeats existing eligible work while progress is evidenced. Routine required input becomes blocked with a preserved question and resumption action. (S021)
+Clarify assesses residual ambiguity after operator-answered bounded sessions. Plan and Tasks independently assess structural and semantic outputs and return exact findings to authors; Implement repeats eligible work while progress is evidenced. Required input blocks with its question and resumption action. (S021)
 
 ## Related pages
 

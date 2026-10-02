@@ -26,9 +26,9 @@ Use the following as a review starting point, not as an automatic rewrite:
 | Responsibility | Name | Review boundary |
 |---|---|---|
 | Read or perform roadmap operations | Roadmap Agent | May apply only an exact change supplied by a declared workflow after the main task records required operator approval; the agent never approves or broadens it. |
-| Author or clarify feature specifications | Specifier | Does not review its own specification. |
-| Create or reconcile technical plans | Planner | Does not review its own plan. |
-| Decompose or reconcile implementation tasks | Tasker | Does not review its own task list. |
+| Author or clarify feature specifications | Specifier | Completes command-required author self-checks; independent specification assessment belongs to a different assigned role. |
+| Create or reconcile technical plans | Planner | Completes command-required author self-checks; independent plan assessment belongs to Reviewer. |
+| Decompose or reconcile implementation tasks | Tasker | Completes command-required author self-checks; independent task assessment belongs to Reviewer. |
 | Review specifications, plans, tasks, and roadmap alignment | Reviewer | Existing assessments return findings through their current correction path or report a precise bounded stop. |
 | Implement code | Coder | Implementation progress is reviewed by a separate Code Reviewer assignment at the existing assessment point. |
 | Review implementation changes | Code Reviewer | Distinct from Coder and from the higher-level Reviewer. Uses only an existing workflow assessment node. |

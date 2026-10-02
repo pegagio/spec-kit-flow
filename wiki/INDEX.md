@@ -9,6 +9,7 @@ page files, not here.
 - [Named agents for delegated steps](pages/agent-roles-and-inheritance.md)
 - [Bundle and workflow model](pages/bundle-and-workflow-model.md)
 - [Codex workflow controller design](pages/codex-workflow-controllers.md)
+- [Controller assessment contract](pages/controller-assessment-contract.md)
 - [Consumer feedback boundary](pages/consumer-feedback-boundary.md)
 - [Feature start contract](pages/feature-start-contract.md)
 - [Preimplementation review gates](pages/preimplementation-review-gates.md)
@@ -27,3 +28,8 @@ page files, not here.
 
 - [Installation and release lifecycle](pages/installation-and-release-lifecycle.md)
 - [Workflow diagram conventions](pages/workflow-diagram-conventions.md)
+
+## Reference
+
+- [Workflow loop baselines and limits](pages/workflow-loop-baselines-and-limits.md)
+- [Workflow graph responsibility boundaries](pages/workflow-graph-responsibility-boundaries.md)

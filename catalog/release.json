@@ -1,12 +1,17 @@
 {
-  "bundle_version": "0.4.1",
+  "bundle_version": "0.13.7",
   "controller_package": {
-    "artifact": "flow-kit-controllers-0.1.1.zip",
+    "artifact": "flow-kit-controllers-0.5.2.zip",
     "controllers": [
       {
-        "display_name": "FlowKit Start Feature",
-        "skill_id": "flow-kit-start-feature",
-        "workflow_id": "speckit-flow-start-feature"
+        "display_name": "FlowKit Select Feature",
+        "skill_id": "flow-kit-select-feature",
+        "workflow_id": "speckit-flow-select-feature"
+      },
+      {
+        "display_name": "FlowKit Specify",
+        "skill_id": "flow-kit-specify",
+        "workflow_id": "speckit-flow-specify"
       },
       {
         "display_name": "FlowKit Clarify",
@@ -42,14 +47,19 @@
         "display_name": "FlowKit Close Out",
         "skill_id": "flow-kit-closeout",
         "workflow_id": "speckit-flow-closeout"
+      },
+      {
+        "display_name": "FlowKit Wiki Lint Update",
+        "skill_id": "flow-kit-wiki-lint-update",
+        "workflow_id": "speckit-flow-wiki-lint-update"
       }
     ],
     "id": "flow-kit-controllers",
-    "sha256": "7009552df90f0a6af8fef4d9538e5d7b6e14637d2dd94be8b53d993360799613",
-    "source_commit": "98cc9d6aee20aba0078d6afc4dbe9bdd97f22421",
+    "sha256": "1de97fc94a5e4a8d9ef0bd1534b8962d437bf7a5d71984988380c925bb8a3778",
+    "source_commit": "6b4c680d0b284f08e149cd0464e4c1f752b5cb7c",
     "source_dirty": false,
-    "source_sha256": "7009552df90f0a6af8fef4d9538e5d7b6e14637d2dd94be8b53d993360799613",
-    "version": "0.1.1"
+    "source_sha256": "1de97fc94a5e4a8d9ef0bd1534b8962d437bf7a5d71984988380c925bb8a3778",
+    "version": "0.5.2"
   },
   "extensions": {
     "flow-feedback": {
@@ -57,7 +67,7 @@
       "author": "pegagio",
       "name": "Spec Kit Flow Feedback",
       "sha256": "c666b11aa9f10c49ef879191a30a1f06d593d6fe7e404d71a0fc7145d0c75670",
-      "source_commit": "98cc9d6aee20aba0078d6afc4dbe9bdd97f22421",
+      "source_commit": "6b4c680d0b284f08e149cd0464e4c1f752b5cb7c",
       "source_repository": "https://github.com/pegagio/spec-kit-flow",
       "source_tag": null,
       "version": "0.2.1"
@@ -87,36 +97,44 @@
   "status": "released",
   "workflows": {
     "speckit-flow-analyze-remediate": {
-      "sha256": "0776399243e4a3f64814bbe9d7c894bda1ea05e2cc81b787cb2d2a82f307b15d",
-      "version": "0.2.0"
+      "sha256": "995664757bf62c75e561e75aedb0b1d05647da190bd19d6ab48994a8b54b4b6c",
+      "version": "0.4.6"
     },
     "speckit-flow-clarify": {
-      "sha256": "e84a8587776d50eb1833ce4527a67e0011ec162e0c7da5e3c8fedbeb41ee175c",
-      "version": "0.2.0"
+      "sha256": "3d14ce6389c4c441e1b9fafbfa2a61660dc89729999f1765ec2e2f8143b9148a",
+      "version": "0.4.5"
     },
     "speckit-flow-closeout": {
-      "sha256": "0330d1119146b1c63ff8297b945a3ce15f7a7fdee74005a0f2f5f3da9b7ab469",
-      "version": "0.3.0"
+      "sha256": "e346f8f3d8ffad08038e2cff6d9dc9207b2181625b54636b5d17fd92abdf9788",
+      "version": "0.6.5"
     },
     "speckit-flow-converge": {
-      "sha256": "ffb3f54e61a628d51159ba39d1a259ad7228c6fba3e11f7912d2f2abb0e14021",
-      "version": "0.2.0"
+      "sha256": "fd9d6c52d0c321805747887311e780fafa332b9a69b5314271f968e598df4b9f",
+      "version": "0.4.8"
     },
     "speckit-flow-implement": {
-      "sha256": "6a79c065eb28aa915d057c5f72c586c8a2f8a38e6b0bc48cfe5eea120a73a83e",
-      "version": "0.2.0"
+      "sha256": "4f761899dcfdae015588d575d84203e60b77f353e5d931c764aa9539e82f48d4",
+      "version": "0.4.6"
     },
     "speckit-flow-plan": {
-      "sha256": "5c5cfac1fbad27e5e87f159307bd06cc2efc4c20aa565bc3e126b10014418f21",
-      "version": "0.2.0"
+      "sha256": "c98a19314502047c1447e0bc40da0a884ef952f553962a9465c18ccece625e75",
+      "version": "0.4.6"
     },
-    "speckit-flow-start-feature": {
-      "sha256": "de5485e1f8b6ae9fb946584b760c1a2e07e63c9fb2597b72c24625e0c66d01c3",
-      "version": "0.3.0"
+    "speckit-flow-select-feature": {
+      "sha256": "2aa47779f11a78161de28e42d7175a3ea5578a38663a64185486fbab8c6ec614",
+      "version": "0.1.1"
+    },
+    "speckit-flow-specify": {
+      "sha256": "72ebab4c069fc1ccf3b65234269a410df5ab980cdfe68b599b4c90cb2999d766",
+      "version": "0.1.1"
     },
     "speckit-flow-tasks": {
-      "sha256": "8912f7c87e3ad6204a8cf325aa2823608c54bab37ab148aecb01dce46956ec30",
-      "version": "0.2.0"
+      "sha256": "5b13da509cb95c1c852476d85b19d13b5fc0e1e7547d7e77477ae4143e3aff0f",
+      "version": "0.4.6"
+    },
+    "speckit-flow-wiki-lint-update": {
+      "sha256": "735d244d4f98ed3bb96a672239891e75b0818b401524aa45b001e2649ef86df8",
+      "version": "0.1.3"
     }
   }
 }

@@ -1,0 +1,4 @@
+{
+  "action": "continue",
+  "next_step_id": "prepare-stale-source-refresh"
+}

@@ -26,21 +26,21 @@ Versions, counts, entries, and loops are derived from the current definitions. E
 
 | Workflow | Version | Delivery | Entry step | Nodes | Branches | Gates | Loops | Delegated |
 |---|---|---|---|---|---|---|---|---|
-| `speckit-flow-analyze-remediate` | 0.4.5 | Active | `analysis-remediation-loop` | 11 | 6 | 0 | 1 | 5 |
-| `speckit-flow-clarify` | 0.4.4 | Active | `clarification-session-loop` | 4 | 0 | 0 | 1 | 2 |
-| `speckit-flow-closeout` | 0.6.3 | Active | `assess-closeout-readiness` | 34 | 24 | 1 | 2 | 15 |
-| `speckit-flow-converge` | 0.4.7 | Active | `convergence-remediation-loop` | 16 | 12 | 0 | 1 | 8 |
-| `speckit-flow-implement` | 0.4.5 | Active | `assess-implementation-state` | 5 | 0 | 0 | 1 | 3 |
-| `speckit-flow-plan` | 0.4.5 | Active | `plan-output-loop` | 5 | 0 | 0 | 1 | 2 |
+| `speckit-flow-analyze-remediate` | 0.4.6 | Active | `analysis-remediation-loop` | 11 | 6 | 0 | 1 | 5 |
+| `speckit-flow-clarify` | 0.4.5 | Active | `clarification-session-loop` | 4 | 0 | 0 | 1 | 2 |
+| `speckit-flow-closeout` | 0.6.6 | Active | `assess-closeout-readiness` | 34 | 24 | 1 | 2 | 15 |
+| `speckit-flow-converge` | 0.4.8 | Active | `convergence-remediation-loop` | 16 | 12 | 0 | 1 | 8 |
+| `speckit-flow-implement` | 0.4.6 | Active | `assess-implementation-state` | 5 | 0 | 0 | 1 | 3 |
+| `speckit-flow-plan` | 0.4.6 | Active | `plan-output-loop` | 5 | 0 | 0 | 1 | 2 |
 | `speckit-flow-select-feature` | 0.1.1 | Active | `list-roadmap-options` | 11 | 6 | 2 | 0 | 3 |
 | `speckit-flow-specify` | 0.1.1 | Active | `inspect-active-feature` | 16 | 11 | 1 | 0 | 6 |
 | `speckit-flow-start-feature` | 0.6.0 | Deprecated; stop only | `report-start-feature-deprecation` | 1 | 0 | 0 | 0 | 0 |
-| `speckit-flow-tasks` | 0.4.5 | Active | `tasks-output-loop` | 5 | 0 | 0 | 1 | 2 |
-| `speckit-flow-wiki-lint-update` | 0.1.2 | Active | `wiki-lint-update-loop` | 7 | 3 | 0 | 1 | 3 |
+| `speckit-flow-tasks` | 0.4.6 | Active | `tasks-output-loop` | 5 | 0 | 0 | 1 | 2 |
+| `speckit-flow-wiki-lint-update` | 0.1.3 | Active | `wiki-lint-update-loop` | 7 | 3 | 0 | 1 | 3 |
 
 ## Complete source graph
 
-The following tables record every authored node, direct parent/branch, type, explicit delegated assignment, command, switch outcome, human gate, and loop policy. An absent assignment means main-task execution. Only explicit delegation launches a child. Per-step role fit is recorded in [agent-assignment-inventory.md](agent-assignment-inventory.md); native client selection remains unverified; current automated results are recorded in [validation/report.json](validation/report.json). These source tables do not establish live-agent availability.
+The following tables record every authored node, direct parent/branch, type, explicit delegated assignment, command, switch outcome, human gate, and loop policy. An absent assignment means main-task execution. Only explicit delegation launches a child. Per-step role fit is recorded in [agent-assignment-inventory.md](agent-assignment-inventory.md); bounded native invocation observations and current automated results are recorded separately in [validation/report.json](validation/report.json) and [the live audit](validation/live-workflows/completion-audit.json). These static source tables alone do not establish live-agent availability or model/effort identity.
 
 ### speckit-flow-analyze-remediate
 

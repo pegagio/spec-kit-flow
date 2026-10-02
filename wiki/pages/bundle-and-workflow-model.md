@@ -2,7 +2,7 @@
 title: Bundle and workflow model
 type: concept
 sources: [S001, S002, S016, S017, S018, S019, S021]
-updated: 2026-09-30
+updated: 2026-10-02
 ---
 
 # Bundle and workflow model

@@ -64,6 +64,15 @@ class AgentConfigTests(unittest.TestCase):
         self.assertEqual(49, len(assignments))
         self.assertEqual(agent_names, {name for _, _, name in assignments})
 
+    def test_authoringRoles_allowRequiredSelfChecksButKeepIndependentReviewSeparate(self) -> None:
+        for filename in ("specifier.toml", "planner.toml", "tasker.toml"):
+            instructions = tomllib.loads((ROOT / ".codex/agents" / filename).read_text())["developer_instructions"]
+            with self.subTest(agent=filename):
+                self.assertIn("Complete command-required self-checks and quality checklists", instructions)
+                self.assertIn("do not replace independent review by another assigned agent", instructions)
+                self.assertIn("Do not", instructions)
+                self.assertIn("act as the independent reviewer of your own", instructions)
+
     def test_authoringAndReviewAssignments_useDifferentRoles(self) -> None:
         def assignments(workflow_id: str) -> dict[str, str]:
             path = ROOT / "workflows" / workflow_id / "workflow.yml"

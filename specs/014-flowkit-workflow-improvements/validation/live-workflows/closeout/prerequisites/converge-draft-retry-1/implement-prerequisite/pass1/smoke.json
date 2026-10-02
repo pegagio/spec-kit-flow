@@ -1,0 +1,9 @@
+{
+  "exit_status": 0,
+  "stdout_hex": "612020620a0a",
+  "stderr_hex": "",
+  "input_unchanged": true,
+  "no_extra_files": true,
+  "repeat_identical": true,
+  "idempotent": true
+}

@@ -2,7 +2,7 @@
 title: Preimplementation review gates
 type: concept
 sources: [S007, S008, S009, S021]
-updated: 2026-09-30
+updated: 2026-10-02
 ---
 
 # Preimplementation review gates
@@ -23,9 +23,11 @@ Task generation is a separate step for an operator-selected planned feature. It 
 
 Clarify begins with the standard skill session, then assesses significant remaining ambiguity and repeats while prior ambiguities are resolved within a finite bound. The five-question limit remains per session and every substantive answer comes from the operator; clarification does not declare planning readiness. (S021)
 
-Plan delegates prerequisites, research, design generation, and constitutional gates to the core skill. Its wrapper checks required/applicable outputs are present and populated, respects justified inapplicability, and feeds exact missing files or placeholders back for correction. This is output verification rather than design review. (S021)
+Plan delegates prerequisites, research, design generation, and constitutional gates to the core skill. Its existing assessment combines structural checks with independent semantic review, respecting justified inapplicability and returning exact actionable findings to Planner through the bounded correction path. Populated files alone do not establish satisfactory design. (S021)
 
-Tasks similarly retries format, section, dependency, and story-coverage gaps while preserving task IDs, completed work, and reviewed design. Unchecked implementation tasks are not generation failures. Material product questions, missing prerequisites, no progress, or the cap stop; Analyze and implementation remain separate invocations. (S021)
+Tasks combines format, section, dependency, and story-coverage checks with independent semantic assessment, returning exact findings to Tasker while preserving task IDs, completion markers, completed work, and reviewed design. Unchecked implementation tasks are not generation failures. Analyze and implementation remain separate invocations. (S021)
+
+Both reviews check accepted requirements, internal and cross-artifact consistency, and required coverage. Findings identify the artifact or section, governing requirement or decision, deficiency, and approved-scope correction. Reviewers do not edit reviewed artifacts. Stable finding identities and substantive resolution establish progress; rewording or renaming findings does not. Baselines count toward the cap, and repeated findings, stale evidence, no progress, or the cap stop. Product answers and material scope decisions remain operator-owned. Specify's independent roadmap brief checks alignment rather than supplying a general content-review loop. (S021)
 
 **Accepted supersession**: S007–S009 require terminal/readiness/coverage choices in the earlier contracts; S021 removes routine classification gates and uses evidence-driven continuation or blocked recovery. Human answers and consequential authority remain required. (S007, S008, S009, S021)
 

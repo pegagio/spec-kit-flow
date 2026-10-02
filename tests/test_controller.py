@@ -435,6 +435,12 @@ class GraphPreflightTests(unittest.TestCase):
                 "resolved_ids": [], "resume_action": "restore-plan",
             }
             self.assertEqual(complete, self.controller.validate_outcome_envelope(complete, project, {"correct", "assess"}))
+            for field, value in (("next_step_id", "correct"), ("gate_step_id", "review"),
+                                 ("resume_action", "restore-plan")):
+                with self.subTest(terminal_route=field), self.assertRaisesRegex(ValueError, "route field required"):
+                    self.controller.validate_outcome_envelope(
+                        {**complete, field: value}, project, {"correct", "assess"}, {"review"}
+                    )
             self.assertEqual(needs_human, self.controller.validate_outcome_envelope(
                 needs_human, project, {"correct", "assess"}, {"review"}
             ))
